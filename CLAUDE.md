@@ -17,6 +17,11 @@ go/
 ├── cmd/
 │   ├── root.go                      # Root command + global flags + --version
 │   ├── register.go                  # Blank-imports all product packages (triggers init())
+│   ├── agentbase/                   # grn agentbase (gated: -tags agentbase)
+│   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
+│   │   ├── identity.go              # identity group (login/workload/outbound-auth)
+│   │   ├── context.go               # context group (switch/current/headers/decorators)
+│   │   └── helpers.go               # mustLoadConfig / newAuthProvider
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list
@@ -66,6 +71,14 @@ go/
 │   ├── resources/
 │   │   └── vserver/
 │   │       └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type)
+│   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
+│   │   ├── auth/                    # OAuth2 v2 clientcredentials
+│   │   ├── client/                  # bearer-token HTTP client
+│   │   ├── config/                  # ./.greennode.json loader
+│   │   ├── identity/                # identity API client + models
+│   │   ├── cliinput/                # interactive prompts
+│   │   ├── jsonslice/               # typed JSON slice helper
+│   │   └── output/                  # table/json/id + color + banner
 │   └── validator/validator.go       # ID format validation
 ├── go.mod, go.sum
 ```
@@ -114,6 +127,10 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 5. Add `<service>_endpoint` for each region in `internal/config/config.go` REGIONS
 6. root.go needs no change — it mounts everything in the registry
 
+Note: `cmd/agentbase` is gated behind the opt-in `agentbase` build tag
+(`cmd/register_agentbase.go`), the inverse of the `!vks_only` pattern — it is
+excluded from default and release builds while still in development.
+
 ## Security rules
 
 - **Credential masking**: `configure list` and `configure get` mask client_id/client_secret (last 4 chars only)
@@ -128,6 +145,9 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 ```bash
 cd go
 CGO_ENABLED=0 go build -o grn .
+
+# Build WITH the agentbase subcommand (dev/internal only; excluded from release):
+CGO_ENABLED=0 go build -tags agentbase -o grn .
 
 # Cross-compile
 GOOS=linux GOARCH=amd64 go build -o grn-linux-amd64 .
