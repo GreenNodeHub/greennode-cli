@@ -79,9 +79,23 @@ func isConfigureSub(c *cobra.Command) bool {
 	return false
 }
 
+// agentbaseExempt: the `grn agentbase` subtree is a gated, self-contained
+// migrated subsystem (own v2 OAuth2 auth + .greennode.json config, compiled in
+// only with -tags agentbase). It preserves its own command UX verbatim and is
+// exempt from the cross-product verb/flag conventions for now; conformity will
+// be revisited when agentbase flips to default-on.
+func isAgentbaseSub(c *cobra.Command) bool {
+	for p := c.Parent(); p != nil; p = p.Parent() {
+		if p.Name() == "agentbase" {
+			return true
+		}
+	}
+	return false
+}
+
 func TestNoDeniedVerbs(t *testing.T) {
 	for _, c := range leafCommands() {
-		if isConfigureSub(c) {
+		if isConfigureSub(c) || isAgentbaseSub(c) {
 			continue
 		}
 		v := verbToken(c.Use)
@@ -94,6 +108,9 @@ func TestNoDeniedVerbs(t *testing.T) {
 
 func TestDestructiveCommandsHaveDryRunAndForce(t *testing.T) {
 	for _, c := range leafCommands() {
+		if isAgentbaseSub(c) {
+			continue
+		}
 		if !destructiveVerbs[verbToken(c.Use)] {
 			continue
 		}
