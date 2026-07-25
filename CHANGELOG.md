@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.3](https://github.com/vngcloud/greennode-cli/compare/v1.7.2...v1.7.3) (2026-07-25)
+
+
+### Bug Fixes
+
+* correct GreenNode spelling (greenode -&gt; greennode) ([#45](https://github.com/vngcloud/greennode-cli/issues/45)) ([9c9f847](https://github.com/vngcloud/greennode-cli/commit/9c9f847c8953cf2ce6af8f5626a26d94c710c0ec))
+* **vks:** --secondary-subnets takes CIDRs, not subnet IDs ([#44](https://github.com/vngcloud/greennode-cli/issues/44)) ([233cc4c](https://github.com/vngcloud/greennode-cli/commit/233cc4cda84fd83510224ac203c0c9077f030e7c))
+
 ## [1.7.2](https://github.com/vngcloud/greennode-cli/compare/v1.7.1...v1.7.2) (2026-07-07)
 
 
