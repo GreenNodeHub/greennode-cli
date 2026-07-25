@@ -61,6 +61,42 @@ func TestPatchSendsPatchMethodAndBody(t *testing.T) {
 	}
 }
 
+func TestRequestSetsUserAgentHeader(t *testing.T) {
+	// Every outbound VKS API request must carry a User-Agent so the backend can
+	// attribute traffic to the grn VKS CLI.
+	var gotUA string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	// Pin a known value; the production default is set from cmd at startup.
+	prev := UserAgent
+	UserAgent = "grn-vks-cli/9.9.9"
+	defer func() { UserAgent = prev }()
+
+	tm := auth.NewTokenManager("id", "secret")
+	tm.SetToken("test-token", time.Now().Add(1*time.Hour))
+
+	c := NewGreennodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
+	if _, err := c.Get("/v1/thing", nil); err != nil {
+		t.Fatalf("Get returned error: %v", err)
+	}
+	if gotUA != "grn-vks-cli/9.9.9" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "grn-vks-cli/9.9.9")
+	}
+}
+
+func TestUserAgentDefaultsToVKSCLI(t *testing.T) {
+	// The package default identifies the VKS CLI even if cmd never overrides it.
+	if UserAgent != "grn-vks-cli" {
+		t.Errorf("default UserAgent = %q, want %q", UserAgent, "grn-vks-cli")
+	}
+}
+
 func TestFormatErrorSurfacesNestedErrorObject(t *testing.T) {
 	// VKS returns errors as {"error": {"message": ...}} — a nested object, not a
 	// string. The detail must still reach the user instead of being dropped.
