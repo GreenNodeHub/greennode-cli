@@ -13,8 +13,8 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/formatter"
 )
 
-// BuildClient creates a GreenodeClient from cobra command flags.
-func BuildClient(cmd *cobra.Command) (*client.GreenodeClient, *config.Config, error) {
+// BuildClient creates a GreennodeClient from cobra command flags.
+func BuildClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, error) {
 	profile, _ := cmd.Flags().GetString("profile")
 	region, _ := cmd.Flags().GetString("region")
 	endpointURL, _ := cmd.Flags().GetString("endpoint-url")
@@ -59,7 +59,7 @@ func BuildClient(cmd *cobra.Command) (*client.GreenodeClient, *config.Config, er
 	connect := time.Duration(connectTimeout) * time.Second
 	read := time.Duration(readTimeout) * time.Second
 
-	return client.NewGreenodeClient(baseURL, tokenManager, connect, read, !noVerifySSL, debug), cfg, nil
+	return client.NewGreennodeClient(baseURL, tokenManager, connect, read, !noVerifySSL, debug), cfg, nil
 }
 
 // ProjectID extracts and validates the project ID from config.

@@ -14,9 +14,9 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
-// NewClient builds a GreenodeClient for the given service from the command's
+// NewClient builds a GreennodeClient for the given service from the command's
 // global flags. The endpoint is resolved per service via config.GetEndpoint.
-func NewClient(cmd *cobra.Command, serviceName string) (*client.GreenodeClient, error) {
+func NewClient(cmd *cobra.Command, serviceName string) (*client.GreennodeClient, error) {
 	profile, _ := cmd.Flags().GetString("profile")
 	region, _ := cmd.Flags().GetString("region")
 	endpointURL, _ := cmd.Flags().GetString("endpoint-url")
@@ -61,5 +61,5 @@ func NewClient(cmd *cobra.Command, serviceName string) (*client.GreenodeClient, 
 	connect := time.Duration(connectTimeout) * time.Second
 	read := time.Duration(readTimeout) * time.Second
 
-	return client.NewGreenodeClient(baseURL, tokenManager, connect, read, !noVerifySSL, debug), nil
+	return client.NewGreennodeClient(baseURL, tokenManager, connect, read, !noVerifySSL, debug), nil
 }

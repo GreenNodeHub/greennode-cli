@@ -8,11 +8,11 @@ func TestIsTrustedEndpoint(t *testing.T) {
 		"https://vks.api.vngcloud.vn":           true,
 		"https://hcm-3.api.vngcloud.vn/x":       true,
 		"https://vngcloud.vn":                   true,
-		"https://api.greenode.ai":               true,
-		"https://greenode.ai":                   true,
+		"https://api.greennode.ai":              true,
+		"https://greennode.ai":                  true,
 		"http://attacker.com":                   false,
 		"https://evil.vngcloud.vn.attacker.com": false, // suffix must be a real domain boundary
-		"https://notgreenode.ai":                false, // must match on a dot boundary
+		"https://notgreennode.ai":               false, // must match on a dot boundary
 		"http://localhost:8080":                 false,
 		"not-a-url ::::":                        false,
 	}
@@ -32,7 +32,7 @@ func TestCheckEndpointPolicy(t *testing.T) {
 		wantBlocked    bool
 	}{
 		{"trusted https", "https://vks.api.vngcloud.vn", false, false, false},
-		{"trusted greenode", "https://api.greenode.ai", false, false, false},
+		{"trusted greennode", "https://api.greennode.ai", false, false, false},
 		{"no override", "", false, false, false},
 		{"untrusted https verified -> warn only", "https://custom.example.com", false, false, false},
 		{"untrusted http -> block", "http://attacker.com", false, false, true},

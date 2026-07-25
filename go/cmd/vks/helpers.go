@@ -22,8 +22,8 @@ func parseToggle(name, value string) (bool, error) {
 	}
 }
 
-// createClient builds a GreenodeClient for the VKS service from command flags.
-func createClient(cmd *cobra.Command) (*client.GreenodeClient, error) {
+// createClient builds a GreennodeClient for the VKS service from command flags.
+func createClient(cmd *cobra.Command) (*client.GreennodeClient, error) {
 	return cli.NewClient(cmd, "vks")
 }
 

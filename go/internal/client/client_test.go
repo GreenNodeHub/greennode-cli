@@ -12,9 +12,9 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/auth"
 )
 
-func TestNewGreenodeClientWiresConnectTimeout(t *testing.T) {
+func TestNewGreennodeClientWiresConnectTimeout(t *testing.T) {
 	tm := auth.NewTokenManager("id", "secret")
-	c := NewGreenodeClient("https://example.invalid", tm, 2*time.Second, 7*time.Second, true, false)
+	c := NewGreennodeClient("https://example.invalid", tm, 2*time.Second, 7*time.Second, true, false)
 
 	if c.httpClient.Timeout != 7*time.Second {
 		t.Errorf("read timeout: httpClient.Timeout = %v, want 7s", c.httpClient.Timeout)
@@ -47,7 +47,7 @@ func TestPatchSendsPatchMethodAndBody(t *testing.T) {
 	// Pre-seed a static token so GetToken never calls the real IAM endpoint.
 	tm.SetToken("test-token", time.Now().Add(1*time.Hour))
 
-	c := NewGreenodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
+	c := NewGreennodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
 
 	_, err := c.Patch("/v1/thing", map[string]interface{}{"enableAutoHealing": true})
 	if err != nil {
@@ -89,7 +89,7 @@ func TestGetReturnsTypedAPIErrorOn404(t *testing.T) {
 
 	tm := auth.NewTokenManager("id", "secret")
 	tm.SetToken("test-token", time.Now().Add(1*time.Hour))
-	c := NewGreenodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
+	c := NewGreennodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
 
 	_, err := c.Get("/v1/clusters/x", nil)
 	if err == nil {

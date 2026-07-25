@@ -61,7 +61,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&Query, "query", "", "JMESPath query to filter output")
 	rootCmd.PersistentFlags().StringVar(&EndpointURL, "endpoint-url", "", "Override the service endpoint URL")
 	rootCmd.PersistentFlags().BoolVar(&NoVerifySSL, "no-verify-ssl", false, "Disable SSL certificate verification")
-	rootCmd.PersistentFlags().BoolVar(&AllowUntrusted, "allow-untrusted-endpoint", false, "Allow --endpoint-url to a host outside vngcloud.vn/greenode.ai without TLS protection (sends a bearer token there)")
+	rootCmd.PersistentFlags().BoolVar(&AllowUntrusted, "allow-untrusted-endpoint", false, "Allow --endpoint-url to a host outside vngcloud.vn/greennode.ai without TLS protection (sends a bearer token there)")
 	rootCmd.PersistentFlags().BoolVar(&Debug, "debug", false, "Enable debug logging")
 	rootCmd.PersistentFlags().IntVar(&CLIReadTimeout, "cli-read-timeout", 30, "HTTP read timeout in seconds")
 	rootCmd.PersistentFlags().IntVar(&CLIConnectTimeout, "cli-connect-timeout", 30, "HTTP connect timeout in seconds")

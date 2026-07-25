@@ -10,7 +10,7 @@ import (
 // trustedEndpointDomains are the domains grn's own services live under. A
 // request to a host outside these is flagged because grn sends a reusable IAM
 // bearer token with every request (see CheckEndpoint / SEC-08).
-var trustedEndpointDomains = []string{"vngcloud.vn", "greenode.ai"}
+var trustedEndpointDomains = []string{"vngcloud.vn", "greennode.ai"}
 
 // IsTrustedEndpoint reports whether endpointURL targets a host within a trusted
 // domain. An empty value means no --endpoint-url override was given (the

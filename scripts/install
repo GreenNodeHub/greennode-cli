@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Standalone installer for Greenode CLI
+# Standalone installer for GreenNode CLI
 # Usage: ./scripts/install [--install-dir <dir>] [--bin-dir <dir>]
 
 set -e
 
-INSTALL_DIR="${HOME}/.local/lib/greenode"
+INSTALL_DIR="${HOME}/.local/lib/greennode"
 BIN_DIR="${HOME}/.local/bin"
 
 while [ $# -gt 0 ]; do
@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-echo "Installing Greenode CLI..."
+echo "Installing GreenNode CLI..."
 echo "  Install dir: ${INSTALL_DIR}"
 echo "  Bin dir:     ${BIN_DIR}"
 
@@ -40,7 +40,7 @@ mkdir -p "${BIN_DIR}"
 ln -sf "${INSTALL_DIR}/bin/grn" "${BIN_DIR}/grn"
 
 echo ""
-echo "Greenode CLI installed successfully!"
+echo "GreenNode CLI installed successfully!"
 echo ""
 echo "Make sure ${BIN_DIR} is in your PATH:"
 echo "  export PATH=\"${BIN_DIR}:\$PATH\""

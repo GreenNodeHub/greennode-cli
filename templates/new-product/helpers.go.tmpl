@@ -6,10 +6,10 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/client"
 )
 
-// createClient builds a GreenodeClient for the __PRODUCT__ service from command
+// createClient builds a GreennodeClient for the __PRODUCT__ service from command
 // flags. "cli.NewClient" resolves the endpoint via config.GetEndpoint using the
 // service name, so add a "__PRODUCT___endpoint" entry to internal/config REGIONS.
-func createClient(cmd *cobra.Command) (*client.GreenodeClient, error) {
+func createClient(cmd *cobra.Command) (*client.GreennodeClient, error) {
 	return cli.NewClient(cmd, "__PRODUCT__")
 }
 

@@ -7,7 +7,7 @@ set -e
 
 BUNDLE_DIR="dist/grncli-bundle"
 
-echo "Creating Greenode CLI bundle..."
+echo "Creating GreenNode CLI bundle..."
 
 # Clean
 rm -rf "${BUNDLE_DIR}" dist/grncli-bundle.zip
@@ -27,14 +27,14 @@ chmod +x "${BUNDLE_DIR}/install"
 # Create offline installer
 cat > "${BUNDLE_DIR}/install-offline" << 'INSTALLER'
 #!/usr/bin/env bash
-# Offline installer for Greenode CLI
+# Offline installer for GreenNode CLI
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-INSTALL_DIR="${HOME}/.local/lib/greenode"
+INSTALL_DIR="${HOME}/.local/lib/greennode"
 BIN_DIR="${HOME}/.local/bin"
 
-echo "Installing Greenode CLI (offline)..."
+echo "Installing GreenNode CLI (offline)..."
 
 python3 -m venv "${INSTALL_DIR}"
 "${INSTALL_DIR}/bin/pip" install --upgrade pip
@@ -44,7 +44,7 @@ mkdir -p "${BIN_DIR}"
 ln -sf "${INSTALL_DIR}/bin/grn" "${BIN_DIR}/grn"
 
 echo ""
-echo "Greenode CLI installed successfully!"
+echo "GreenNode CLI installed successfully!"
 echo "Make sure ${BIN_DIR} is in your PATH."
 echo "Run 'grn configure' to set up credentials."
 INSTALLER

@@ -34,7 +34,7 @@ Credentials are obtained from the [GreenNode IAM Portal](https://hcm-3.console.v
 Credentials are resolved in the following order (highest to lowest priority):
 
 1. **Environment variables**: `GRN_ACCESS_KEY_ID`, `GRN_SECRET_ACCESS_KEY`
-2. **Shared credentials file**: `~/.greenode/credentials`
+2. **Shared credentials file**: `~/.greennode/credentials`
 
 ## Environment variables
 
@@ -66,7 +66,7 @@ grn vks list-clusters
 Credentials and config are stored in separate files:
 
 ```ini
-# ~/.greenode/credentials
+# ~/.greennode/credentials
 [default]
 client_id = 5028b2cb-cb0f-4249-ae1e-1c51b2bcf6e6
 client_secret = abc123
@@ -77,7 +77,7 @@ client_secret = yyy
 ```
 
 ```ini
-# ~/.greenode/config
+# ~/.greennode/config
 [default]
 region = HCM-3
 output = json
@@ -106,11 +106,11 @@ grn configure set region HAN  # Set a specific value
           Name                   Value            Type    Location
           ----                   -----            ----    --------
        profile               <not set>            None    None
-     client_id    ****************bc6e     config-file    ~/.greenode/credentials
- client_secret    ****************c123     config-file    ~/.greenode/credentials
-        region                   HCM-3     config-file    ~/.greenode/config
-        output                    json     config-file    ~/.greenode/config
-    project_id       pro-xxxxxxxx          config-file    ~/.greenode/config
+     client_id    ****************bc6e     config-file    ~/.greennode/credentials
+ client_secret    ****************c123     config-file    ~/.greennode/credentials
+        region                   HCM-3     config-file    ~/.greennode/config
+        output                    json     config-file    ~/.greennode/config
+    project_id       pro-xxxxxxxx          config-file    ~/.greennode/config
 ```
 
 ## Profiles

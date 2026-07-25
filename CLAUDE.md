@@ -179,7 +179,7 @@ Code without docs is not done.
 |------|---------|
 | `cmd/root.go` | Root command, global flags, --version |
 | `cmd/vks/helpers.go` | Client creation, output formatting, label/taint parsing |
-| `internal/config/config.go` | Config loading from ~/.greenode/, REGIONS map |
+| `internal/config/config.go` | Config loading from ~/.greennode/, REGIONS map |
 | `internal/config/writer.go` | INI file writer with 0600 perms |
 | `internal/auth/token.go` | TokenManager — OAuth2 with IAM (camelCase) |
 | `internal/client/client.go` | HTTP client with retry (3x backoff) + 401 refresh |

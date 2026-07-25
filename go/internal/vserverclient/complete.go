@@ -42,7 +42,7 @@ func extractCompletions(result interface{}, listKeys []string, idKey, nameKey st
 	return out
 }
 
-func buildCompleter(fetch func(*client.GreenodeClient, string) ([]string, error)) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+func buildCompleter(fetch func(*client.GreennodeClient, string) ([]string, error)) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		c, cfg, err := BuildClient(cmd)
 		if err != nil {
@@ -61,7 +61,7 @@ func buildCompleter(fetch func(*client.GreenodeClient, string) ([]string, error)
 }
 
 // CompleteServerIDs completes --server-id flags.
-var CompleteServerIDs = buildCompleter(func(c *client.GreenodeClient, projectID string) ([]string, error) {
+var CompleteServerIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
 	result, err := c.Get(fmt.Sprintf("/v2/%s/servers", projectID), map[string]string{"page": "1", "size": "100"})
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ var CompleteServerIDs = buildCompleter(func(c *client.GreenodeClient, projectID 
 })
 
 // CompleteVolumeIDs completes --volume-id flags.
-var CompleteVolumeIDs = buildCompleter(func(c *client.GreenodeClient, projectID string) ([]string, error) {
+var CompleteVolumeIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
 	result, err := c.Get(fmt.Sprintf("/v2/%s/volumes", projectID), map[string]string{"page": "1", "size": "100"})
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ var CompleteVolumeIDs = buildCompleter(func(c *client.GreenodeClient, projectID 
 })
 
 // CompleteVPCIDs completes --network-id and --vpc-id flags.
-var CompleteVPCIDs = buildCompleter(func(c *client.GreenodeClient, projectID string) ([]string, error) {
+var CompleteVPCIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
 	result, err := c.Get(fmt.Sprintf("/v2/%s/networks", projectID), map[string]string{"page": "1", "size": "100"})
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ var CompleteVPCIDs = buildCompleter(func(c *client.GreenodeClient, projectID str
 })
 
 // CompleteSecgroupIDs completes --secgroup-id and --security-group flags.
-var CompleteSecgroupIDs = buildCompleter(func(c *client.GreenodeClient, projectID string) ([]string, error) {
+var CompleteSecgroupIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
 	result, err := c.Get(fmt.Sprintf("/v2/%s/secgroups", projectID), map[string]string{"page": "1", "size": "100"})
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ var CompleteSecgroupIDs = buildCompleter(func(c *client.GreenodeClient, projectI
 })
 
 // CompleteImageIDs completes --image-id flags by combining OS and GPU images.
-var CompleteImageIDs = buildCompleter(func(c *client.GreenodeClient, projectID string) ([]string, error) {
+var CompleteImageIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
 	var completions []string
 	for _, imageType := range []string{"os", "gpu"} {
 		result, err := c.Get(fmt.Sprintf("/v1/%s/images/%s", projectID, imageType), map[string]string{"page": "1", "size": "100"})

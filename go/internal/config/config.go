@@ -32,10 +32,36 @@ type Config struct {
 	Regions      map[string]map[string]string
 }
 
-// DefaultConfigDir returns ~/.greenode
+// DefaultConfigDir returns ~/.greennode. This is where config is written.
 func DefaultConfigDir() string {
 	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".greennode")
+}
+
+// legacyConfigDir returns the pre-rename config directory (~/.greenode), kept as
+// a read-only fallback so users who configured the CLI before the rename keep
+// loading without re-running `grn configure`.
+func legacyConfigDir() string {
+	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".greenode")
+}
+
+// effectiveConfigDir returns the directory to READ config from: the preferred
+// ~/.greennode if it exists, otherwise the legacy ~/.greenode if present. Writes
+// always target DefaultConfigDir; this helper only affects reads, so a legacy
+// install transparently keeps working until the user re-runs `grn configure`,
+// which migrates them onto ~/.greennode.
+func effectiveConfigDir() string {
+	dir := DefaultConfigDir()
+	if _, err := os.Stat(dir); err == nil {
+		return dir
+	}
+	if legacy := legacyConfigDir(); legacy != dir {
+		if _, err := os.Stat(legacy); err == nil {
+			return legacy
+		}
+	}
+	return dir
 }
 
 // LoadConfig loads configuration for the given profile.
@@ -48,7 +74,7 @@ func LoadConfig(profile string) (*Config, error) {
 		profile = "default"
 	}
 
-	configDir := DefaultConfigDir()
+	configDir := effectiveConfigDir()
 	cfg := &Config{
 		Profile: profile,
 		Regions: REGIONS,
@@ -167,7 +193,7 @@ func RegionNames() []string {
 // ProfileNames returns profile (section) names from the credentials file, sorted.
 // Returns nil on any error so completion stays silent.
 func ProfileNames() []string {
-	path := filepath.Join(DefaultConfigDir(), "credentials")
+	path := filepath.Join(effectiveConfigDir(), "credentials")
 	f, err := ini.Load(path)
 	if err != nil {
 		return nil

@@ -7,7 +7,7 @@ import (
 )
 
 // isolateConfigEnv points HOME at a temp dir and clears GRN_* env vars so
-// LoadConfig reads only the files we create under <tmp>/.greenode.
+// LoadConfig reads only the files we create under <tmp>/.greennode.
 func isolateConfigEnv(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
@@ -18,7 +18,7 @@ func isolateConfigEnv(t *testing.T) string {
 	} {
 		t.Setenv(k, "")
 	}
-	dir := filepath.Join(home, ".greenode")
+	dir := filepath.Join(home, ".greennode")
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -102,5 +102,83 @@ func TestLoadConfigNoFiles(t *testing.T) {
 	}
 	if cfg == nil || cfg.Output != "json" {
 		t.Errorf("expected non-nil cfg with default output, got %#v", cfg)
+	}
+}
+
+// isolateLegacyConfigEnv points HOME at a temp dir and clears GRN_* env vars,
+// creating only the pre-rename <tmp>/.greenode dir (no .greennode) so the
+// legacy-read fallback can be exercised.
+func isolateLegacyConfigEnv(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	for _, k := range []string{
+		"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
+		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
+	} {
+		t.Setenv(k, "")
+	}
+	dir := filepath.Join(home, ".greenode")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	return dir
+}
+
+// Migration: when only the pre-rename ~/.greenode dir exists, LoadConfig falls
+// back to reading it so existing users keep working after the rename.
+func TestLoadConfigLegacyDirFallback(t *testing.T) {
+	dir := isolateLegacyConfigEnv(t)
+	writeFile(t, filepath.Join(dir, "credentials"),
+		"[default]\nclient_id = AKIA-legacy\nclient_secret = secret-legacy\n")
+	writeFile(t, filepath.Join(dir, "config"),
+		"[default]\nregion = HAN\noutput = table\n")
+
+	cfg, err := LoadConfig("default")
+	if err != nil {
+		t.Fatalf("unexpected error reading legacy dir: %v", err)
+	}
+	if cfg.ClientID != "AKIA-legacy" {
+		t.Errorf("client_id = %q, want AKIA-legacy (legacy dir not read)", cfg.ClientID)
+	}
+	if cfg.Region != "HAN" {
+		t.Errorf("region = %q, want HAN (legacy dir not read)", cfg.Region)
+	}
+	if cfg.Output != "table" {
+		t.Errorf("output = %q, want table (legacy dir not read)", cfg.Output)
+	}
+}
+
+// Migration: when both ~/.greennode and the legacy ~/.greenode exist, the new
+// directory wins so a re-run of `grn configure` cleanly migrates off the old one.
+func TestLoadConfigPrefersNewDirOverLegacy(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	for _, k := range []string{
+		"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
+		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
+	} {
+		t.Setenv(k, "")
+	}
+
+	newDir := filepath.Join(home, ".greennode")
+	legacyDir := filepath.Join(home, ".greenode")
+	for _, d := range []string{newDir, legacyDir} {
+		if err := os.MkdirAll(d, 0700); err != nil {
+			t.Fatalf("mkdir %s: %v", d, err)
+		}
+	}
+	// Same profile, different values in each dir.
+	writeFile(t, filepath.Join(newDir, "credentials"),
+		"[default]\nclient_id = AKIA-new\nclient_secret = secret-new\n")
+	writeFile(t, filepath.Join(legacyDir, "credentials"),
+		"[default]\nclient_id = AKIA-legacy\nclient_secret = secret-legacy\n")
+
+	cfg, err := LoadConfig("default")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.ClientID != "AKIA-new" {
+		t.Errorf("client_id = %q, want AKIA-new (new dir should take precedence)", cfg.ClientID)
 	}
 }

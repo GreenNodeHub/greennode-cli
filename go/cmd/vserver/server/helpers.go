@@ -12,7 +12,7 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/vserverclient"
 )
 
-func createClient(cmd *cobra.Command) (*client.GreenodeClient, *config.Config, error) {
+func createClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, error) {
 	return vserverclient.BuildClient(cmd)
 }
 
@@ -71,11 +71,11 @@ func nilIfEmpty(s string) interface{} {
 	return s
 }
 
-func suggestZones(apiClient *client.GreenodeClient, projectID string) error {
+func suggestZones(apiClient *client.GreennodeClient, projectID string) error {
 	return vserverclient.SuggestZoneIDs(apiClient, projectID)
 }
 
-func suggestVPCs(apiClient *client.GreenodeClient, projectID string) error {
+func suggestVPCs(apiClient *client.GreennodeClient, projectID string) error {
 	result, err := apiClient.Get(fmt.Sprintf("/v2/%s/networks", projectID), map[string]string{"page": "1", "size": "50"})
 	if err != nil {
 		return fmt.Errorf("--network-id is required (also failed to fetch VPCs: %w)", err)
@@ -87,7 +87,7 @@ func suggestVPCs(apiClient *client.GreenodeClient, projectID string) error {
 	return fmt.Errorf("flag --network-id is required")
 }
 
-func suggestSubnets(apiClient *client.GreenodeClient, projectID, networkID string) error {
+func suggestSubnets(apiClient *client.GreennodeClient, projectID, networkID string) error {
 	result, err := apiClient.Get(fmt.Sprintf("/v2/%s/networks/%s/subnets", projectID, networkID), map[string]string{"page": "1", "size": "50"})
 	if err != nil {
 		return fmt.Errorf("--subnet-id is required (also failed to fetch subnets: %w)", err)

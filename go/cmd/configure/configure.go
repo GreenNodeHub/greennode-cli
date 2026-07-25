@@ -20,7 +20,7 @@ var ConfigureCmd = &cobra.Command{
 	Long: `Interactive setup for GreenNode CLI.
 
 Prompts for Client ID, Client Secret, Region, and Output format.
-Saves credentials to ~/.greenode/credentials and config to ~/.greenode/config.`,
+Saves credentials to ~/.greennode/credentials and config to ~/.greennode/config.`,
 	Run: runConfigure,
 }
 

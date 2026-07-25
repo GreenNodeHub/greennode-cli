@@ -9,7 +9,7 @@ import (
 
 // SuggestZoneIDs fetches available zones and prints enabled ones to stderr,
 // then returns an error telling the user to set --zone-id.
-func SuggestZoneIDs(apiClient *client.GreenodeClient, projectID string) error {
+func SuggestZoneIDs(apiClient *client.GreennodeClient, projectID string) error {
 	result, err := apiClient.Get(fmt.Sprintf("/v1/%s/zones", projectID), nil)
 	if err != nil {
 		return fmt.Errorf("--zone-id is required (also failed to fetch zones: %w)", err)

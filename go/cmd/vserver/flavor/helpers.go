@@ -7,7 +7,7 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/vserverclient"
 )
 
-func createClient(cmd *cobra.Command) (*client.GreenodeClient, *config.Config, error) {
+func createClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, error) {
 	return vserverclient.BuildClient(cmd)
 }
 

@@ -50,7 +50,7 @@ func TestSetRegionOnNonExistentProfile(t *testing.T) {
 		t.Fatalf("set region on new profile failed: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(home, ".greenode", "config"))
+	data, err := os.ReadFile(filepath.Join(home, ".greennode", "config"))
 	if err != nil {
 		t.Fatalf("config file not written: %v", err)
 	}

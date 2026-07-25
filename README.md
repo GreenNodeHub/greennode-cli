@@ -73,14 +73,14 @@ Auto-detected project_id: pro-xxxxxxxx
 **Method 3: Credentials file (manual)**
 
 ```ini
-# ~/.greenode/credentials
+# ~/.greennode/credentials
 [default]
 client_id = your-client-id
 client_secret = your-client-secret
 ```
 
 ```ini
-# ~/.greenode/config
+# ~/.greennode/config
 [default]
 region = HCM-3
 output = json
@@ -98,7 +98,7 @@ grn configure --profile staging
 grn --profile staging vks list-clusters
 ```
 
-For more configuration options, see the [Configuration Guide](https://vngcloud.github.io/greenode-cli/configuration/).
+For more configuration options, see the [Configuration Guide](https://vngcloud.github.io/greennode-cli/configuration/).
 
 ### Basic Commands
 
@@ -191,7 +191,7 @@ The best way to interact with our team is through GitHub:
 
 ## More Resources
 
-- [Documentation](https://vngcloud.github.io/greenode-cli/)
+- [Documentation](https://vngcloud.github.io/greennode-cli/)
 - [Changelog](CHANGELOG.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [GreenNode Console](https://hcm-3.console.vngcloud.vn/)
