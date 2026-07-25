@@ -40,7 +40,7 @@ func init() {
 	f.String("block-store-csi-plugin", "enabled", "Block store CSI plugin (enabled, disabled)")
 	f.String("service-endpoint", "disabled", "Service endpoint (enabled, disabled)")
 	f.String("az-strategy", "SINGLE", "Availability zone strategy")
-	f.String("secondary-subnets", "", "Secondary subnet IDs, comma-separated (required for CILIUM_NATIVE_ROUTING, at least one, max 10)")
+	f.String("secondary-subnets", "", "Secondary subnet CIDRs, comma-separated, e.g. 10.5.60.0/22 (required for CILIUM_NATIVE_ROUTING, at least one, max 10). NOT subnet IDs")
 	f.String("list-subnet-ids", "", "Subnet IDs for the cluster (comma-separated)")
 	f.Int("node-netmask-size", 0, "Node netmask size: 24, 25, or 26 (required for CILIUM_NATIVE_ROUTING)")
 	f.String("auto-upgrade-config", "", "Auto-upgrade config (shorthand time=03:00,weekdays=Mon or JSON; use JSON for multiple weekdays)")

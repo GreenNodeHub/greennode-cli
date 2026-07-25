@@ -137,11 +137,11 @@ Availability-zone strategy for the cluster.
 
 **`--secondary-subnets`** (list&lt;string&gt;)
 
-Secondary subnet IDs, comma-separated. Used by `CILIUM_NATIVE_ROUTING`.
+Secondary subnet **CIDRs**, comma-separated — the address ranges themselves, **not** subnet IDs (`sec-sub-…`). Used by `CILIUM_NATIVE_ROUTING`.
 
 - Required: Conditional — at least one value is required when `--network-type` is `CILIUM_NATIVE_ROUTING`.
 - Constraints: up to 10 entries.
-- Syntax: `sub-aaa,sub-bbb`
+- Syntax: `10.5.60.0/22,10.5.71.0/26`
 
 **`--node-netmask-size`** (integer)
 
@@ -217,7 +217,7 @@ grn vks create-cluster \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
   --subnet-id sub-abc12345-0000-0000-0000-000000000001 \
   --node-netmask-size 25 \
-  --secondary-subnets sub-abc12345-0000-0000-0000-000000000002
+  --secondary-subnets 10.5.60.0/22,10.5.71.0/26
 ```
 
 Create a cluster with TIGERA (CIDR required) and auto-healing:
@@ -242,6 +242,6 @@ grn vks create-cluster \
   --network-type CILIUM_NATIVE_ROUTING \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
   --node-netmask-size 25 \
-  --secondary-subnets sub-abc12345-0000-0000-0000-000000000002 \
+  --secondary-subnets 10.5.60.0/22,10.5.71.0/26 \
   --dry-run
 ```
