@@ -39,6 +39,12 @@ var retryableStatusCodes = map[int]bool{
 	500: true, 502: true, 503: true, 504: true,
 }
 
+// UserAgent is the User-Agent header sent on every VKS API request so the
+// backend can attribute traffic to the grn VKS CLI. cmd overrides it at startup
+// with the release version (e.g. "grn-vks-cli/1.7.3"); the version-less default
+// keeps identification intact if that override is ever skipped (e.g. in tests).
+var UserAgent = "grn-vks-cli"
+
 // GreennodeClient is an HTTP client for Greennode APIs with retry and auto token refresh.
 type GreennodeClient struct {
 	baseURL      string
@@ -205,6 +211,7 @@ func (c *GreennodeClient) requestRaw(method, path string, params map[string]stri
 
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("User-Agent", UserAgent)
 
 		if c.debug {
 			fmt.Fprintf(os.Stderr, "[debug] %s %s\n", method, fullURL)
@@ -245,6 +252,7 @@ func (c *GreennodeClient) requestRaw(method, path string, params map[string]stri
 			req2, _ := http.NewRequest(method, fullURL, retryBody)
 			req2.Header.Set("Authorization", "Bearer "+token)
 			req2.Header.Set("Content-Type", "application/json")
+			req2.Header.Set("User-Agent", UserAgent)
 			resp2, err := c.httpClient.Do(req2)
 			if err != nil {
 				return "", err

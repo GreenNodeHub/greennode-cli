@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vngcloud/greennode-cli/cmd/configure"
 	"github.com/vngcloud/greennode-cli/internal/cli"
+	"github.com/vngcloud/greennode-cli/internal/client"
 	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
@@ -73,6 +74,10 @@ func init() {
 	_ = rootCmd.RegisterFlagCompletionFunc("color", cli.FlagValues("on", "off", "auto"))
 
 	rootCmd.SetVersionTemplate("grn-cli/{{.Version}}\n")
+
+	// Tag every VKS API request with a version-stamped User-Agent so the backend
+	// can attribute traffic to the grn VKS CLI. Shares cliVersion with --version.
+	client.UserAgent = "grn-vks-cli/" + cliVersion
 
 	rootCmd.AddCommand(configure.ConfigureCmd)
 	for _, svc := range cli.Services() {
