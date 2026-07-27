@@ -1,8 +1,8 @@
 site_name: Green Node CLI
-site_url: https://vngcloud.github.io/greennode-cli/
+site_url: https://greennodehub.github.io/greennode-cli/
 site_description: Universal Command Line Interface for Green Node
-repo_url: https://github.com/vngcloud/greennode-cli
-repo_name: vngcloud/greennode-cli
+repo_url: https://github.com/GreenNodeHub/greennode-cli
+repo_name: GreenNodeHub/greennode-cli
 
 theme:
   name: material
