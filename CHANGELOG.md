@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.8.0...v1.9.0) (2026-07-27)
+
+
+### Features
+
+* **vks:** send grn-vks-cli User-Agent on every VKS API request ([#1](https://github.com/GreenNodeHub/greennode-cli/issues/1)) ([a0ffab6](https://github.com/GreenNodeHub/greennode-cli/commit/a0ffab6398cb043e42314adbe26976abaad82985))
+
 ## [1.8.0](https://github.com/vngcloud/greennode-cli/compare/v1.7.3...v1.8.0) (2026-07-25)
 
 

@@ -12,7 +12,7 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
-const cliVersion = "1.8.0" // x-release-please-version
+const cliVersion = "1.9.0" // x-release-please-version
 
 // Global flags
 var (
