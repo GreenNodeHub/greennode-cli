@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/GreenNodeHub/greennode-cli/compare/v1.9.0...v1.9.1) (2026-07-27)
+
+
+### Documentation
+
+* point mkdocs site/repo URLs to GreenNodeHub ([#3](https://github.com/GreenNodeHub/greennode-cli/issues/3)) ([1a20649](https://github.com/GreenNodeHub/greennode-cli/commit/1a2064959a23c19e863273941b3d79f0c56b6a20))
+
 ## [1.9.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.8.0...v1.9.0) (2026-07-27)
 
 
