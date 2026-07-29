@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vngcloud/greennode-cli/cmd/configure"
+	"github.com/vngcloud/greennode-cli/cmd/login"
 	"github.com/vngcloud/greennode-cli/internal/cli"
 	"github.com/vngcloud/greennode-cli/internal/client"
 	"github.com/vngcloud/greennode-cli/internal/config"
@@ -80,6 +81,8 @@ func init() {
 	client.UserAgent = "grn-vks-cli/" + cliVersion
 
 	rootCmd.AddCommand(configure.ConfigureCmd)
+	rootCmd.AddCommand(login.LoginCmd)
+	rootCmd.AddCommand(login.LogoutCmd)
 	for _, svc := range cli.Services() {
 		rootCmd.AddCommand(svc)
 	}
