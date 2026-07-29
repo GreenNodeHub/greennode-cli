@@ -20,19 +20,46 @@ type StoredToken struct {
 var ErrNoStoredToken = errors.New("login: no stored token")
 
 // Save writes t as JSON to path with 0600 perms, creating the parent dir with
-// 0700. Mirrors greennode-cli internal/agentbase/config/config.go:231
-// (0600 file) and internal/config/writer.go:23 (0700 dir).
+// 0700. The write is atomic (temp file + rename in the same dir): a crash
+// mid-write cannot truncate an existing token, and the rename re-asserts 0600
+// even when the target already exists with looser perms (os.WriteFile preserves
+// the existing file's mode bits on overwrite). Mirrors greennode-cli
+// internal/agentbase/config/config.go:231 (0600 file) and
+// internal/config/writer.go:23 (0700 dir).
 func Save(path string, t StoredToken) error {
-	if dir := filepath.Dir(path); dir != "" {
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			return err
-		}
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
 	}
 	b, err := json.Marshal(t)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0600)
+	tmp, err := os.CreateTemp(dir, ".token-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	remove := func() { _ = os.Remove(tmpName) }
+	if _, err := tmp.Write(b); err != nil {
+		tmp.Close()
+		remove()
+		return err
+	}
+	if err := tmp.Chmod(0600); err != nil {
+		tmp.Close()
+		remove()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		remove()
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		remove()
+		return err
+	}
+	return nil
 }
 
 // Load reads and decodes the token file. A missing file returns ErrNoStoredToken

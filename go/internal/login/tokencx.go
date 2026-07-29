@@ -53,7 +53,7 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("idpoauth: status=%d body=%s", e.Status, string(e.RawBody))
+	return fmt.Sprintf("login: status=%d body=%s", e.Status, string(e.RawBody))
 }
 
 // ExchangeCode posts grant_type=authorization_code + code_verifier (+ Basic
