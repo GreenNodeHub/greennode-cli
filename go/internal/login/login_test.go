@@ -3,6 +3,7 @@ package login
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -201,7 +202,7 @@ func TestLogin_StateMismatchReturnsErrStateMismatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err := Login(ctx, cfg, storePath)
-	if !strings.Contains(err.Error(), "state") && err != ErrStateMismatch {
+	if !errors.Is(err, ErrStateMismatch) {
 		t.Errorf("err=%v, want ErrStateMismatch", err)
 	}
 	// Nothing persisted on mismatch.

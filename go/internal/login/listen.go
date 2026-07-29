@@ -26,15 +26,22 @@ const callbackPath = "/callback"
 // It binds 127.0.0.1:<random port>/callback, serves exactly one request, then
 // shuts down (RFC 8252 loopback redirect URI).
 type Listener struct {
-	uri      string
-	srv      *http.Server
-	bound    net.Listener
-	mu       sync.Mutex
-	code     string
-	state    string
-	cbErr    error
-	received chan struct{} // closed on first callback
+	uri       string
+	srv       *http.Server
+	bound     net.Listener
+	mu        sync.Mutex
+	code      string
+	state     string
+	cbErr     error
+	wantState string        // when non-empty, handle rejects callbacks whose appState differs
+	received  chan struct{} // closed on first callback
 }
+
+// setExpectedState arms the state-mismatch check. When set to a non-empty nonce,
+// handle serves a failure page and Serve returns ErrStateMismatch if the
+// callback's appState differs from it. The zero value (empty) disables the
+// check, leaving the listener nonce-agnostic (how the unit tests exercise it).
+func (l *Listener) setExpectedState(s string) { l.wantState = s }
 
 // NewListener binds 127.0.0.1:0 (random ephemeral port) and returns a Listener
 // whose RedirectURI() is http://127.0.0.1:<port>/callback. Serve starts
@@ -129,6 +136,15 @@ func (l *Listener) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	l.code = q.Get("code")
 	l.state = q.Get("appState")
+	// When an expected nonce is armed (by Login), a mismatch is a stale or forged
+	// callback: serve a failure page and report ErrStateMismatch. Empty wantState
+	// disables the check (unit tests exercise the listener without one).
+	if l.wantState != "" && l.state != l.wantState {
+		l.cbErr = ErrStateMismatch
+		writeResult(w, false, "Login failed. You may close this tab.")
+		l.signal()
+		return
+	}
 	writeResult(w, true, "Login complete. You may close this tab.")
 	l.signal()
 }

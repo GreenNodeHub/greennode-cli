@@ -130,3 +130,41 @@ func TestServe_ContextCancelShutsDown(t *testing.T) {
 		t.Errorf("Serve cancel err=%v, want context.Canceled", sErr)
 	}
 }
+
+func TestServe_StateMismatchServesFailurePage(t *testing.T) {
+	t.Parallel()
+	l, err := NewListener()
+	if err != nil {
+		t.Fatalf("NewListener: %v", err)
+	}
+	defer l.Close()
+	l.setExpectedState("the-nonce") // arm the nonce check (as Login does)
+
+	done := make(chan struct{})
+	var sErr error
+	go func() {
+		_, _, sErr = l.Serve(context.Background())
+		close(done)
+	}()
+
+	// Callback carries a DIFFERENT appState than the armed nonce.
+	uri := l.RedirectURI() + "?code=c&appState=WRONG"
+	resp, err := http.Get(uri)
+	if err != nil {
+		t.Fatalf("http.Get: %v", err)
+	}
+	defer resp.Body.Close()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Serve did not return within 2s")
+	}
+	if !errors.Is(sErr, ErrStateMismatch) {
+		t.Errorf("Serve err=%v, want ErrStateMismatch", sErr)
+	}
+	// The honest UX: a mismatch shows a FAILURE page, not "Login complete".
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status=%d, want %d (failure page on state mismatch)", resp.StatusCode, http.StatusBadRequest)
+	}
+}

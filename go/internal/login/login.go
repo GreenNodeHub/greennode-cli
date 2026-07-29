@@ -48,6 +48,7 @@ func Login(ctx context.Context, cfg Config, storePath string) (Token, error) {
 		return Token{}, fmt.Errorf("login: listener: %w", err)
 	}
 	defer l.Close()
+	l.setExpectedState(nonce) // arm the nonce check so a mismatch serves a failure page
 
 	authURL := cfg.BuildAuthorizeURL(l.RedirectURI(), pair.Challenge, nonce)
 
@@ -57,12 +58,9 @@ func Login(ctx context.Context, cfg Config, storePath string) (Token, error) {
 		fmt.Fprintf(noisyStderr, "Could not open a browser automatically.\nOpen this URL to log in:\n  %s\n", authURL)
 	}
 
-	code, state, serr := l.Serve(ctx)
+	code, _, serr := l.Serve(ctx)
 	if serr != nil {
-		return Token{}, serr
-	}
-	if state != nonce {
-		return Token{}, ErrStateMismatch
+		return Token{}, serr // ErrStateMismatch / *ErrAuthzDenied / ctx error — listener owns the nonce check
 	}
 
 	tc := New(30 * time.Second)
