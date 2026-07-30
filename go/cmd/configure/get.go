@@ -3,6 +3,7 @@ package configure
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/vngcloud/greennode-cli/internal/config"
@@ -45,6 +46,21 @@ func runGet(cmd *cobra.Command, args []string) {
 		value = cfg.Profile
 	case "project_id":
 		value = cfg.ProjectID
+	// Login (user) identity. refresh_token is secret-at-rest → masked (a user
+	// can confirm a login token is present without seeing it). auth_mode,
+	// login_client_id, iam_env and the expiry are non-secret refresh context.
+	case "refresh_token":
+		value = config.MaskCredential(cfg.RefreshToken)
+	case "auth_mode":
+		value = cfg.AuthMode
+	case "login_client_id":
+		value = cfg.LoginClientID
+	case "iam_env":
+		value = cfg.IamEnv
+	case "token_expires_at":
+		if !cfg.TokenExpiresAt.IsZero() {
+			value = cfg.TokenExpiresAt.UTC().Format(time.RFC3339)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown configuration key: %s\n", key)
 		os.Exit(1)

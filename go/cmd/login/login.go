@@ -1,16 +1,16 @@
 // Package login wires the `grn login` / `grn logout` cobra commands around the
 // internal/login PKCE library. It resolves a login.Config from flags + env
 // (client identity is never baked into the binary), runs the browser PKCE flow,
-// and persists the refresh token (0600) to ~/.greennode/login_token.json. The
-// access token is held in memory only — nothing the command prints or writes
-// leaks it.
+// and folds the refresh token (0600) + non-secret refresh context into the
+// per-profile ~/.greennode/credentials INI (auth-only merge — one identity file
+// per profile). The access token is held in memory only — nothing the command
+// prints or writes leaks it.
 package login
 
 import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,14 +39,7 @@ var iamEndpoints = map[string]struct{ Authorize, Token string }{
 const (
 	defaultIamEnv  = "prod"
 	defaultTimeout = 5 * time.Minute
-	tokenFileName  = "login_token.json"
 )
-
-// storePathFn resolves the refresh-token file path. Overridable in tests so
-// they redirect to t.TempDir() without touching os.UserHomeDir.
-var storePathFn = func() string {
-	return filepath.Join(config.DefaultConfigDir(), tokenFileName)
-}
 
 var (
 	flagClientID     string
@@ -63,8 +56,10 @@ var LoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Log in to GreenNode via IAM (interactive PKCE)",
 	Long: `Log in to GreenNode by authenticating against VNG IAM with a browser-based
-PKCE authorization-code flow. The resulting refresh token is cached to
-~/.greennode/login_token.json (0600); the access token is held in memory only.
+PKCE authorization-code flow. The resulting refresh token is folded into the
+per-profile ~/.greennode/credentials INI (0600), alongside any machine
+credentials; the access token is held in memory only. Use --profile to target a
+specific profile (e.g. dev vs prod) so each holds its own login token.
 
 Client identity is supplied via --client-id/--client-secret (or the
 GRN_LOGIN_CLIENT_ID/GRN_LOGIN_CLIENT_SECRET env vars) and is never baked into
@@ -76,8 +71,10 @@ the binary. Omit --client-secret for a PKCE-only public client.`,
 var LogoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Forget the cached GreenNode login refresh token",
-	Long: `Removes the cached refresh token at ~/.greennode/login_token.json.
-Idempotent: running logout when not logged in is not an error.`,
+	Long: `Removes the login keys (refresh_token, expiry, auth_mode, login_client_id,
+iam_env) from the current profile's credentials section, leaving any machine
+client_id/client_secret intact. Idempotent: running logout when not logged in
+is not an error.`,
 	RunE: runLogout,
 }
 
@@ -159,15 +156,31 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
 
-	storePath := storePathFn()
-	tok, err := loginpkg.Login(ctx, cfg, storePath)
+	// The library mints and returns the Token; persistence is our job. Fold the
+	// refresh token + non-secret refresh context (login_client_id, iam_env) into
+	// the per-profile credentials INI so a later usage slice can refresh without
+	// re-prompting. The access token is NEVER persisted — only the refresh token
+	// is (0600). On partial success (no refresh_token) there is nothing to
+	// persist; the library already warned on stderr.
+	tok, err := loginpkg.Login(ctx, cfg)
 	if err != nil {
 		return err
 	}
 
-	// Do not echo the access token (credential hygiene). The refresh token is
-	// what `Login` persisted; report only that and the access-token expiry.
-	fmt.Printf("Logged in. Refresh token saved to %s (0600).", storePath)
+	profile := resolveProfile(cmd)
+	if tok.RefreshToken != "" {
+		iamEnv := flagIamEnv
+		if iamEnv == "" {
+			iamEnv = defaultIamEnv // flag default is "prod"; guard an explicit --iam-env ""
+		}
+		if err := config.NewConfigFileWriter().WriteLoginToken(profile, tok.RefreshToken, tok.ExpiresAt, "user", cfg.ClientID, iamEnv); err != nil {
+			return fmt.Errorf("persist login token: %w", err)
+		}
+	}
+
+	// Do not echo the access token (credential hygiene). Report only the profile
+	// the refresh token landed in + the access-token expiry.
+	fmt.Printf("Logged in. Refresh token saved to profile '%s'.", profile)
 	if !tok.ExpiresAt.IsZero() {
 		fmt.Printf(" Access token expires %s.", tok.ExpiresAt.Format(time.RFC3339))
 	}
@@ -178,11 +191,30 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func runLogout(_ *cobra.Command, _ []string) error {
-	storePath := storePathFn()
-	if err := loginpkg.Clear(storePath); err != nil {
+// resolveProfile mirrors cmd/configure's resolution: --profile flag → GRN_PROFILE
+// → "default". login/logout act on the resolved profile's credentials section
+// so dev/prod profiles each hold their own login token. The nil-flag guard lets
+// a zero *cobra.Command (white-box tests, no registered flags) resolve to the
+// default/env profile instead of panicking.
+func resolveProfile(cmd *cobra.Command) string {
+	profile := ""
+	if f := cmd.Flag("profile"); f != nil {
+		profile = f.Value.String()
+	}
+	if profile == "" {
+		profile = os.Getenv("GRN_PROFILE")
+	}
+	if profile == "" {
+		profile = "default"
+	}
+	return profile
+}
+
+func runLogout(cmd *cobra.Command, _ []string) error {
+	profile := resolveProfile(cmd)
+	if err := config.NewConfigFileWriter().ClearLoginToken(profile); err != nil {
 		return fmt.Errorf("logout: %w", err)
 	}
-	fmt.Printf("Logged out (%s removed).\n", storePath)
+	fmt.Printf("Logged out (login token cleared from profile '%s').\n", profile)
 	return nil
 }

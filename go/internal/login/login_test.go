@@ -6,8 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -81,7 +79,10 @@ func stubBrowser() func() {
 	return func() { openBrowser = orig }
 }
 
-func TestLogin_EndToEnd_RefreshTokenPersisted(t *testing.T) {
+// TestLogin_EndToEnd_MintsToken: the library mints and returns a Token; it no
+// longer persists anything (the cmd layer decides where/whether to store the
+// refresh token). Persistence is owned by the config-layer tests.
+func TestLogin_EndToEnd_MintsToken(t *testing.T) {
 	restore := stubBrowser()
 	defer restore()
 
@@ -92,12 +93,11 @@ func TestLogin_EndToEnd_RefreshTokenPersisted(t *testing.T) {
 	srv := startFakeIAM(t, f)
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	tok, err := Login(ctx, cfg, storePath)
+	tok, err := Login(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Login: %v", err)
 	}
@@ -113,18 +113,6 @@ func TestLogin_EndToEnd_RefreshTokenPersisted(t *testing.T) {
 	if tok.ExpiresAt.IsZero() {
 		t.Error("ExpiresAt should be set from expires_in")
 	}
-
-	// File persisted at 0600 with the refresh token.
-	stored, err := Load(storePath)
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if stored.RefreshToken != "rt-456" {
-		t.Errorf("stored RefreshToken=%q, want rt-456", stored.RefreshToken)
-	}
-	if fi, _ := os.Stat(storePath); fi != nil && fi.Mode().Perm() != 0600 {
-		t.Errorf("file perm=%o, want 0600", fi.Mode().Perm())
-	}
 }
 
 func TestLogin_ConfidentialClient_SendsBasic(t *testing.T) {
@@ -138,12 +126,11 @@ func TestLogin_ConfidentialClient_SendsBasic(t *testing.T) {
 	srv := startFakeIAM(t, f)
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "the-secret")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if _, err := Login(ctx, cfg, storePath); err != nil {
+	if _, err := Login(ctx, cfg); err != nil {
 		t.Fatalf("Login: %v", err)
 	}
 	if !f.sawBasicAuth {
@@ -162,12 +149,11 @@ func TestLogin_PublicClient_SendsBasicWithEmptySecret(t *testing.T) {
 	srv := startFakeIAM(t, f)
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "") // public client
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if _, err := Login(ctx, cfg, storePath); err != nil {
+	if _, err := Login(ctx, cfg); err != nil {
 		t.Fatalf("Login: %v", err)
 	}
 	// VNG IAM requires client_secret_basic for ALL clients, including public
@@ -199,18 +185,13 @@ func TestLogin_StateMismatchReturnsErrStateMismatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := Login(ctx, cfg, storePath)
+	_, err := Login(ctx, cfg)
 	if !errors.Is(err, ErrStateMismatch) {
 		t.Errorf("err=%v, want ErrStateMismatch", err)
-	}
-	// Nothing persisted on mismatch.
-	if _, err := os.Stat(storePath); !os.IsNotExist(err) {
-		t.Errorf("expected no token file on state mismatch; stat err=%v", err)
 	}
 }
 
@@ -232,12 +213,11 @@ func TestLogin_PartialSuccessWhenNoRefreshToken(t *testing.T) {
 	srv := startFakeIAM(t, f)
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	tok, err := Login(ctx, cfg, storePath)
+	tok, err := Login(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Login (partial): %v", err)
 	}
@@ -249,10 +229,6 @@ func TestLogin_PartialSuccessWhenNoRefreshToken(t *testing.T) {
 	}
 	if !strings.Contains(warnBuf.String(), "refresh_token") {
 		t.Errorf("expected a no-refresh-token warning on stderr, got %q", warnBuf.String())
-	}
-	// No file written when there's nothing to persist.
-	if _, err := os.Stat(storePath); !os.IsNotExist(err) {
-		t.Errorf("expected no token file when no refresh_token; stat err=%v", err)
 	}
 }
 
@@ -268,12 +244,11 @@ func TestLogin_TokenExchangeNon2xxFails(t *testing.T) {
 	srv := startFakeIAM(t, f)
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := Login(ctx, cfg, storePath)
+	_, err := Login(ctx, cfg)
 	if err == nil {
 		t.Fatal("expected error for 400 token response, got nil")
 	}
@@ -305,12 +280,11 @@ func TestLogin_DebugTrace_RedactsSecretValues(t *testing.T) {
 	srv := startFakeIAM(t, f)
 	defer srv.Close()
 
-	storePath := filepath.Join(t.TempDir(), "token.json")
 	cfg := newLoginTestCfg(srv.URL, "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if _, err := Login(ctx, cfg, storePath); err != nil {
+	if _, err := Login(ctx, cfg); err != nil {
 		t.Fatalf("Login: %v", err)
 	}
 

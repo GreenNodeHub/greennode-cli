@@ -41,8 +41,9 @@ func truncBody(b []byte) string {
 }
 
 // Token is the full in-memory result of Login: the live access token plus the
-// refresh fields. Only the refresh fields are persisted (via store); the access
-// token is caller-held and ephemeral.
+// refresh fields. Login mints and returns it; persisting the refresh token is
+// the CALLER's job (the library is stdlib-only and profile/INI-agnostic). The
+// access token is caller-held and ephemeral — it is never persisted.
 type Token struct {
 	AccessToken  string
 	TokenType    string // e.g. "Bearer"; from the /v2 body, defaulted if empty
@@ -59,9 +60,9 @@ func defaultOpenBrowser(rawurl string) error {
 }
 
 // Login runs the full PKCE authorization-code flow against IAM and returns the
-// minted token. It persists the refresh token (0600) to storePath when one is
-// present. ctx bounds the whole browser wait. On failure nothing is persisted.
-func Login(ctx context.Context, cfg Config, storePath string) (Token, error) {
+// minted token. It does NOT persist anything — the caller decides how/where to
+// store the refresh token. ctx bounds the whole browser wait.
+func Login(ctx context.Context, cfg Config) (Token, error) {
 	pair, err := Generate()
 	if err != nil {
 		return Token{}, fmt.Errorf("login: pkce generate: %w", err)
@@ -135,11 +136,9 @@ func Login(ctx context.Context, cfg Config, storePath string) (Token, error) {
 	dbg("decoded access_token_len=%d token_type=%s refresh_present=%t expires_at=%s",
 		len(tok.AccessToken), tok.TokenType, refreshToken != "", tok.ExpiresAt.Format(time.RFC3339))
 
-	if refreshToken != "" {
-		if err := Save(storePath, StoredToken{RefreshToken: refreshToken, ExpiresAt: tok.ExpiresAt}); err != nil {
-			return Token{}, fmt.Errorf("login: persist: %w", err)
-		}
-	} else {
+	if refreshToken == "" {
+		// Partial success: access token is valid but IAM returned no refresh
+		// token. Warn the caller; persistence is the caller's call regardless.
 		fmt.Fprintf(noisyStderr, "Warning: IAM returned no refresh_token — re-login needed after expiry.\n")
 	}
 	return tok, nil

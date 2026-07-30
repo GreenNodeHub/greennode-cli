@@ -1,14 +1,14 @@
 package login
 
 import (
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
 // resolveConfig is the pure cobra-slice seam; these tests cover flag>env
@@ -171,37 +171,55 @@ func TestResolveConfig(t *testing.T) {
 	}
 }
 
-// runLogout ignores its *cobra.Command, so a zero value is fine for white-box
-// testing. These mutate the package-level storePathFn seam, so non-parallel.
-func TestLogout_ClearsTokenFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, tokenFileName)
-	if err := os.WriteFile(path, []byte("{}"), 0600); err != nil {
-		t.Fatal(err)
+// runLogout resolves the profile from cmd (flag → GRN_PROFILE → default) and
+// clears that profile's login keys via the config-layer writer. These isolate
+// HOME at a temp dir so the writer targets a throwaway ~/.greennode. Non-parallel:
+// they mutate process env (HOME, GRN_PROFILE).
+func TestLogout_ClearsLoginKeysKeepsMachineCreds(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GRN_PROFILE", "")
+	w := config.NewConfigFileWriter()
+	// Seed the default profile with machine creds + a login token.
+	if err := w.WriteCredentials("default", "cid", "cs"); err != nil {
+		t.Fatalf("WriteCredentials: %v", err)
 	}
-
-	orig := storePathFn
-	storePathFn = func() string { return path }
-	defer func() { storePathFn = orig }()
+	if err := w.WriteLoginToken("default", "rt-xyz", time.Now().UTC(), "user", "cid", "dev"); err != nil {
+		t.Fatalf("WriteLoginToken: %v", err)
+	}
 
 	if err := runLogout(&cobra.Command{}, nil); err != nil {
 		t.Fatalf("runLogout: %v", err)
 	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Errorf("expected token file removed; stat err=%v", err)
+
+	cfg, err := config.LoadConfig("default")
+	if err != nil {
+		t.Fatalf("LoadConfig after logout: %v", err)
+	}
+	// Login keys gone.
+	if cfg.RefreshToken != "" {
+		t.Errorf("RefreshToken=%q, want empty after logout", cfg.RefreshToken)
+	}
+	if cfg.AuthMode != "" {
+		t.Errorf("AuthMode=%q, want empty after logout", cfg.AuthMode)
+	}
+	if cfg.LoginClientID != "" {
+		t.Errorf("LoginClientID=%q, want empty after logout", cfg.LoginClientID)
+	}
+	// Machine creds survive logout (auth-only clear, not a credentials wipe).
+	if cfg.ClientID != "cid" {
+		t.Errorf("ClientID=%q, want cid (logout must keep machine creds)", cfg.ClientID)
+	}
+	if cfg.ClientSecret != "cs" {
+		t.Errorf("ClientSecret=%q, want cs", cfg.ClientSecret)
 	}
 }
 
-func TestLogout_IdempotentWhenNoFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, tokenFileName) // deliberately absent
-
-	orig := storePathFn
-	storePathFn = func() string { return path }
-	defer func() { storePathFn = orig }()
-
+func TestLogout_IdempotentWhenNoCredsFile(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GRN_PROFILE", "")
+	// No credentials file at all — logout must be a no-op, not an error.
 	if err := runLogout(&cobra.Command{}, nil); err != nil {
-		t.Fatalf("runLogout on missing file should be a no-op, got: %v", err)
+		t.Fatalf("runLogout on missing creds file should be a no-op, got: %v", err)
 	}
 }
 
