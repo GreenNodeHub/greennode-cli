@@ -151,7 +151,7 @@ func TestLogin_ConfidentialClient_SendsBasic(t *testing.T) {
 	}
 }
 
-func TestLogin_PublicClient_NoBasic(t *testing.T) {
+func TestLogin_PublicClient_SendsBasicWithEmptySecret(t *testing.T) {
 	restore := stubBrowser()
 	defer restore()
 
@@ -170,8 +170,11 @@ func TestLogin_PublicClient_NoBasic(t *testing.T) {
 	if _, err := Login(ctx, cfg, storePath); err != nil {
 		t.Fatalf("Login: %v", err)
 	}
-	if f.sawBasicAuth {
-		t.Error("expected NO Basic auth at /token for a public client")
+	// VNG IAM requires client_secret_basic for ALL clients, including public
+	// (no-secret) ones — the client_id travels as the Basic username with an
+	// empty password. So Basic IS sent even with ClientSecret == "".
+	if !f.sawBasicAuth {
+		t.Error("expected Basic auth at /token even for a public client (VNG IAM requires it)")
 	}
 }
 

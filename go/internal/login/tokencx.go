@@ -91,12 +91,17 @@ func (c *Client) post(ctx context.Context, tokenURL string, v url.Values, client
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	if clientSecret != "" {
-		// client_secret_basic per RFC 6749 §2.3.1 — IAM's /v2 endpoint requires it
-		// for confidential clients. The secret goes ONLY in the header, never the
-		// form body. Mirrors idpoauth/client.go:108-113.
-		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
-	}
+	// client_secret_basic per RFC 6749 §2.3.1 — sent on EVERY token POST. VNG
+	// IAM's /v2 endpoint requires Basic for all clients, including "public"
+	// (no-secret) ones: for those the password is empty and only the client_id
+	// (the Basic username) is validated. Verified against dev IAM: a correct
+	// PKCE POST without Basic is rejected as AUTHENTICATION_FAILED, while the
+	// same POST with Basic(client_id:) advances to grant validation
+	// (AUTH_CODE_INVALID for a bogus code). Body secrets are NOT honored by IAM
+	// — the credential travels only in this header. Mirrors agent-core-gateway
+	// internal/clients/idpoauth/client.go:108-113, extended to the public-client
+	// case the CLI needs.
+	req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, nil, err

@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,21 @@ import (
 	"testing"
 	"time"
 )
+
+// basicUserPass decodes an "Authorization: Basic …" header into (user, pass).
+// Returns ok=false when the header is absent or malformed.
+func basicUserPass(h http.Header) (user, pass string, ok bool) {
+	auth := h.Get("Authorization")
+	if !strings.HasPrefix(auth, "Basic ") {
+		return "", "", false
+	}
+	dec, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(auth, "Basic "))
+	if err != nil {
+		return "", "", false
+	}
+	user, pass, _ = strings.Cut(string(dec), ":")
+	return user, pass, true
+}
 
 // recServer records the last request it received (method, path, body, headers).
 type recServer struct {
@@ -67,8 +83,17 @@ func TestExchangeCode_SendsCodeVerifierAndForm(t *testing.T) {
 	if v.Get("client_id") != "cid" {
 		t.Errorf("client_id=%q", v.Get("client_id"))
 	}
-	if r.header.Get("Authorization") != "" {
-		t.Errorf("no Basic expected without secret; got %q", r.header.Get("Authorization"))
+	// VNG IAM requires Basic on EVERY token POST. With no ClientSecret (public
+	// client) the Basic username is the client_id and the password is empty.
+	user, pass, ok := basicUserPass(r.header)
+	if !ok {
+		t.Fatalf("expected Basic auth (always sent); got %q", r.header.Get("Authorization"))
+	}
+	if user != "cid" {
+		t.Errorf("Basic username=%q, want cid", user)
+	}
+	if pass != "" {
+		t.Errorf("Basic password=%q, want empty for a public client", pass)
 	}
 	if string(resp.Raw) == "" || !strings.Contains(string(resp.Raw), "access_token") {
 		t.Errorf("Raw not preserved: %s", string(resp.Raw))
@@ -87,9 +112,15 @@ func TestExchangeCode_BasicAuthWhenSecretSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExchangeCode: %v", err)
 	}
-	auth := r.header.Get("Authorization")
-	if !strings.HasPrefix(auth, "Basic ") {
-		t.Errorf("expected Basic auth when secret set; got %q", auth)
+	user, pass, ok := basicUserPass(r.header)
+	if !ok {
+		t.Fatalf("expected Basic auth when secret set; got %q", r.header.Get("Authorization"))
+	}
+	if user != "cid" {
+		t.Errorf("Basic username=%q, want cid", user)
+	}
+	if pass != "sec" {
+		t.Errorf("Basic password=%q, want the client secret", pass)
 	}
 	// client_secret must NOT also be in the form body (Basic is the auth).
 	if v, _ := url.ParseQuery(r.body); v.Get("client_secret") != "" {
@@ -142,7 +173,8 @@ func TestRefresh_SendsRefreshToken(t *testing.T) {
 	if v.Get("scope") != "openid" {
 		t.Errorf("scope=%q", v.Get("scope"))
 	}
-	if r.header.Get("Authorization") == "" {
-		t.Error("expected Basic auth with secret set")
+	// Refresh shares post() with ExchangeCode, so Basic is always sent there too.
+	if _, _, ok := basicUserPass(r.header); !ok {
+		t.Error("expected Basic auth on Refresh (always sent)")
 	}
 }
