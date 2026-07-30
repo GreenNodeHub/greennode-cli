@@ -278,3 +278,55 @@ func TestLogin_TokenExchangeNon2xxFails(t *testing.T) {
 		t.Errorf("err=%v, want a 'token exchange' wrap", err)
 	}
 }
+
+// TestLogin_DebugTrace_RedactsSecretValues proves the --debug trace surfaces
+// non-secret context (client_id, endpoints, lengths) while NEVER leaking the
+// value of any secret-shaped field (access token, refresh token, auth code).
+// Security-critical: a regression here would print bearer grants to stderr.
+func TestLogin_DebugTrace_RedactsSecretValues(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	origStderr := noisyStderr
+	var buf bytes.Buffer
+	noisyStderr = &buf
+	defer func() { noisyStderr = origStderr }()
+
+	SetDebug(true)
+	defer SetDebug(false)
+
+	f := &fakeIAM{
+		authCode:  "the-code",
+		tokenBody: `{"access_token":"at-123","token_type":"Bearer","refresh_token":"rt-456","expires_in":3600}`,
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	storePath := filepath.Join(t.TempDir(), "token.json")
+	cfg := newLoginTestCfg(srv.URL, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := Login(ctx, cfg, storePath); err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "login debug:") {
+		t.Fatalf("expected debug trace lines, got: %q", out)
+	}
+	// Non-secret context is shown in full.
+	if !strings.Contains(out, "client_id=cid") {
+		t.Errorf("debug should show client_id=cid; got: %q", out)
+	}
+	// Secret VALUES must never appear — only their lengths/presence.
+	for _, secret := range []string{"at-123", "rt-456", "the-code"} {
+		if strings.Contains(out, secret) {
+			t.Errorf("debug trace LEAKED secret %q in: %q", secret, out)
+		}
+	}
+	// The redacted length form of the access token must be present.
+	if !strings.Contains(out, "access_token_len=6") { // len("at-123")
+		t.Errorf("debug should report access_token_len=6; got: %q", out)
+	}
+}

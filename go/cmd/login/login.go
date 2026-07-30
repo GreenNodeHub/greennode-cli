@@ -150,6 +150,12 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	// The global --debug flag gates the library's stderr trace. Restored on
+	// return so a debug run never leaves the seam armed for later invocations.
+	if dbg, _ := cmd.Flags().GetBool("debug"); dbg {
+		loginpkg.SetDebug(true)
+		defer loginpkg.SetDebug(false)
+	}
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
 
