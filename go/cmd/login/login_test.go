@@ -11,17 +11,19 @@ import (
 	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
-// resolveConfig is the pure cobra-slice seam; these tests cover flag>env
-// precedence, the iam-env presets and piecewise overrides, scope splitting,
-// the public-client (empty-secret) path, and the missing-client-id failure.
+// resolveConfig is the pure cobra-slice seam; these tests cover client-id
+// precedence (flag > env > baked-in per-env default), iam-env precedence
+// (flag > GRN_IAM_ENV > prod default), the iam-env presets and piecewise
+// overrides, scope splitting, and the public-client (empty-secret) path.
 //
 // They are deliberately non-parallel: resolveConfig reads process env
-// (GRN_LOGIN_*) via os.Getenv, and t.Setenv is not safe across parallel tests
-// in the same process.
+// (GRN_LOGIN_*, GRN_IAM_ENV) via os.Getenv, and t.Setenv is not safe across
+// parallel tests in the same process.
 func TestResolveConfig(t *testing.T) {
 	// Start from a clean env so each case controls its inputs exactly.
 	t.Setenv("GRN_LOGIN_CLIENT_ID", "")
 	t.Setenv("GRN_LOGIN_CLIENT_SECRET", "")
+	t.Setenv("GRN_IAM_ENV", "")
 
 	cases := []struct {
 		name          string
@@ -34,6 +36,7 @@ func TestResolveConfig(t *testing.T) {
 		timeout       time.Duration
 		envClientID   string
 		envClientSec  string
+		envIamEnv     string
 		wantErr       string // non-empty → expect an error containing this
 		wantClientID  string
 		wantClientSec string
@@ -50,15 +53,55 @@ func TestResolveConfig(t *testing.T) {
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "env client-id used when flag empty",
-			envClientID: "cid-env", iamEnv: "prod",
+			name: "env client-id used when flag empty (env > embedded)",
+			envClientID: "cid-env", iamEnv: "dev", // dev has an embedded default that env must beat
 			wantClientID: "cid-env",
+			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
+		},
+		{
+			// Was "missing client id errors" — now the baked-in prod placeholder
+			// is used automatically, so login no longer refuses; prod just fails
+			// at IAM until the placeholder is replaced.
+			name: "embedded prod placeholder used when flag/env omitted",
+			iamEnv: "prod",
+			wantClientID: prodClientIDPlaceholder, wantClientSec: "",
+			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
+		},
+		{
+			name: "embedded dev client_id used when flag/env omitted",
+			iamEnv: "dev",
+			wantClientID: devClientID, wantClientSec: "",
+			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
+		},
+		{
+			name: "invalid iam-env errors",
+			clientID: "cid", iamEnv: "staging",
+			wantErr: "iam-env",
+		},
+		{
+			name: "GRN_IAM_ENV selects dev when iam-env flag empty",
+			clientID: "cid", iamEnv: "", envIamEnv: "dev",
+			wantClientID: "cid",
+			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
+		},
+		{
+			// Explicit --iam-env (non-empty) beats GRN_IAM_ENV. resolveConfig only
+			// consults GRN_IAM_ENV when iamEnv == "".
+			name: "explicit iam-env beats GRN_IAM_ENV",
+			clientID: "cid", iamEnv: "prod", envIamEnv: "dev",
+			wantClientID: "cid",
 			wantAuthorize: iamEndpoints["prod"].Authorize, wantToken: iamEndpoints["prod"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "missing client id errors", iamEnv: "prod",
-			wantErr: "client-id",
+			name: "iam-env empty + GRN_IAM_ENV empty defaults to prod",
+			clientID: "cid", iamEnv: "", envIamEnv: "",
+			wantClientID: "cid",
+			wantAuthorize: iamEndpoints["prod"].Authorize, wantToken: iamEndpoints["prod"].Token,
+			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
 			name: "client-secret flag wins over env",
@@ -84,11 +127,6 @@ func TestResolveConfig(t *testing.T) {
 			wantClientID: "cid",
 			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
-		},
-		{
-			name: "invalid iam-env errors",
-			clientID: "cid", iamEnv: "staging",
-			wantErr: "iam-env",
 		},
 		{
 			name: "authorize-url overrides preset only",
@@ -134,6 +172,7 @@ func TestResolveConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("GRN_LOGIN_CLIENT_ID", tc.envClientID)
 			t.Setenv("GRN_LOGIN_CLIENT_SECRET", tc.envClientSec)
+			t.Setenv("GRN_IAM_ENV", tc.envIamEnv)
 
 			cfg, gotTimeout, err := resolveConfig(tc.clientID, tc.clientSecret, tc.iamEnv, tc.authorizeURL, tc.tokenURL, tc.scope, tc.timeout)
 			if tc.wantErr != "" {
@@ -168,6 +207,66 @@ func TestResolveConfig(t *testing.T) {
 				t.Errorf("timeout=%v, want %v", gotTimeout, tc.wantTimeout)
 			}
 		})
+	}
+}
+
+// resolveClientID is the pure client-id resolution helper (flag > env >
+// embedded). The error path is unreachable via resolveConfig with the shipped
+// presets (both have embedded defaults), so it is exercised directly here with
+// an empty embedded default.
+func TestResolveClientID(t *testing.T) {
+	t.Setenv("GRN_LOGIN_CLIENT_ID", "")
+	// flag wins over env and embedded.
+	t.Setenv("GRN_LOGIN_CLIENT_ID", "cid-env")
+	got, err := resolveClientID("cid-flag", "cid-embedded")
+	if err != nil || got != "cid-flag" {
+		t.Fatalf("flag should win: got=%q err=%v", got, err)
+	}
+	// env wins over embedded.
+	got, err = resolveClientID("", "cid-embedded")
+	if err != nil || got != "cid-env" {
+		t.Fatalf("env should beat embedded: got=%q err=%v", got, err)
+	}
+	// embedded used when flag+env empty.
+	t.Setenv("GRN_LOGIN_CLIENT_ID", "")
+	got, err = resolveClientID("", "cid-embedded")
+	if err != nil || got != "cid-embedded" {
+		t.Fatalf("embedded fallback: got=%q err=%v", got, err)
+	}
+	// all empty → error (the defensive guard).
+	_, err = resolveClientID("", "")
+	if err == nil || !strings.Contains(err.Error(), "client-id") {
+		t.Fatalf("expected client-id error when all empty, got %v", err)
+	}
+}
+
+// resolveIamEnv applies flag > GRN_IAM_ENV > prod default. Built on a real
+// cobra command whose --iam-env flag is registered with no default (mirroring
+// init), so an unset flag falls through to env. Non-parallel: mutates GRN_IAM_ENV.
+func TestResolveIamEnv(t *testing.T) {
+	t.Setenv("GRN_IAM_ENV", "")
+	newCmd := func() *cobra.Command {
+		c := &cobra.Command{}
+		c.Flags().String("iam-env", "", "")
+		return c
+	}
+	// unset flag + unset env → prod default.
+	c := newCmd()
+	if got := resolveIamEnv(c); got != defaultIamEnv {
+		t.Errorf("unset → %q, want prod", got)
+	}
+	// unset flag + env=dev → dev.
+	t.Setenv("GRN_IAM_ENV", "dev")
+	c = newCmd()
+	if got := resolveIamEnv(c); got != "dev" {
+		t.Errorf("env dev → %q, want dev", got)
+	}
+	// explicit flag beats env.
+	t.Setenv("GRN_IAM_ENV", "dev")
+	c = newCmd()
+	_ = c.Flags().Set("iam-env", "prod")
+	if got := resolveIamEnv(c); got != "prod" {
+		t.Errorf("flag prod over env dev → %q, want prod", got)
 	}
 }
 

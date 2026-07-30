@@ -1,9 +1,10 @@
 // Package login wires the `grn login` / `grn logout` cobra commands around the
-// internal/login PKCE library. It resolves a login.Config from flags + env
-// (client identity is never baked into the binary), runs the browser PKCE flow,
-// and folds the refresh token (0600) + non-secret refresh context into the
-// per-profile ~/.greennode/credentials INI (auth-only merge — one identity file
-// per profile). The access token is held in memory only — nothing the command
+// internal/login PKCE library. It resolves a login.Config from flags + env plus
+// a baked-in per-env public client_id (dev real, prod placeholder; the
+// client_secret is never baked in), runs the browser PKCE flow, and folds the
+// refresh token (0600) + non-secret refresh context into the per-profile
+// ~/.greennode/credentials INI (auth-only merge — one identity file per
+// profile). The access token is held in memory only — nothing the command
 // prints or writes leaks it.
 package login
 
@@ -25,16 +26,39 @@ import (
 // the browser signin page; the prod entry 301→signin.greennode.ai (a rebrand,
 // not an env signal). Override either endpoint piecewise with --authorize-url /
 // --token-url when a portal points elsewhere.
-var iamEndpoints = map[string]struct{ Authorize, Token string }{
+//
+// ClientID is a BAKED-IN default public client_id per env, used automatically
+// when --client-id / GRN_LOGIN_CLIENT_ID are omitted so `grn login` needs no
+// client id for dev. These are PUBLIC OAuth client identifiers (RFC 6749) — not
+// secrets — so baking them is safe; the client_secret is NEVER baked in (the
+// dev client is public/no-secret; omit --client-secret). devClientID is the real
+// client registered on the IAM dev portal; prodClientIDPlaceholder is a stand-in
+// (not a real client) so prod login fails at IAM until it is replaced with the
+// registered prod client_id. Rotating a baked id requires a rebuild — the
+// tradeoff for zero-flag login; keep it overridable via --client-id.
+var iamEndpoints = map[string]struct{ Authorize, Token, ClientID string }{
 	"prod": {
 		Authorize: "https://signin.vngcloud.vn/ap/auth",
 		Token:     "https://iam.api.vngcloud.vn/accounts-api/v2/auth/token",
+		ClientID:  prodClientIDPlaceholder,
 	},
 	"dev": {
 		Authorize: "https://dev-signin.vngcloud.tech/ap/auth",
 		Token:     "https://pub-iamapis.api-dev.vngcloud.tech/accounts-api/v2/auth/token",
+		ClientID:  devClientID,
 	},
 }
+
+// devClientID is the public (no-secret, redirect-*) OAuth client registered on
+// the IAM dev portal. A non-secret identifier; safe to bake in.
+const devClientID = "23d6e219-04d5-4d94-a2cd-536048ed2d7c"
+
+// prodClientIDPlaceholder is a stand-in prod client_id — NOT a real client.
+// Prod login will fail at IAM (the client does not exist) until this is
+// replaced with the real registered prod public client_id. Zero-UUID so it is
+// unmistakably fake yet UUID-shaped (passes client_id format validation and
+// fails cleanly at grant validation, not format validation).
+const prodClientIDPlaceholder = "00000000-0000-0000-0000-000000000000"
 
 const (
 	defaultIamEnv  = "prod"
@@ -61,9 +85,11 @@ per-profile ~/.greennode/credentials INI (0600), alongside any machine
 credentials; the access token is held in memory only. Use --profile to target a
 specific profile (e.g. dev vs prod) so each holds its own login token.
 
-Client identity is supplied via --client-id/--client-secret (or the
-GRN_LOGIN_CLIENT_ID/GRN_LOGIN_CLIENT_SECRET env vars) and is never baked into
-the binary. Omit --client-secret for a PKCE-only public client.`,
+A default public client_id is baked in per --iam-env (dev's real id; prod's is
+a placeholder until a real prod client is registered), so "grn login" needs no
+--client-id for dev. Override with --client-id or GRN_LOGIN_CLIENT_ID. Pick the
+env with --iam-env or GRN_IAM_ENV (default prod). The client_secret is never
+baked in; omit --client-secret for a PKCE-only public client.`,
 	RunE: runLogin,
 }
 
@@ -79,9 +105,9 @@ is not an error.`,
 }
 
 func init() {
-	LoginCmd.Flags().StringVar(&flagClientID, "client-id", "", "IAM OAuth client id (env: GRN_LOGIN_CLIENT_ID)")
+	LoginCmd.Flags().StringVar(&flagClientID, "client-id", "", "IAM OAuth client id (default: baked-in per --iam-env; env: GRN_LOGIN_CLIENT_ID)")
 	LoginCmd.Flags().StringVar(&flagClientSecret, "client-secret", "", "IAM OAuth client secret; omit for a PKCE-only public client (env: GRN_LOGIN_CLIENT_SECRET)")
-	LoginCmd.Flags().StringVar(&flagIamEnv, "iam-env", defaultIamEnv, "IAM environment preset: prod|dev")
+	LoginCmd.Flags().StringVar(&flagIamEnv, "iam-env", "", "IAM environment preset: prod|dev (default prod; env: GRN_IAM_ENV)")
 	LoginCmd.Flags().StringVar(&flagAuthorizeURL, "authorize-url", "", "Override the IAM signin/authorize URL")
 	LoginCmd.Flags().StringVar(&flagTokenURL, "token-url", "", "Override the IAM /v2 token URL")
 	LoginCmd.Flags().StringVar(&flagScope, "scope", "", "OAuth scopes (space-separated); default openid")
@@ -89,12 +115,17 @@ func init() {
 }
 
 // resolveConfig builds a loginpkg.Config from the flag/env inputs plus the
-// iam-env preset. Precedence: explicit flag > env var (for client identity);
-// --authorize-url/--token-url > preset. It is pure w.r.t. the cobra flag state
-// (callers pass flag values in) so it table-tests cleanly. Returns an error
-// when ClientID resolves empty — login cannot proceed without a client.
+// iam-env preset. Precedence: explicit flag > env var; --authorize-url/
+// --token-url > preset; client-id flag > GRN_LOGIN_CLIENT_ID > the per-env
+// baked-in default (see resolveClientID). It is pure w.r.t. the cobra flag
+// state (callers pass flag values in) so it table-tests cleanly. Returns an
+// error only when ClientID resolves empty AND the preset has no baked default
+// — unreachable with the shipped presets, kept as a defensive guard.
 func resolveConfig(clientID, clientSecret, iamEnv, authorizeURL, tokenURL, scope string, timeout time.Duration) (loginpkg.Config, time.Duration, error) {
 	env := iamEnv
+	if env == "" {
+		env = os.Getenv("GRN_IAM_ENV")
+	}
 	if env == "" {
 		env = defaultIamEnv
 	}
@@ -110,11 +141,9 @@ func resolveConfig(clientID, clientSecret, iamEnv, authorizeURL, tokenURL, scope
 		tokenURL = preset.Token
 	}
 
-	if clientID == "" {
-		clientID = os.Getenv("GRN_LOGIN_CLIENT_ID")
-	}
-	if clientID == "" {
-		return loginpkg.Config{}, 0, fmt.Errorf("--client-id (or GRN_LOGIN_CLIENT_ID) is required")
+	clientID, err := resolveClientID(clientID, preset.ClientID)
+	if err != nil {
+		return loginpkg.Config{}, 0, err
 	}
 
 	if clientSecret == "" {
@@ -142,8 +171,46 @@ func resolveConfig(clientID, clientSecret, iamEnv, authorizeURL, tokenURL, scope
 	return cfg, timeout, nil
 }
 
+// resolveClientID applies client-id precedence: explicit --client-id flag >
+// GRN_LOGIN_CLIENT_ID env > the per-iam-env baked-in public default. The baked
+// default is a non-secret public client_id (dev's real id; prod's placeholder);
+// only when ALL three are empty (a preset with no default) does login refuse.
+// Unreachable with the shipped presets — the error is a defensive guard so a
+// future preset without a ClientID fails loudly rather than sending an empty
+// client_id to IAM.
+func resolveClientID(flagClientID, embeddedDefault string) (string, error) {
+	if flagClientID != "" {
+		return flagClientID, nil
+	}
+	if v := os.Getenv("GRN_LOGIN_CLIENT_ID"); v != "" {
+		return v, nil
+	}
+	if embeddedDefault != "" {
+		return embeddedDefault, nil
+	}
+	return "", fmt.Errorf("--client-id (or GRN_LOGIN_CLIENT_ID) is required")
+}
+
+// resolveIamEnv applies iam-env precedence: a non-empty --iam-env flag >
+// GRN_IAM_ENV env > prod default. The flag has no cobra default (registered as
+// "") so an unset flag falls through to the env var, letting
+// `GRN_IAM_ENV=dev grn login` select dev without --iam-env. Returns the
+// EFFECTIVE env so it can be threaded to both resolveConfig and the persisted
+// login context (iam_env must reflect where the user actually logged in, not
+// the flag default — otherwise a GRN_IAM_ENV=dev login would persist prod).
+func resolveIamEnv(cmd *cobra.Command) string {
+	if f := cmd.Flag("iam-env"); f != nil && f.Value.String() != "" {
+		return f.Value.String()
+	}
+	if v := os.Getenv("GRN_IAM_ENV"); v != "" {
+		return v
+	}
+	return defaultIamEnv
+}
+
 func runLogin(cmd *cobra.Command, _ []string) error {
-	cfg, timeout, err := resolveConfig(flagClientID, flagClientSecret, flagIamEnv, flagAuthorizeURL, flagTokenURL, flagScope, flagTimeout)
+	iamEnv := resolveIamEnv(cmd)
+	cfg, timeout, err := resolveConfig(flagClientID, flagClientSecret, iamEnv, flagAuthorizeURL, flagTokenURL, flagScope, flagTimeout)
 	if err != nil {
 		return err
 	}
@@ -152,6 +219,12 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	if dbg, _ := cmd.Flags().GetBool("debug"); dbg {
 		loginpkg.SetDebug(true)
 		defer loginpkg.SetDebug(false)
+	}
+	// If the resolved client_id is the prod placeholder, warn BEFORE we hit IAM:
+	// the placeholder is not a real client, so prod login will fail at IAM until
+	// it is replaced. No secret is involved (the placeholder is not a credential).
+	if cfg.ClientID == prodClientIDPlaceholder {
+		fmt.Fprintf(os.Stderr, "Warning: prod client_id is a placeholder (%s) — prod login will fail until it is replaced.\n", prodClientIDPlaceholder)
 	}
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
@@ -169,10 +242,9 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 
 	profile := resolveProfile(cmd)
 	if tok.RefreshToken != "" {
-		iamEnv := flagIamEnv
-		if iamEnv == "" {
-			iamEnv = defaultIamEnv // flag default is "prod"; guard an explicit --iam-env ""
-		}
+		// Persist the RESOLVED iam-env (flag > GRN_IAM_ENV > prod) — not the raw
+		// flag — so refresh targets the environment the user actually logged in
+		// against, even when they selected it via GRN_IAM_ENV.
 		if err := config.NewConfigFileWriter().WriteLoginToken(profile, tok.RefreshToken, tok.ExpiresAt, "user", cfg.ClientID, iamEnv); err != nil {
 			return fmt.Errorf("persist login token: %w", err)
 		}
