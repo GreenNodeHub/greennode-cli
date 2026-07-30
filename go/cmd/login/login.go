@@ -21,17 +21,17 @@ import (
 )
 
 // iamEndpoints are the IAM endpoint presets per environment, from the PKCE
-// login design spec §7. AuthorizeURL is the browser signin page
-// (301 → signin.greennode.ai); no dev signin host is published separately, so
-// both envs reuse it — override piecewise with --authorize-url if a dev signin
-// URL is known.
+// login design spec §7 (dev signin host confirmed 2026-07-30). AuthorizeURL is
+// the browser signin page; the prod entry 301→signin.greennode.ai (a rebrand,
+// not an env signal). Override either endpoint piecewise with --authorize-url /
+// --token-url when a portal points elsewhere.
 var iamEndpoints = map[string]struct{ Authorize, Token string }{
 	"prod": {
 		Authorize: "https://signin.vngcloud.vn/ap/auth",
 		Token:     "https://iam.api.vngcloud.vn/accounts-api/v2/auth/token",
 	},
 	"dev": {
-		Authorize: "https://signin.vngcloud.vn/ap/auth",
+		Authorize: "https://dev-signin.vngcloud.tech/ap/auth",
 		Token:     "https://pub-iamapis.api-dev.vngcloud.tech/accounts-api/v2/auth/token",
 	},
 }
