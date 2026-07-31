@@ -21,12 +21,17 @@ func TestAgentbaseCmd_HasContextSubtree(t *testing.T) {
 }
 
 // TestAgentbaseCmd_PersistentFlags verifies the agentbase-specific persistent
-// flags (and that -i/-o shorthands exist; --output shadows grn's root flag).
+// flags (and that -i/-o shorthands exist; --output shadows grn's root flag;
+// --profile is inherited from root, not re-registered here). The --env flag was
+// dropped when agentbase unified onto the shared profile's iam_env.
 func TestAgentbaseCmd_PersistentFlags(t *testing.T) {
-	for _, flag := range []string{"interactive", "env", "output"} {
+	for _, flag := range []string{"interactive", "output"} {
 		if AgentbaseCmd.PersistentFlags().Lookup(flag) == nil {
 			t.Errorf("agentbase missing persistent flag %q", flag)
 		}
+	}
+	if AgentbaseCmd.PersistentFlags().Lookup("env") != nil {
+		t.Error("agentbase should no longer register --env (env is iam_env in the shared profile)")
 	}
 	if AgentbaseCmd.PersistentFlags().ShorthandLookup("i") == nil {
 		t.Error("agentbase missing -i shorthand for --interactive")
@@ -37,15 +42,28 @@ func TestAgentbaseCmd_PersistentFlags(t *testing.T) {
 }
 
 // TestAgentbaseCmd_HasIdentitySubtree verifies the identity group and its
-// workload CRUD subtree mounted under `grn agentbase`.
+// workload CRUD subtree mounted under `grn agentbase`. identity login/logout
+// were removed when agentbase unified onto `grn configure`/`grn login`/`grn logout`.
 func TestAgentbaseCmd_HasIdentitySubtree(t *testing.T) {
 	identityCmd, _, err := AgentbaseCmd.Find([]string{"identity"})
 	if err != nil {
 		t.Fatalf("agentbase has no 'identity' subcommand: %v", err)
 	}
-	for _, want := range []string{"login", "logout", "whoami", "workload", "outbound-auth"} {
+	for _, want := range []string{"whoami", "config", "workload", "outbound-auth"} {
 		if _, _, err := identityCmd.Find([]string{want}); err != nil {
 			t.Errorf("identity missing subcommand %q: %v", want, err)
+		}
+	}
+	for _, gone := range []string{"login", "logout"} {
+		found := false
+		for _, c := range identityCmd.Commands() {
+			if c.Name() == gone {
+				found = true
+				break
+			}
+		}
+		if found {
+			t.Errorf("identity should no longer have %q (use grn configure/grn login/grn logout)", gone)
 		}
 	}
 	workloadCmd, _, err := identityCmd.Find([]string{"workload"})

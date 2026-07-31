@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/auth"
 	"github.com/vngcloud/greennode-cli/internal/agentbase/client"
+	coreclient "github.com/vngcloud/greennode-cli/internal/client"
 )
 
 // Client is the API client for the Identity service.
@@ -15,9 +15,11 @@ type Client struct {
 	http *client.Client
 }
 
-// NewClient creates a new identity Client.
-func NewClient(baseURL string, authProvider *auth.Provider) *Client {
-	return &Client{http: client.New(baseURL, authProvider)}
+// NewClient creates a new identity Client backed by the shared
+// coreclient.TokenProvider (the same auth seam vks/vserver use). Pass nil only
+// in construction tests that never issue a request.
+func NewClient(baseURL string, tp coreclient.TokenProvider) *Client {
+	return &Client{http: client.New(baseURL, tp)}
 }
 
 // --- Agent Identities ---

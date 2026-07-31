@@ -13,24 +13,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/auth"
+	coreclient "github.com/vngcloud/greennode-cli/internal/client"
 )
 
 // Client is the authenticated HTTP client for a single API base URL.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
-	auth       *auth.Provider
+	auth       coreclient.TokenProvider
 }
 
-// New creates a new Client for the given base URL and auth provider.
-func New(baseURL string, authProvider *auth.Provider) *Client {
+// New creates a new Client for the given base URL and token provider. The
+// provider is the shared coreclient.TokenProvider (GetToken/RefreshToken,
+// ctx-less) — the same seam vks/vserver use — so agentbase speaks the same auth
+// idiom as the rest of the CLI. Pass nil only in construction tests that never
+// call Do.
+func New(baseURL string, tp coreclient.TokenProvider) *Client {
 	return &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		auth: authProvider,
+		auth: tp,
 	}
 }
 
@@ -45,9 +49,12 @@ func (e *APIError) Error() string {
 }
 
 // Do executes an authenticated HTTP request and decodes the response into out.
-// Pass out=nil if you do not need the response body.
+// Pass out=nil if you do not need the response body. The token comes from the
+// shared TokenProvider (ctx-less GetToken, matching vks/vserver); ctx still
+// drives the HTTP call itself. A nil provider (construction tests) panics on
+// Do — never construct a Client with nil for a real request.
 func (c *Client) Do(ctx context.Context, method, path string, query url.Values, body, out interface{}) error {
-	token, err := c.auth.AccessToken(ctx)
+	token, err := c.auth.GetToken()
 	if err != nil {
 		return err
 	}

@@ -1,11 +1,13 @@
 // Package agentbase implements the `grn agentbase` subcommand group for the
 // GreenNode AgentBase platform.
 //
-// It is intentionally self-contained: it carries its own OAuth2 (v2
-// client-credentials) auth, its own ./.greennode.json config, and its own HTTP
-// client. It does NOT share state with grn's core (the v1 TokenManager, the INI
-// config in ~/.greennode, or the retry/refresh HTTP client). The two stacks are
-// fully independent.
+// agentbase shares the rest of the CLI's auth and config: it reads the same
+// ~/.greennode profile (creds, auth_mode, iam_env, agent_identity) and uses the
+// same shared token providers (auth.MachineTokenProvider for machine mode,
+// auth.LoginTokenProvider for user mode) via cli.NewTokenProvider — the exact
+// selector vks/vserver use. The dev/prod environment is the profile's iam_env
+// (default prod); the current agent identity is persisted per-profile (the
+// agent_identity key). agentbase no longer carries its own .greennode.json.
 //
 // Compiled in ONLY with `-tags agentbase`. The default grn binary and the
 // public release build (`-tags vks_only`) both exclude it while agentbase is
@@ -25,11 +27,10 @@ import (
 
 // Persistent-flag targets for the `grn agentbase` subtree. The --output flag
 // shadows grn's inherited root --output for this subtree only (cobra lets a
-// child flag shadow an inherited persistent flag); the other grn root flags are
-// inherited but inert — agentbase never reads them.
+// child flag shadow an inherited persistent flag); --profile is inherited from
+// the root and selects the shared ~/.greennode profile agentbase reads.
 var (
 	interactiveMode bool
-	envOverride     string
 	outputFormat    string
 )
 
@@ -65,9 +66,11 @@ var AgentbaseCmd = &cobra.Command{
 authentication providers (Phase 1). Runtime, memory, and deploy commands arrive
 in later phases.
 
-Configuration is read from ./.greennode.json in the current working directory
-(separate from grn's ~/.greennode profile config). Run 'grn agentbase context
-current' to see the active environment and endpoints.`,
+agentbase shares the ~/.greennode profile with the rest of the CLI. Configure
+machine credentials with 'grn configure' (or log in as a user with 'grn login');
+select dev/prod with 'grn agentbase context switch' (writes iam_env); set the
+current agent with 'grn agentbase identity workload use <name>'. Run 'grn
+agentbase context current' to see the active environment and endpoints.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		output.SetFormat(output.ParseFormat(outputFormat))
 		if !skipBannerCommands[cmd.Name()] && output.GetFormat() == output.FormatTable {
@@ -79,7 +82,6 @@ current' to see the active environment and endpoints.`,
 
 func init() {
 	AgentbaseCmd.PersistentFlags().BoolVarP(&interactiveMode, "interactive", "i", false, "Prompt for missing inputs instead of requiring flags")
-	AgentbaseCmd.PersistentFlags().StringVar(&envOverride, "env", "", `Target environment: "dev" or "prod" (overrides GREENNODE_ENV and ./.greennode.json)`)
 	AgentbaseCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", `Output format: "table", "json", or "id"`)
 
 	cli.RegisterService(AgentbaseCmd)

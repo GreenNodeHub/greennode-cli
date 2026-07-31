@@ -10,12 +10,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/auth"
 	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/config"
 	identitypkg "github.com/vngcloud/greennode-cli/internal/agentbase/identity"
 	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
 	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	coreconfig "github.com/vngcloud/greennode-cli/internal/config"
 )
 
 // --- root identity command ---
@@ -23,73 +22,13 @@ import (
 var identityCmd = &cobra.Command{
 	Use:   "identity",
 	Short: "Manage authentication and agent identities",
-	Long:  `Login, logout, manage agent identities, and configure outbound authentication providers.`,
-}
+	Long: `Manage agent identities and configure outbound authentication providers.
 
-// --- identity login ---
-
-var identityLoginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Authenticate with the GreenNode platform",
-	Long: `Authenticate with the GreenNode AgentBase platform using OAuth2 client credentials.
-
-Your Client ID and Client Secret are saved to ./.greennode.json.
-
-Credentials can be supplied via flags, environment variables (GREENNODE_CLIENT_ID /
-GREENNODE_CLIENT_SECRET), or interactively with --interactive.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		clientID, _ := cmd.Flags().GetString("client-id")
-		if clientID == "" {
-			clientID = os.Getenv("GREENNODE_CLIENT_ID")
-		}
-		secret, _ := cmd.Flags().GetString("client-secret")
-		if secret == "" {
-			secret = os.Getenv("GREENNODE_CLIENT_SECRET")
-		}
-
-		var err error
-		clientID, err = cliinput.RequireOrPromptString(clientID, "--client-id", "Client ID")
-		if err != nil {
-			return err
-		}
-		secret, err = cliinput.RequireOrPromptSecret(secret, "--client-secret", "Client Secret")
-		if err != nil {
-			return err
-		}
-
-		// Validate credentials by fetching a token.
-		cfg, _ := config.Load()
-		tokenURL := cfg.Endpoints.OAuth2Token
-		provider := auth.NewProvider(clientID, secret, tokenURL)
-		if _, err := provider.AccessToken(context.Background()); err != nil {
-			return fmt.Errorf("authentication failed: %w", err)
-		}
-
-		if err := config.SaveCredentials(clientID, secret); err != nil {
-			return fmt.Errorf("failed to save credentials: %w", err)
-		}
-
-		output.Success("Logged in successfully")
-		return nil
-	},
-}
-
-// --- identity logout ---
-
-var identityLogoutCmd = &cobra.Command{
-	Use:   "logout",
-	Short: "Clear stored credentials",
-	Long: `Remove your Client ID and Client Secret from ./.greennode.json.
-
-If you set them via GREENNODE_CLIENT_ID / GREENNODE_CLIENT_SECRET environment variables,
-you must unset those separately.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := config.ClearCredentials(); err != nil {
-			return err
-		}
-		output.Success("Logged out. Credentials cleared from ./.greennode.json")
-		return nil
-	},
+Authentication is shared with the rest of the CLI: machine credentials come from
+'grn configure' (client_id/client_secret in the ~/.greennode profile) and user
+login from 'grn login'. Use 'grn logout' to clear a login. There is no separate
+agentbase login/logout — the profile's auth_mode (user vs machine) selects the
+token source agentbase uses, exactly like vks/vserver.`,
 }
 
 // --- identity whoami ---
@@ -97,13 +36,15 @@ you must unset those separately.`,
 var identityWhoamiCmd = &cobra.Command{
 	Use:   "whoami",
 	Short: "Show the currently active credentials",
-	Long:  `Display the current environment, client ID, and agent identity.`,
+	Long:  `Display the current environment, client ID, and agent identity from the shared ~/.greennode profile.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg := mustLoadConfig()
+		ab := mustLoadAgentbaseCtx(cmd)
 		output.Table([]string{"Field", "Value"}, [][]string{
-			{"Environment", string(cfg.Env)},
-			{"Client ID", output.StrOrDash(cfg.ClientID)},
-			{"Agent Identity", output.StrOrDash(cfg.AgentIdentity)},
+			{"Profile", ab.shared.Profile},
+			{"Environment", string(ab.env)},
+			{"Auth Mode", output.StrOrDash(ab.shared.AuthMode)},
+			{"Client ID", output.StrOrDash(ab.shared.ClientID)},
+			{"Agent Identity", output.StrOrDash(ab.shared.AgentIdentity)},
 		})
 		return nil
 	},
@@ -120,22 +61,25 @@ var identityConfigCmd = &cobra.Command{
 var identityConfigShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Display the current configuration",
-	Long:  `Display the current identity configuration including environment, credentials, and endpoint URLs.`,
+	Long:  `Display the current identity configuration including environment, credentials, and endpoint URLs resolved from the shared profile's iam_env.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg := mustLoadConfig()
+		ab := mustLoadAgentbaseCtx(cmd)
 		secret := "-"
-		if cfg.ClientSecret != "" {
-			secret = "***" + cfg.ClientSecret[max(0, len(cfg.ClientSecret)-4):]
+		if ab.shared.ClientSecret != "" {
+			secret = "***" + ab.shared.ClientSecret[max(0, len(ab.shared.ClientSecret)-4):]
 		}
 		output.Table([]string{"Key", "Value"}, [][]string{
-			{"environment", string(cfg.Env)},
-			{"client_id", output.StrOrDash(cfg.ClientID)},
+			{"profile", ab.shared.Profile},
+			{"iam_env", output.StrOrDash(ab.shared.IamEnv)},
+			{"environment", string(ab.env)},
+			{"auth_mode", output.StrOrDash(ab.shared.AuthMode)},
+			{"client_id", output.StrOrDash(ab.shared.ClientID)},
 			{"client_secret", secret},
-			{"agent_identity", output.StrOrDash(cfg.AgentIdentity)},
-			{"identity_url", cfg.Endpoints.Identity},
-			{"runtime_url", cfg.Endpoints.Runtime},
-			{"memory_url", cfg.Endpoints.Memory},
-			{"oauth2_token_url", cfg.Endpoints.OAuth2Token},
+			{"agent_identity", output.StrOrDash(ab.shared.AgentIdentity)},
+			{"identity_url", ab.endpoints.Identity},
+			{"runtime_url", ab.endpoints.Runtime},
+			{"memory_url", ab.endpoints.Memory},
+			{"oauth2_token_url", ab.endpoints.OAuth2Token},
 		})
 		return nil
 	},
@@ -173,7 +117,7 @@ external services. The name must be 3-50 characters and match the pattern
 		urls, _ := cmd.Flags().GetStringArray("allowed-return-url")
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -189,7 +133,7 @@ external services. The name must be 3-50 characters and match the pattern
 			return err
 		}
 		if workloadCreateSetCurrent {
-			if err := config.SaveAgentIdentity(str(identity.Name)); err != nil {
+			if err := coreconfig.NewConfigFileWriter().WriteAgentIdentity(resolveProfile(cmd), str(identity.Name)); err != nil {
 				output.Warn("Identity created but failed to save as current: " + err.Error())
 			}
 		}
@@ -225,7 +169,7 @@ var workloadListCmd = &cobra.Command{
 		size, _ := cmd.Flags().GetInt("size")
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -266,7 +210,7 @@ var workloadGetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -304,7 +248,7 @@ var workloadUpdateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -347,10 +291,10 @@ var workloadUpdateCmd = &cobra.Command{
 var workloadUseCmd = &cobra.Command{
 	Use:   "use <name>",
 	Short: "Set the current agent identity",
-	Long:  `Set the given agent identity name as the current identity in ./.greennode.json.`,
+	Long:  `Set the given agent identity name as the current identity in the shared ~/.greennode profile (per-profile).`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := config.SaveAgentIdentity(args[0]); err != nil {
+		if err := coreconfig.NewConfigFileWriter().WriteAgentIdentity(resolveProfile(cmd), args[0]); err != nil {
 			return err
 		}
 		output.Successf("Current agent identity set to: %s", args[0])
@@ -365,7 +309,7 @@ var workloadDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -412,7 +356,7 @@ the pattern ^[a-zA-Z0-9_-]+$. Both name and API key are required.`,
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -442,7 +386,7 @@ var staticListCmd = &cobra.Command{
 		size, _ := cmd.Flags().GetInt("size")
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -483,7 +427,7 @@ var staticGetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -518,7 +462,7 @@ var staticUpdateCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -550,7 +494,7 @@ var staticDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -568,7 +512,7 @@ var staticGetKeyCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -612,7 +556,7 @@ match the pattern ^[a-zA-Z0-9_-]+$.`,
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -642,7 +586,7 @@ var delegatedListCmd = &cobra.Command{
 		size, _ := cmd.Flags().GetInt("size")
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -683,7 +627,7 @@ var delegatedGetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -711,7 +655,7 @@ var delegatedDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -745,7 +689,7 @@ Optional flags: --custom-state, --session-id, --force-delegation.`,
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -831,7 +775,7 @@ and token-url are required.`,
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -872,7 +816,7 @@ var oauth2ListCmd = &cobra.Command{
 		size, _ := cmd.Flags().GetInt("size")
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -913,7 +857,7 @@ var oauth2GetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -968,7 +912,7 @@ var oauth2UpdateCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -1010,7 +954,7 @@ var oauth2DeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -1035,7 +979,7 @@ var oauth2M2MTokenCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -1087,7 +1031,7 @@ Optional flags: --session-id, --custom-parameters, --custom-state, --force-authe
 		}
 
 		ctx := context.Background()
-		client, err := newIdentityClient(ctx)
+		client, err := newIdentityClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -1143,10 +1087,6 @@ Optional flags: --session-id, --custom-parameters, --custom-state, --force-authe
 func init() {
 	AgentbaseCmd.AddCommand(identityCmd)
 
-	identityLoginCmd.Flags().String("client-id", "", "OAuth2 client ID (env: GREENNODE_CLIENT_ID)")
-	identityLoginCmd.Flags().String("client-secret", "", "OAuth2 client secret (env: GREENNODE_CLIENT_SECRET)")
-	identityCmd.AddCommand(identityLoginCmd)
-	identityCmd.AddCommand(identityLogoutCmd)
 	identityCmd.AddCommand(identityWhoamiCmd)
 
 	identityCmd.AddCommand(identityConfigCmd)
@@ -1274,12 +1214,20 @@ func formatTime(t *time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
-// newIdentityClient builds an authenticated identity client.
-func newIdentityClient(ctx context.Context) (*identitypkg.Client, error) {
-	cfg := mustLoadConfigWithCreds()
-	provider := newAuthProvider(cfg)
-	if _, err := provider.AccessToken(ctx); err != nil {
+// newIdentityClient builds an authenticated identity client from the shared
+// profile. It resolves the agentbase identity endpoint from iam_env, selects
+// the token provider via cli.NewTokenProvider (the same selector vks/vserver
+// use — user vs machine), and force-mints a token once so a missing/expired
+// credential surfaces as a clear "authentication failed" error before the first
+// API call rather than mid-request.
+func newIdentityClient(ctx context.Context, cmd *cobra.Command) (*identitypkg.Client, error) {
+	ab := mustLoadAgentbaseCtx(cmd)
+	provider, err := newAuthProvider(ab)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := provider.GetToken(); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
-	return identitypkg.NewClient(cfg.Endpoints.Identity, provider), nil
+	return identitypkg.NewClient(ab.endpoints.Identity, provider), nil
 }

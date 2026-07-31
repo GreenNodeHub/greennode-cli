@@ -3,13 +3,32 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
-
-	"github.com/vngcloud/greennode-cli/internal/agentbase/auth"
 )
+
+// fakeTokenProvider is a test stub satisfying coreclient.TokenProvider
+// (GetToken/RefreshToken, ctx-less) — the same seam vks/vserver exercise. It
+// proves client.Do drives the Bearer header from any TokenProvider
+// implementor, not just the concrete auth providers.
+type fakeTokenProvider struct {
+	token    string
+	err      error
+	getCalls atomic.Int32
+}
+
+func (f *fakeTokenProvider) GetToken() (string, error) {
+	f.getCalls.Add(1)
+	return f.token, f.err
+}
+
+func (f *fakeTokenProvider) RefreshToken() (string, error) {
+	return f.token, f.err
+}
 
 type stubResponse struct {
 	Message string `json:"message"`
@@ -18,16 +37,8 @@ type stubResponse struct {
 func newTestServer(t *testing.T, handler http.HandlerFunc) (*httptest.Server, *Client) {
 	t.Helper()
 	srv := httptest.NewServer(handler)
-	tokenSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-	}))
-	t.Cleanup(func() {
-		srv.Close()
-		tokenSrv.Close()
-	})
-	provider := auth.NewProvider("id", "secret", tokenSrv.URL)
-	c := New(srv.URL, provider)
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, &fakeTokenProvider{token: "test-token"})
 	return srv, c
 }
 
@@ -116,16 +127,41 @@ func TestAPIErrorReturned(t *testing.T) {
 	}
 }
 
+// TestAuthHeaderInjected: Do attaches `Bearer <token>` from the TokenProvider —
+// the seam contract. Also asserts GetToken is called exactly once per request
+// (so the provider drives auth, not a baked-in header).
 func TestAuthHeaderInjected(t *testing.T) {
-	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		if auth != "Bearer test-token" {
-			t.Errorf("expected Bearer test-token, got %s", auth)
+	fp := &fakeTokenProvider{token: "test-token"}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("expected Bearer test-token, got %s", got)
 		}
 		w.WriteHeader(http.StatusOK)
-	})
-	_ = c.Get(context.Background(), "/test", nil, nil)
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, fp)
+	if err := c.Get(context.Background(), "/test", nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := fp.getCalls.Load(); got != 1 {
+		t.Errorf("GetToken calls=%d, want 1 per request", got)
+	}
 }
+
+// TestDo_GetTokenErrorSurfaces: a provider error (e.g. IAM down) surfaces from
+// Do without hitting the network — no silent fallback.
+func TestDo_GetTokenErrorSurfaces(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("upstream should not be called when GetToken fails")
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, &fakeTokenProvider{err: errSentinel})
+	if err := c.Get(context.Background(), "/test", nil, nil); err != errSentinel {
+		t.Errorf("expected provider error to surface, got %v", err)
+	}
+}
+
+var errSentinel = errors.New("sentinel provider error")
 
 func TestPatchSuccess(t *testing.T) {
 	type body struct{ Value int }

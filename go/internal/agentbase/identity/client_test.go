@@ -7,23 +7,23 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/auth"
 	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
 )
 
+// fakeTokenProvider satisfies coreclient.TokenProvider so identity tests no
+// longer spin up a real IAM token server (the v2 MachineTokenProvider in
+// internal/auth is the production provider now; agentbaseClient.Do tests cover
+// the Bearer seam in internal/agentbase/client).
+type fakeTokenProvider struct{ token string }
+
+func (f *fakeTokenProvider) GetToken() (string, error)     { return f.token, nil }
+func (f *fakeTokenProvider) RefreshToken() (string, error) { return f.token, nil }
+
 func newTestClient(t *testing.T, handler http.HandlerFunc) (*Client, *httptest.Server) {
 	t.Helper()
-	tokenSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"test","token_type":"Bearer","expires_in":3600}`))
-	}))
 	apiSrv := httptest.NewServer(handler)
-	t.Cleanup(func() {
-		apiSrv.Close()
-		tokenSrv.Close()
-	})
-	provider := auth.NewProvider("id", "secret", tokenSrv.URL)
-	return NewClient(apiSrv.URL, provider), apiSrv
+	t.Cleanup(apiSrv.Close)
+	return NewClient(apiSrv.URL, &fakeTokenProvider{token: "test"}), apiSrv
 }
 
 func sp(s string) *string { return &s }
