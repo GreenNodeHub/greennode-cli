@@ -83,10 +83,10 @@ func TestAccessTokenFrom_FailLoudOnMissing(t *testing.T) {
 	t.Parallel()
 	c := cfgForTest()
 	for _, body := range [][]byte{
-		[]byte(`{"token_type":"Bearer"}`),            // no access_token
-		[]byte(`{"access_token":""}`),                // empty access_token
-		[]byte(`{}`),                                  // empty object
-		[]byte(`not json at all`),                     // not JSON
+		[]byte(`{"token_type":"Bearer"}`), // no access_token
+		[]byte(`{"access_token":""}`),     // empty access_token
+		[]byte(`{}`),                      // empty object
+		[]byte(`not json at all`),         // not JSON
 	} {
 		if _, err := c.AccessTokenFrom(body); err == nil {
 			t.Errorf("expected error for body %q, got nil", string(body))
