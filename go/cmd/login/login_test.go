@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/vngcloud/greennode-cli/internal/config"
+	loginpkg "github.com/vngcloud/greennode-cli/internal/login"
 )
 
 // resolveConfig is the pure cobra-slice seam; these tests cover client-id
@@ -46,122 +47,121 @@ func TestResolveConfig(t *testing.T) {
 		wantTimeout   time.Duration
 	}{
 		{
-			name: "flag client-id wins over env",
+			name:     "flag client-id wins over env",
 			clientID: "cid-flag", envClientID: "cid-env", iamEnv: "prod",
 			wantClientID: "cid-flag", wantClientSec: "",
-			wantAuthorize: iamEndpoints["prod"].Authorize, wantToken: iamEndpoints["prod"].Token,
+			wantAuthorize: loginpkg.IamEndpoints["prod"].Authorize, wantToken: loginpkg.IamEndpoints["prod"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "env client-id used when flag empty (env > embedded)",
+			name:        "env client-id used when flag empty (env > embedded)",
 			envClientID: "cid-env", iamEnv: "dev", // dev has an embedded default that env must beat
-			wantClientID: "cid-env",
-			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			wantClientID:  "cid-env",
+			wantAuthorize: loginpkg.IamEndpoints["dev"].Authorize, wantToken: loginpkg.IamEndpoints["dev"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			// Was "missing client id errors" — now the baked-in prod placeholder
-			// is used automatically, so login no longer refuses; prod just fails
-			// at IAM until the placeholder is replaced.
-			name: "embedded prod placeholder used when flag/env omitted",
-			iamEnv: "prod",
-			wantClientID: prodClientIDPlaceholder, wantClientSec: "",
+			// The baked-in prod client_id is used automatically when flag/env
+			// omit it — a real registered public client, so prod login works.
+			name:         "embedded prod client_id used when flag/env omitted",
+			iamEnv:       "prod",
+			wantClientID: loginpkg.ProdClientID, wantClientSec: "",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "embedded dev client_id used when flag/env omitted",
-			iamEnv: "dev",
-			wantClientID: devClientID, wantClientSec: "",
-			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			name:         "embedded dev client_id used when flag/env omitted",
+			iamEnv:       "dev",
+			wantClientID: loginpkg.DevClientID, wantClientSec: "",
+			wantAuthorize: loginpkg.IamEndpoints["dev"].Authorize, wantToken: loginpkg.IamEndpoints["dev"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "invalid iam-env errors",
+			name:     "invalid iam-env errors",
 			clientID: "cid", iamEnv: "staging",
 			wantErr: "iam-env",
 		},
 		{
-			name: "GRN_IAM_ENV selects dev when iam-env flag empty",
+			name:     "GRN_IAM_ENV selects dev when iam-env flag empty",
 			clientID: "cid", iamEnv: "", envIamEnv: "dev",
-			wantClientID: "cid",
-			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			wantClientID:  "cid",
+			wantAuthorize: loginpkg.IamEndpoints["dev"].Authorize, wantToken: loginpkg.IamEndpoints["dev"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
 			// Explicit --iam-env (non-empty) beats GRN_IAM_ENV. resolveConfig only
 			// consults GRN_IAM_ENV when iamEnv == "".
-			name: "explicit iam-env beats GRN_IAM_ENV",
+			name:     "explicit iam-env beats GRN_IAM_ENV",
 			clientID: "cid", iamEnv: "prod", envIamEnv: "dev",
-			wantClientID: "cid",
-			wantAuthorize: iamEndpoints["prod"].Authorize, wantToken: iamEndpoints["prod"].Token,
+			wantClientID:  "cid",
+			wantAuthorize: loginpkg.IamEndpoints["prod"].Authorize, wantToken: loginpkg.IamEndpoints["prod"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "iam-env empty + GRN_IAM_ENV empty defaults to prod",
+			name:     "iam-env empty + GRN_IAM_ENV empty defaults to prod",
 			clientID: "cid", iamEnv: "", envIamEnv: "",
-			wantClientID: "cid",
-			wantAuthorize: iamEndpoints["prod"].Authorize, wantToken: iamEndpoints["prod"].Token,
+			wantClientID:  "cid",
+			wantAuthorize: loginpkg.IamEndpoints["prod"].Authorize, wantToken: loginpkg.IamEndpoints["prod"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "client-secret flag wins over env",
+			name:     "client-secret flag wins over env",
 			clientID: "cid", clientSecret: "cs-flag", envClientSec: "cs-env", iamEnv: "prod",
 			wantClientID: "cid", wantClientSec: "cs-flag",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "client-secret env fallback",
+			name:     "client-secret env fallback",
 			clientID: "cid", envClientSec: "cs-env", iamEnv: "prod",
 			wantClientID: "cid", wantClientSec: "cs-env",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "empty secret → public client path",
+			name:     "empty secret → public client path",
 			clientID: "cid", iamEnv: "prod",
 			wantClientID: "cid", wantClientSec: "",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "dev preset swaps token URL",
+			name:     "dev preset swaps token URL",
 			clientID: "cid", iamEnv: "dev",
-			wantClientID: "cid",
-			wantAuthorize: iamEndpoints["dev"].Authorize, wantToken: iamEndpoints["dev"].Token,
+			wantClientID:  "cid",
+			wantAuthorize: loginpkg.IamEndpoints["dev"].Authorize, wantToken: loginpkg.IamEndpoints["dev"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "authorize-url overrides preset only",
+			name:     "authorize-url overrides preset only",
 			clientID: "cid", iamEnv: "prod", authorizeURL: "https://custom/auth",
 			wantClientID: "cid", wantClientSec: "",
-			wantAuthorize: "https://custom/auth", wantToken: iamEndpoints["prod"].Token,
+			wantAuthorize: "https://custom/auth", wantToken: loginpkg.IamEndpoints["prod"].Token,
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "token-url overrides preset only",
+			name:     "token-url overrides preset only",
 			clientID: "cid", iamEnv: "prod", tokenURL: "https://custom/token",
 			wantClientID: "cid", wantClientSec: "",
-			wantAuthorize: iamEndpoints["prod"].Authorize, wantToken: "https://custom/token",
+			wantAuthorize: loginpkg.IamEndpoints["prod"].Authorize, wantToken: "https://custom/token",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "default scope is openid",
+			name:     "default scope is openid",
 			clientID: "cid", iamEnv: "prod", scope: "",
 			wantClientID: "cid", wantClientSec: "",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "scope splits on spaces",
+			name:     "scope splits on spaces",
 			clientID: "cid", iamEnv: "prod", scope: "openid profile email",
 			wantClientID: "cid", wantClientSec: "",
 			wantScopes: []string{"openid", "profile", "email"}, wantTimeout: defaultTimeout,
 		},
 		{
-			name: "timeout preserved when positive",
+			name:     "timeout preserved when positive",
 			clientID: "cid", iamEnv: "prod", timeout: 42 * time.Second,
 			wantClientID: "cid", wantClientSec: "",
 			wantScopes: []string{"openid"}, wantTimeout: 42 * time.Second,
 		},
 		{
-			name: "timeout<=0 falls back to default",
+			name:     "timeout<=0 falls back to default",
 			clientID: "cid", iamEnv: "prod", timeout: 0,
 			wantClientID: "cid", wantClientSec: "",
 			wantScopes: []string{"openid"}, wantTimeout: defaultTimeout,
@@ -252,7 +252,7 @@ func TestResolveIamEnv(t *testing.T) {
 	}
 	// unset flag + unset env → prod default.
 	c := newCmd()
-	if got := resolveIamEnv(c); got != defaultIamEnv {
+	if got := resolveIamEnv(c); got != loginpkg.DefaultIamEnv {
 		t.Errorf("unset → %q, want prod", got)
 	}
 	// unset flag + env=dev → dev.
