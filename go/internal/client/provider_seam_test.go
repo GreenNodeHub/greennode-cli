@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// fakeProvider is a TokenProvider that is NOT *auth.TokenManager — it proves the
+// fakeProvider is a TokenProvider that is NOT *auth.MachineTokenProvider — it proves the
 // GreennodeClient seam accepts any implementor and that GetToken/RefreshToken
 // drive the Bearer header (and the 401 retry) as the contract expects.
 type fakeProvider struct {

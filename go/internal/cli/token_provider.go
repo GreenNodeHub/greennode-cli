@@ -39,9 +39,16 @@ var clientIDForEnv = login.ClientIDForEnv
 //     resolved from iam_env (login.ClientIDForEnv). A rotation callback writes
 //     any rotated refresh token + new expiry back to the credentials INI
 //     (atomic 0600) so later invocations don't see a stale token.
-//   - anything else (unset / "machine") → the machine client_credentials
-//     TokenManager (today's behavior). Requires machine client_id/client_secret;
-//     missing → the existing "run `grn configure`" error.
+//   - anything else (unset / "machine") → MachineTokenProvider: mints
+//     short-lived access tokens via the IAM v2 client_credentials grant
+//     (RFC 6749; golang.org/x/oauth2/clientcredentials). v2 is the standards
+//     facade over the same IAM backend as the former v1 path, so vks/vserver's
+//     existing machine client_id/client_secret are valid at v2 and their
+//     backends accept v2-minted tokens. The token URL is resolved from the
+//     profile's iam_env (default prod) so machine mode is env-aware — a
+//     iam_env=dev profile hits dev (was prod-hardcoded under the v1 path).
+//     Requires machine client_id/client_secret; missing → the existing
+//     "run `grn configure`" error.
 //
 // The profile is read from cfg.Profile — the RESOLVED profile from LoadConfig
 // (always non-empty in production: flag → GRN_PROFILE → "default") — NOT the
@@ -85,6 +92,18 @@ func NewTokenProvider(cfg *config.Config) (client.TokenProvider, error) {
 		if cfg.ClientID == "" || cfg.ClientSecret == "" {
 			return nil, fmt.Errorf("credentials not configured. Run 'grn configure' to set up credentials")
 		}
-		return auth.NewTokenManager(cfg.ClientID, cfg.ClientSecret), nil
+		// Machine client_credentials against IAM v2, env-resolved from the
+		// profile's iam_env (default prod). v2 is the RFC 6749 facade over the
+		// same IAM backend as v1, so existing vks/vserver machine creds are valid
+		// at v2 and their backends accept v2-minted tokens.
+		iamEnv := cfg.IamEnv
+		if iamEnv == "" {
+			iamEnv = login.DefaultIamEnv
+		}
+		tokenURL, err := tokenURLForEnv(iamEnv)
+		if err != nil {
+			return nil, err
+		}
+		return auth.NewMachineTokenProvider(cfg.ClientID, cfg.ClientSecret, tokenURL), nil
 	}
 }

@@ -45,13 +45,13 @@ var UserAgent = "grn-vks-cli"
 
 // TokenProvider supplies the Bearer credential GreennodeClient attaches to
 // every request. It is the seam that lets a client speak to either auth source:
-// the machine client_credentials flow (*auth.TokenManager) or the user PKCE
-// refresh-token flow (auth.LoginTokenProvider). Declared in the consumer
+// the machine client_credentials flow (*auth.MachineTokenProvider) or the user
+// PKCE refresh-token flow (auth.LoginTokenProvider). Declared in the consumer
 // package per the repo's dependency rule; both implementations satisfy it
 // structurally. GetToken returns a valid access token (fetching one if needed);
-// RefreshToken force-refreshes (used on HTTP 401). Mirrors the pre-existing
-// *auth.TokenManager method signatures exactly, so that type satisfies it
-// without change.
+// RefreshToken force-refreshes (used on HTTP 401). Mirrors the
+// *auth.MachineTokenProvider method signatures exactly, so that type satisfies
+// it without change.
 type TokenProvider interface {
 	GetToken() (string, error)
 	RefreshToken() (string, error)
@@ -69,7 +69,7 @@ type GreennodeClient struct {
 // connect and TLS handshake (the --cli-connect-timeout flag); readTimeout bounds
 // the overall request (the --cli-read-timeout flag). A zero readTimeout falls
 // back to the default; a zero connectTimeout means no explicit connect bound.
-// tokenProvider is the auth source (machine TokenManager or login
+// tokenProvider is the auth source (machine MachineTokenProvider or login
 // LoginTokenProvider); GreennodeClient is agnostic to which.
 func NewGreennodeClient(baseURL string, tokenProvider TokenProvider, connectTimeout, readTimeout time.Duration, verifySSL bool, debug bool) *GreennodeClient {
 	if readTimeout == 0 {

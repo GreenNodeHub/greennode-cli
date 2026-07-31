@@ -13,7 +13,7 @@ import (
 
 // refreshExpirySkew is how long before the access token's real expiry the
 // LoginTokenProvider considers it stale and refreshes — mirrors the machine
-// TokenManager's 60s skew (internal/auth/token.go:114).
+// MachineTokenProvider's 60s skew (machine_token.go).
 const refreshExpirySkew = 60 * time.Second
 
 // noExpiryFallback is used when a refresh response carries no expires_in: pin a
@@ -31,7 +31,7 @@ var ErrLoginTokenRefreshFailed = errors.New("login token expired or revoked — 
 // LoginTokenProvider is the user-PKCE auth source for GreennodeClient: it mints
 // short-lived access tokens from the persisted refresh token via the IAM /v2
 // refresh_token grant (login.Client.Refresh). It is the login counterpart to the
-// machine client_credentials TokenManager; both satisfy client.TokenProvider
+// machine client_credentials MachineTokenProvider; both satisfy client.TokenProvider
 // (structural — this package does not import internal/client, avoiding a cycle,
 // since internal/login is stdlib-only and does not import internal/auth).
 //

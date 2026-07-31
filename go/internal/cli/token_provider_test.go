@@ -31,11 +31,11 @@ func TestNewTokenProvider_UserMode_BuildsLoginTokenProvider(t *testing.T) {
 	}
 }
 
-func TestNewTokenProvider_MachineMode_BuildsTokenManager(t *testing.T) {
+func TestNewTokenProvider_MachineMode_BuildsMachineTokenProvider(t *testing.T) {
 	t.Parallel()
 	cfg := &config.Config{
 		Profile: "default",
-		// AuthMode unset → machine (today's behavior).
+		// AuthMode unset → machine (v2 client_credentials, defaults to prod).
 		ClientID:     "cid",
 		ClientSecret: "cs",
 	}
@@ -43,8 +43,67 @@ func TestNewTokenProvider_MachineMode_BuildsTokenManager(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTokenProvider: %v", err)
 	}
-	if _, ok := tp.(*auth.TokenManager); !ok {
-		t.Errorf("tp=%T, want *auth.TokenManager", tp)
+	if _, ok := tp.(*auth.MachineTokenProvider); !ok {
+		t.Errorf("tp=%T, want *auth.MachineTokenProvider", tp)
+	}
+}
+
+// TestNewTokenProvider_MachineMode_ResolvesTokenURLFromIamEnv asserts the
+// machine branch resolves the v2 token URL from the profile's iam_env (default
+// prod when unset) — the env-awareness change vs the former prod-hardcoded v1
+// TokenManager. The tokenURLForEnv seam is pointed at two httptest /v2 token
+// servers so dev and prod are distinguishable; GetToken must hit the server for
+// the profile's env (dev→dev, ""→prod default). NOT parallel: mutates the
+// package-level tokenURLForEnv seam.
+func TestNewTokenProvider_MachineMode_ResolvesTokenURLFromIamEnv(t *testing.T) {
+	var devHits, prodHits int
+	devSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		devHits++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"access_token":"at-dev","token_type":"Bearer","expires_in":3600}`)
+	}))
+	t.Cleanup(devSrv.Close)
+	prodSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		prodHits++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"access_token":"at-prod","token_type":"Bearer","expires_in":3600}`)
+	}))
+	t.Cleanup(prodSrv.Close)
+
+	prev := tokenURLForEnv
+	tokenURLForEnv = func(env string) (string, error) {
+		if env == "dev" {
+			return devSrv.URL, nil
+		}
+		return prodSrv.URL, nil
+	}
+	t.Cleanup(func() { tokenURLForEnv = prev })
+
+	// iam_env=dev → hits the dev token server.
+	devCfg := &config.Config{Profile: "default", ClientID: "cid", ClientSecret: "cs", IamEnv: "dev"}
+	devTP, err := NewTokenProvider(devCfg)
+	if err != nil {
+		t.Fatalf("dev NewTokenProvider: %v", err)
+	}
+	if _, err := devTP.GetToken(); err != nil {
+		t.Fatalf("dev GetToken: %v", err)
+	}
+
+	// iam_env unset → defaults to prod → hits the prod token server.
+	prodCfg := &config.Config{Profile: "default", ClientID: "cid", ClientSecret: "cs"}
+	prodTP, err := NewTokenProvider(prodCfg)
+	if err != nil {
+		t.Fatalf("prod NewTokenProvider: %v", err)
+	}
+	if _, err := prodTP.GetToken(); err != nil {
+		t.Fatalf("prod GetToken: %v", err)
+	}
+
+	if devHits == 0 {
+		t.Error("iam_env=dev did not hit the dev token server")
+	}
+	if prodHits == 0 {
+		t.Error("unset iam_env did not default to the prod token server")
 	}
 }
 

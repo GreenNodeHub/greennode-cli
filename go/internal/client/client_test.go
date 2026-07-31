@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewGreennodeClientWiresConnectTimeout(t *testing.T) {
-	tm := auth.NewTokenManager("id", "secret")
+	tm := auth.NewMachineTokenProvider("id", "secret", "")
 	c := NewGreennodeClient("https://example.invalid", tm, 2*time.Second, 7*time.Second, true, false)
 
 	if c.httpClient.Timeout != 7*time.Second {
@@ -43,7 +43,7 @@ func TestPatchSendsPatchMethodAndBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	tm := auth.NewTokenManager("id", "secret")
+	tm := auth.NewMachineTokenProvider("id", "secret", "")
 	// Pre-seed a static token so GetToken never calls the real IAM endpoint.
 	tm.SetToken("test-token", time.Now().Add(1*time.Hour))
 
@@ -78,7 +78,7 @@ func TestRequestSetsUserAgentHeader(t *testing.T) {
 	UserAgent = "grn-vks-cli/9.9.9"
 	defer func() { UserAgent = prev }()
 
-	tm := auth.NewTokenManager("id", "secret")
+	tm := auth.NewMachineTokenProvider("id", "secret", "")
 	tm.SetToken("test-token", time.Now().Add(1*time.Hour))
 
 	c := NewGreennodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
@@ -123,7 +123,7 @@ func TestGetReturnsTypedAPIErrorOn404(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	tm := auth.NewTokenManager("id", "secret")
+	tm := auth.NewMachineTokenProvider("id", "secret", "")
 	tm.SetToken("test-token", time.Now().Add(1*time.Hour))
 	c := NewGreennodeClient(srv.URL, tm, 5*time.Second, 5*time.Second, false, false)
 
