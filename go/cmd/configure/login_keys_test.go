@@ -51,7 +51,6 @@ func TestResolveCredEntry_MasksRefreshToken(t *testing.T) {
 func TestResolveCredEntryPlain_ShowsLoginContextAsIs(t *testing.T) {
 	for _, tc := range []struct{ name, val string }{
 		{"auth_mode", "user"},
-		{"login_client_id", "cid-login"},
 		{"iam_env", "dev"},
 	} {
 		e := resolveCredEntryPlain(tc.name, tc.val, "/home/u/.greennode/credentials")
@@ -72,7 +71,7 @@ func TestListMasksRefreshTokenShowsLoginContext(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("GRN_PROFILE", "")
 	exp := time.Date(2026, 7, 30, 12, 0, 0, 0, time.UTC)
-	if err := config.NewConfigFileWriter().WriteLoginToken("default", "rt-SUPERSECRET-0001", exp, "user", "cid-login", "dev"); err != nil {
+	if err := config.NewConfigFileWriter().WriteLoginToken("default", "rt-SUPERSECRET-0001", exp, "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 
@@ -91,21 +90,21 @@ func TestListMasksRefreshTokenShowsLoginContext(t *testing.T) {
 		t.Errorf("list should show masked refresh_token ending in 0001: %q", out)
 	}
 	// Non-secret login context is shown as-is so a user can see the auth mode.
-	for _, want := range []string{"user", "cid-login", "dev"} {
+	for _, want := range []string{"user", "dev"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("list missing non-secret login context %q: %q", want, out)
 		}
 	}
 }
 
-// `configure get refresh_token` masks; `get auth_mode`/`login_client_id`/
-// `iam_env` return the plaintext non-secret value.
+// `configure get refresh_token` masks; `get auth_mode`/`iam_env` return the
+// plaintext non-secret value.
 func TestGetRefreshTokenMasked(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("GRN_PROFILE", "")
 	exp := time.Date(2026, 7, 30, 12, 0, 0, 0, time.UTC)
-	if err := config.NewConfigFileWriter().WriteLoginToken("default", "rt-SUPERSECRET-0001", exp, "user", "cid-login", "dev"); err != nil {
+	if err := config.NewConfigFileWriter().WriteLoginToken("default", "rt-SUPERSECRET-0001", exp, "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 
@@ -129,12 +128,11 @@ func TestGetLoginContextPlain(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("GRN_PROFILE", "")
 	exp := time.Date(2026, 7, 30, 12, 0, 0, 0, time.UTC)
-	if err := config.NewConfigFileWriter().WriteLoginToken("default", "rt", exp, "user", "cid-login", "dev"); err != nil {
+	if err := config.NewConfigFileWriter().WriteLoginToken("default", "rt", exp, "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 	for _, tc := range []struct{ key, want string }{
 		{"auth_mode", "user"},
-		{"login_client_id", "cid-login"},
 		{"iam_env", "dev"},
 	} {
 		root := newConfigureTestCmd()

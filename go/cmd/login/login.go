@@ -9,6 +9,7 @@
 package login
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -60,6 +61,10 @@ per-profile ~/.greennode/credentials INI (0600), alongside any machine
 credentials; the access token is held in memory only. Use --profile to target a
 specific profile (e.g. dev vs prod) so each holds its own login token.
 
+After the browser flow you are prompted for a default region (same prompt as
+"grn configure"), so a login-only profile is ready for vks/vserver without a
+separate configure.
+
 A default public client_id is baked in per --iam-env (dev's and prod's real
 ids), so "grn login" needs no --client-id. Override with --client-id or
 GRN_LOGIN_CLIENT_ID. Pick the env with --iam-env or GRN_IAM_ENV (default prod).
@@ -72,7 +77,7 @@ public client.`,
 var LogoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Forget the cached GreenNode login refresh token",
-	Long: `Removes the login keys (refresh_token, expiry, auth_mode, login_client_id,
+	Long: `Removes the login keys (refresh_token, expiry, auth_mode,
 iam_env) from the current profile's credentials section, leaving any machine
 client_id/client_secret intact. Idempotent: running logout when not logged in
 is not an error.`,
@@ -199,11 +204,13 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 
 	// The library mints and returns the Token; persistence is our job. Fold the
-	// refresh token + non-secret refresh context (login_client_id, iam_env) into
-	// the per-profile credentials INI so a later usage slice can refresh without
-	// re-prompting. The access token is NEVER persisted — only the refresh token
-	// is (0600). On partial success (no refresh_token) there is nothing to
-	// persist; the library already warned on stderr.
+	// refresh token + non-secret refresh context (iam_env) into the per-profile
+	// credentials INI so a later usage slice can refresh without re-prompting.
+	// The client_id is NOT persisted — it is a public id baked into source and
+	// resolved from iam_env at refresh (internal/login.ClientIDForEnv). The
+	// access token is NEVER persisted — only the refresh token is (0600). On
+	// partial success (no refresh_token) there is nothing to persist; the
+	// library already warned on stderr.
 	tok, err := loginpkg.Login(ctx, cfg)
 	if err != nil {
 		return err
@@ -214,10 +221,19 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 		// Persist the RESOLVED iam-env (flag > GRN_IAM_ENV > prod) — not the raw
 		// flag — so refresh targets the environment the user actually logged in
 		// against, even when they selected it via GRN_IAM_ENV.
-		if err := config.NewConfigFileWriter().WriteLoginToken(profile, tok.RefreshToken, tok.ExpiresAt, "user", cfg.ClientID, iamEnv); err != nil {
+		if err := config.NewConfigFileWriter().WriteLoginToken(profile, tok.RefreshToken, tok.ExpiresAt, "user", iamEnv); err != nil {
 			return fmt.Errorf("persist login token: %w", err)
 		}
 	}
+
+	// Prompt for the default region — same UX as `grn configure` — so a
+	// login-only profile is immediately usable for vks/vserver without a
+	// separate `grn configure` (a login-only profile otherwise hits "region is
+	// not configured" on the first service call). The prompt defaults to the
+	// profile's existing region, validates against config.REGIONS, and
+	// preserves the existing output/project_id. A prompt/IO failure is
+	// non-fatal: login already succeeded.
+	region, regionErr := promptDefaultRegion(profile, bufio.NewReader(os.Stdin))
 
 	// Do not echo the access token (credential hygiene). Report only the profile
 	// the refresh token landed in + the access-token expiry.
@@ -227,6 +243,11 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	}
 	if tok.RefreshToken == "" {
 		fmt.Printf(" No refresh token returned — re-login will be needed after expiry.")
+	}
+	if regionErr != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %v\n", regionErr)
+	} else {
+		fmt.Printf(" Default region set to '%s'.", region)
 	}
 	fmt.Println()
 	return nil
@@ -249,6 +270,67 @@ func resolveProfile(cmd *cobra.Command) string {
 		profile = "default"
 	}
 	return profile
+}
+
+// promptDefaultRegion asks for the profile's default region — the same prompt
+// `grn configure` shows — and persists it to the profile's config file, so a
+// login-only profile is immediately usable for vks/vserver. The prompt defaults
+// to the profile's existing region (pressing Enter keeps it); an unknown region
+// falls back to "HCM-3" with a stderr warning (mirrors configure). The existing
+// output and project_id are preserved verbatim (login does not re-prompt or
+// auto-detect them — that is configure's job). reader is an injected
+// *bufio.Reader so the prompt is testable without hijacking os.Stdin; runLogin
+// passes bufio.NewReader(os.Stdin).
+//
+// Lenient load: a brand-new profile (or a parse error) yields an empty config,
+// so `grn login` bootstraps a profile that has not been `configure`d. On
+// non-interactive stdin (EOF, piped input) the prompt returns the default, so
+// headless login still writes a sane region instead of hanging.
+func promptDefaultRegion(profile string, reader *bufio.Reader) (string, error) {
+	cfg, err := config.LoadConfig(profile)
+	if err != nil || cfg == nil {
+		cfg = &config.Config{Profile: profile}
+	}
+	output := cfg.Output
+	if output == "" {
+		output = "json" // LoadConfig's own default; re-asserted on write.
+	}
+	region := resolveDefaultRegion(reader, cfg.Region)
+	if err := config.NewConfigFileWriter().WriteConfig(profile, region, output, cfg.ProjectID); err != nil {
+		return "", fmt.Errorf("save default region: %w", err)
+	}
+	return region, nil
+}
+
+// resolveDefaultRegion prompts for a region (defaulting to current), validates
+// it against config.REGIONS, and falls back to "HCM-3" on empty/unknown —
+// matching `grn configure`. Pure w.r.t. the reader so it table-tests cleanly.
+func resolveDefaultRegion(reader *bufio.Reader, current string) string {
+	region := promptWithDefault(reader, "Default region name", current)
+	if _, ok := config.REGIONS[region]; !ok {
+		fmt.Fprintf(os.Stderr, "Warning: invalid region '%s', using default 'HCM-3'\n", region)
+		region = "HCM-3"
+	}
+	return region
+}
+
+// promptWithDefault prints a "label [default]: " prompt and returns the trimmed
+// input, falling back to defaultVal on empty input (including EOF on a
+// non-interactive stdin). Mirrors cmd/configure's helper so the two commands
+// prompt identically; kept here (not exported from a shared package) because the
+// prompt is a cmd-layer concern and each cmd package stays self-contained.
+func promptWithDefault(reader *bufio.Reader, prompt, defaultVal string) string {
+	if defaultVal != "" {
+		fmt.Printf("%s [%s]: ", prompt, defaultVal)
+	} else {
+		fmt.Printf("%s: ", prompt)
+	}
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return defaultVal
+	}
+	return input
 }
 
 func runLogout(cmd *cobra.Command, _ []string) error {

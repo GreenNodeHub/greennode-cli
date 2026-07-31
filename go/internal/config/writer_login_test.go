@@ -44,7 +44,7 @@ func TestWriteLoginToken_PreservesMachineCredentials(t *testing.T) {
 	}
 
 	exp := time.Date(2026, 7, 30, 12, 0, 0, 0, time.UTC)
-	if err := w.WriteLoginToken("default", "rt-123", exp, "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "rt-123", exp, "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 
@@ -63,8 +63,10 @@ func TestWriteLoginToken_PreservesMachineCredentials(t *testing.T) {
 	if s.Key("auth_mode").String() != "user" {
 		t.Errorf("auth_mode=%q, want user", s.Key("auth_mode").String())
 	}
-	if s.Key("login_client_id").String() != "cid" {
-		t.Errorf("login_client_id=%q, want cid", s.Key("login_client_id").String())
+	// login_client_id is intentionally NOT written — it is a public id resolved
+	// from iam_env at refresh, not persisted in the credentials INI.
+	if s.Key("login_client_id").String() != "" {
+		t.Errorf("login_client_id=%q, want empty (not persisted)", s.Key("login_client_id").String())
 	}
 	if s.Key("iam_env").String() != "dev" {
 		t.Errorf("iam_env=%q, want dev", s.Key("iam_env").String())
@@ -84,11 +86,11 @@ func TestWriteLoginToken_PreservesMachineCredentials(t *testing.T) {
 func TestWriteLoginToken_EmptyRefreshTokenIsNoop(t *testing.T) {
 	w := newHomeWriter(t)
 	// Seed an existing good token.
-	if err := w.WriteLoginToken("default", "rt-good", time.Now().UTC(), "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "rt-good", time.Now().UTC(), "user", "dev"); err != nil {
 		t.Fatalf("seed WriteLoginToken: %v", err)
 	}
 	// Empty refresh token must not touch the file.
-	if err := w.WriteLoginToken("default", "", time.Time{}, "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "", time.Time{}, "user", "dev"); err != nil {
 		t.Fatalf("empty WriteLoginToken: %v", err)
 	}
 	if got := loadCredsFile(t).Section("default").Key("refresh_token").String(); got != "rt-good" {
@@ -100,10 +102,10 @@ func TestWriteLoginToken_EmptyRefreshTokenIsNoop(t *testing.T) {
 // (per-profile isolation — the consolidation's reason for existing).
 func TestWriteLoginToken_PerProfileIsolation(t *testing.T) {
 	w := newHomeWriter(t)
-	if err := w.WriteLoginToken("default", "rt-prod", time.Now().UTC(), "user", "cid-prod", "prod"); err != nil {
+	if err := w.WriteLoginToken("default", "rt-prod", time.Now().UTC(), "user", "prod"); err != nil {
 		t.Fatalf("default WriteLoginToken: %v", err)
 	}
-	if err := w.WriteLoginToken("dev", "rt-dev", time.Now().UTC(), "user", "cid-dev", "dev"); err != nil {
+	if err := w.WriteLoginToken("dev", "rt-dev", time.Now().UTC(), "user", "dev"); err != nil {
 		t.Fatalf("dev WriteLoginToken: %v", err)
 	}
 
@@ -122,7 +124,7 @@ func TestClearLoginToken_KeepsMachineCredentials(t *testing.T) {
 	if err := w.WriteCredentials("default", "cid", "cs"); err != nil {
 		t.Fatalf("WriteCredentials: %v", err)
 	}
-	if err := w.WriteLoginToken("default", "rt-123", time.Now().UTC(), "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "rt-123", time.Now().UTC(), "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 
@@ -170,6 +172,35 @@ func TestClearLoginToken_Idempotent(t *testing.T) {
 	}
 }
 
+// ClearLoginToken also removes a legacy login_client_id key written by older
+// CLI versions, so a logout fully clears a prior login even though
+// WriteLoginToken no longer writes that key (the client_id is now resolved from
+// iam_env at refresh, not persisted).
+func TestClearLoginToken_RemovesLegacyLoginClientID(t *testing.T) {
+	w := newHomeWriter(t)
+	if err := os.MkdirAll(filepath.Dir(credsPath(t)), 0700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	legacy := "[default]\nauth_mode = user\nrefresh_token = rt\nlogin_client_id = cid-legacy\niam_env = dev\n"
+	if err := os.WriteFile(credsPath(t), []byte(legacy), 0600); err != nil {
+		t.Fatalf("write legacy creds: %v", err)
+	}
+	if err := w.ClearLoginToken("default"); err != nil {
+		t.Fatalf("ClearLoginToken: %v", err)
+	}
+	s := loadCredsFile(t).Section("default")
+	for _, k := range loginTokenKeys {
+		if v := s.Key(k).String(); v != "" {
+			t.Errorf("login key %q=%q after ClearLoginToken, want empty", k, v)
+		}
+	}
+	for _, k := range loginTokenKeysLegacy {
+		if v := s.Key(k).String(); v != "" {
+			t.Errorf("legacy login key %q=%q after ClearLoginToken, want empty", k, v)
+		}
+	}
+}
+
 // LoadConfig reads the login keys back into Config from the credentials INI.
 func TestLoadConfig_ReadsLoginKeys(t *testing.T) {
 	home := t.TempDir()
@@ -203,9 +234,9 @@ func TestLoadConfig_ReadsLoginKeys(t *testing.T) {
 	if !cfg.TokenExpiresAt.Equal(exp) {
 		t.Errorf("TokenExpiresAt=%v, want %v", cfg.TokenExpiresAt, exp)
 	}
-	if cfg.LoginClientID != "cid-login" {
-		t.Errorf("LoginClientID=%q, want cid-login", cfg.LoginClientID)
-	}
+	// login_client_id in the seed file is legacy and now ignored (the field is
+	// gone; the client_id is resolved from iam_env at refresh) — LoadConfig must
+	// not choke on a legacy key, it just doesn't surface it.
 	if cfg.IamEnv != "dev" {
 		t.Errorf("IamEnv=%q, want dev", cfg.IamEnv)
 	}
@@ -239,7 +270,7 @@ func TestLoadConfig_LoginOnlyProfileExists(t *testing.T) {
 // secret-at-rest). Regression: the old O_TRUNC path admitted looser perms.
 func TestSave_CredentialsFileIs0600(t *testing.T) {
 	w := newHomeWriter(t)
-	if err := w.WriteLoginToken("default", "rt", time.Now().UTC(), "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "rt", time.Now().UTC(), "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 	fi, err := os.Stat(credsPath(t))
@@ -253,7 +284,7 @@ func TestSave_CredentialsFileIs0600(t *testing.T) {
 	if err := os.Chmod(credsPath(t), 0644); err != nil {
 		t.Fatalf("chmod loosen: %v", err)
 	}
-	if err := w.WriteLoginToken("default", "rt2", time.Now().UTC(), "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "rt2", time.Now().UTC(), "user", "dev"); err != nil {
 		t.Fatalf("rewrite WriteLoginToken: %v", err)
 	}
 	fi, _ = os.Stat(credsPath(t))
@@ -265,7 +296,7 @@ func TestSave_CredentialsFileIs0600(t *testing.T) {
 // The atomic save leaves no leftover temp files in the config dir.
 func TestSave_NoLeftoverTempFiles(t *testing.T) {
 	w := newHomeWriter(t)
-	if err := w.WriteLoginToken("default", "rt", time.Now().UTC(), "user", "cid", "dev"); err != nil {
+	if err := w.WriteLoginToken("default", "rt", time.Now().UTC(), "user", "dev"); err != nil {
 		t.Fatalf("WriteLoginToken: %v", err)
 	}
 	entries, err := os.ReadDir(filepath.Dir(credsPath(t)))

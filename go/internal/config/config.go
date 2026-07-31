@@ -38,12 +38,13 @@ type Config struct {
 	// AuthMode is "user" for a PKCE login, "machine" (or empty) for an
 	// access-key pair. RefreshToken is secret-at-rest (0600, masked in
 	// configure list/get); the access token is NEVER persisted — only the
-	// refresh token is. LoginClientID/IamEnv are non-secret refresh context a
-	// later usage slice needs to refresh without re-prompting.
+	// refresh token is. IamEnv is non-secret refresh context the usage slice
+	// needs to resolve the /v2 token URL and the baked-in client_id at refresh
+	// (the client_id itself is NOT persisted — it is a public id already in
+	// source, resolved from iam_env via internal/login.ClientIDForEnv).
 	AuthMode       string
 	RefreshToken   string
 	TokenExpiresAt time.Time
-	LoginClientID  string
 	IamEnv         string
 }
 
@@ -145,9 +146,6 @@ func LoadConfig(profile string) (*Config, error) {
 					if t, perr := time.Parse(time.RFC3339, v); perr == nil {
 						cfg.TokenExpiresAt = t
 					}
-				}
-				if v := section.Key("login_client_id").String(); v != "" {
-					cfg.LoginClientID = v
 				}
 				if v := section.Key("iam_env").String(); v != "" {
 					cfg.IamEnv = v

@@ -63,6 +63,24 @@ func TokenURLForEnv(env string) (string, error) {
 	return ep.Token, nil
 }
 
+// ClientIDForEnv returns the baked-in public client_id for the given env — the
+// no-secret OAuth client `grn login` uses for that env, and the client the
+// refresh-token grant must present (the refresh token is bound to it at login).
+// The subcommand refresh path resolves the client_id from a profile's iam_env
+// via this helper rather than reading a persisted login_client_id — the value
+// is a public identifier already baked into source (iamenv.go), so storing it
+// again in the credentials INI is redundant. Empty/unknown env → error.
+func ClientIDForEnv(env string) (string, error) {
+	if env == "" {
+		return "", fmt.Errorf("iam_env is not set for this profile — run `grn login` again")
+	}
+	ep, ok := IamEndpoints[env]
+	if !ok {
+		return "", fmt.Errorf("unknown iam_env %q (valid: %s)", env, validIamEnvs())
+	}
+	return ep.ClientID, nil
+}
+
 // EndpointForEnv returns the full preset for an env (authorize/token/client_id),
 // used by the `grn login` authorize flow. Unknown env → error.
 func EndpointForEnv(env string) (IamEndpoint, error) {

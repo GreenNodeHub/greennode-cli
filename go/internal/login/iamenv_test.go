@@ -74,3 +74,35 @@ func TestEndpointForEnv(t *testing.T) {
 		t.Error("EndpointForEnv() succeeded, want error")
 	}
 }
+
+// TestClientIDForEnv covers the refresh-path helper that resolves the client_id
+// from iam_env (so login_client_id need not be persisted). dev/prod return their
+// baked-in public ids; empty/unknown env error (a profile without a valid
+// iam_env cannot be refreshed safely).
+func TestClientIDForEnv(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		env  string
+		want string
+	}{
+		{"prod", ProdClientID},
+		{"dev", DevClientID},
+	}
+	for _, tc := range cases {
+		t.Run(tc.env, func(t *testing.T) {
+			t.Parallel()
+			got, err := ClientIDForEnv(tc.env)
+			if err != nil {
+				t.Fatalf("ClientIDForEnv(%q): %v", tc.env, err)
+			}
+			if got != tc.want {
+				t.Errorf("ClientIDForEnv(%q)=%q, want %q", tc.env, got, tc.want)
+			}
+		})
+	}
+	for _, env := range []string{"", "staging"} {
+		if _, err := ClientIDForEnv(env); err == nil {
+			t.Errorf("ClientIDForEnv(%q) succeeded, want error", env)
+		}
+	}
+}

@@ -78,9 +78,19 @@ func (w *ConfigFileWriter) WriteConfig(profile, region, output, projectID string
 
 // loginTokenKeys are the per-section keys WriteLoginToken writes and
 // ClearLoginToken removes. refresh_token is secret-at-rest (0600, masked in
-// configure list/get); auth_mode/login_client_id/iam_env are non-secret refresh
-// context; token_expires_at is a non-secret RFC3339 timestamp.
-var loginTokenKeys = []string{"refresh_token", "token_expires_at", "auth_mode", "login_client_id", "iam_env"}
+// configure list/get); auth_mode/iam_env are non-secret refresh context;
+// token_expires_at is a non-secret RFC3339 timestamp. The OAuth client_id is
+// NOT persisted here — it is a public identifier baked into source
+// (internal/login's per-env presets) and resolved from iam_env at refresh, so
+// storing it in the credentials INI is redundant. ClearLoginToken still deletes
+// a legacy login_client_id key if one is present from an older CLI version.
+var loginTokenKeys = []string{"refresh_token", "token_expires_at", "auth_mode", "iam_env"}
+
+// loginTokenKeysLegacy lists credential-section keys older CLI versions wrote
+// that the current version no longer writes but should still clear on logout
+// (so a logout fully removes a prior login). login_client_id was dropped from
+// the persisted set because it is a public id already in source.
+var loginTokenKeysLegacy = []string{"login_client_id"}
 
 // WriteLoginToken persists a PKCE login result into the per-profile credentials
 // INI: it folds the refresh token + non-secret refresh context into the same
@@ -90,7 +100,7 @@ var loginTokenKeys = []string{"refresh_token", "token_expires_at", "auth_mode", 
 // idempotent (returns the existing section without wiping its keys). An empty
 // refreshToken is a no-op so a stale empty value can never erase a prior good
 // token; the caller (cmd/login) also skips the call on partial success.
-func (w *ConfigFileWriter) WriteLoginToken(profile, refreshToken string, expiresAt time.Time, authMode, loginClientID, iamEnv string) error {
+func (w *ConfigFileWriter) WriteLoginToken(profile, refreshToken string, expiresAt time.Time, authMode, iamEnv string) error {
 	if refreshToken == "" {
 		return nil
 	}
@@ -111,7 +121,6 @@ func (w *ConfigFileWriter) WriteLoginToken(profile, refreshToken string, expires
 	section.Key("refresh_token").SetValue(refreshToken)
 	section.Key("token_expires_at").SetValue(expiresAt.UTC().Format(time.RFC3339))
 	section.Key("auth_mode").SetValue(authMode)
-	section.Key("login_client_id").SetValue(loginClientID)
 	section.Key("iam_env").SetValue(iamEnv)
 
 	return w.save(cfg, filePath)
@@ -138,6 +147,9 @@ func (w *ConfigFileWriter) ClearLoginToken(profile string) error {
 		return nil // no section for this profile → nothing to clear
 	}
 	for _, k := range loginTokenKeys {
+		section.DeleteKey(k)
+	}
+	for _, k := range loginTokenKeysLegacy {
 		section.DeleteKey(k)
 	}
 	return w.save(cfg, filePath)

@@ -60,7 +60,6 @@ func runList(cmd *cobra.Command, args []string) {
 		// profile is in and which IAM env it targets.
 		resolveCredEntry("refresh_token", cfg.RefreshToken, credsFile),
 		resolveCredEntryPlain("auth_mode", cfg.AuthMode, credsFile),
-		resolveCredEntryPlain("login_client_id", cfg.LoginClientID, credsFile),
 		resolveCredEntryPlain("iam_env", cfg.IamEnv, credsFile),
 		resolveCredEntryPlain("token_expires_at", tokenExpiresAtStr(cfg.TokenExpiresAt), credsFile),
 	}
@@ -131,9 +130,9 @@ func resolveConfigEntry(name, value, configFile string) configEntry {
 }
 
 // resolveCredEntryPlain is resolveCredEntry for non-secret credential-section
-// keys (auth_mode, login_client_id, iam_env, token_expires_at): same location
-// logic, but the value is shown as-is rather than masked (these are non-secret
-// refresh context, not credentials).
+// keys (auth_mode, iam_env, token_expires_at): same location logic, but the
+// value is shown as-is rather than masked (these are non-secret refresh
+// context, not credentials).
 func resolveCredEntryPlain(name, value, credsFile string) configEntry {
 	if value == "" {
 		return configEntry{name: name, value: "<not set>", typ: "None", location: "None"}

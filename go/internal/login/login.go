@@ -171,6 +171,24 @@ func decodeTokenBody(raw json.RawMessage, accessToken string) (Token, string, er
 	return tok, b.RefreshToken, nil
 }
 
+// DecodeTokenBody decodes a /v2 token response (snake_case) into a Token,
+// fail-loud validating that an access_token is present (the same guard
+// Config.AccessTokenFrom applies, so a silent decode-to-empty is impossible).
+// Exported so a refresh-token-grant caller outside this package — which has a
+// raw response body but no Config — can decode access_token / token_type /
+// refresh_token / expires_in in one call. AccessTokenFrom is a method on Config
+// but reads no Config state, so a zero-value Config reaches the exact validation
+// path Login uses; the decoded Token.RefreshToken lets the caller detect (and
+// persist) a rotated refresh token, and ExpiresAt drives cache expiry.
+func DecodeTokenBody(raw json.RawMessage) (Token, error) {
+	accessToken, err := Config{}.AccessTokenFrom(raw)
+	if err != nil {
+		return Token{}, err
+	}
+	tok, _, err := decodeTokenBody(raw, accessToken)
+	return tok, err
+}
+
 // randomNonce returns a 256-bit random base64url string for the appState.
 func randomNonce() (string, error) {
 	p, err := Generate() // reuse the 256-bit base64url generator
