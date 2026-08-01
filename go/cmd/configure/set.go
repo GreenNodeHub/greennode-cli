@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/spf13/cobra"
+	"github.com/vngcloud/greennode-cli/internal/config"
+	loginpkg "github.com/vngcloud/greennode-cli/internal/login"
 )
 
 var setCmd = &cobra.Command{
@@ -59,6 +60,32 @@ func runSet(cmd *cobra.Command, args []string) {
 		}
 	case "project_id":
 		if err := writer.WriteConfig(profile, cfg.Region, cfg.Output, value); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	// iam_env selects dev/prod endpoints for every service (vks/vserver/agentbase)
+	// and the IAM v2 token URL. On a user (auth_mode=user) profile it is bound to
+	// the login token — repointing it would invalidate the refresh token, so
+	// refuse and point at re-login. Machine profiles switch freely. Validation is
+	// delegated to the login package so the accepted set lives in one place.
+	case "iam_env":
+		if cfg.AuthMode == "user" {
+			fmt.Fprintf(os.Stderr, "Error: iam_env is bound to the login token on a user profile; re-login with 'grn login --iam-env %s' to switch\n", value)
+			os.Exit(1)
+		}
+		if _, err := loginpkg.TokenURLForEnv(value); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		if err := writer.WriteIamEnv(profile, value); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	// agent_identity: the agentbase current-agent selection. Normally set via
+	// 'grn agentbase identity workload use|create --set-current', but exposed here
+	// so it is settable / clearable like any other profile key.
+	case "agent_identity":
+		if err := writer.WriteAgentIdentity(profile, value); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}

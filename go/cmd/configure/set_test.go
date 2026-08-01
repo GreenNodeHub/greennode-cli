@@ -73,3 +73,48 @@ func TestListOnFreshMachineNoFiles(t *testing.T) {
 		t.Fatalf("list on fresh machine failed: %v", err)
 	}
 }
+
+// `configure set iam_env <dev|prod>` is the replacement for the dropped
+// `agentbase context switch` on a MACHINE profile: it writes iam_env to the
+// shared credentials INI so all three services (vks/vserver/agentbase) resolve
+// env from it. (The user-profile refusal and the invalid-value rejection use
+// os.Exit, so they are not unit-testable here — same convention as the other
+// error paths in runSet.)
+func TestSetIamEnv_MachineProfileWrites(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	root := newConfigureTestCmd()
+	root.SetArgs([]string{"configure", "set", "iam_env", "dev", "--profile", "default"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("set iam_env on machine profile failed: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(home, ".greennode", "credentials"))
+	if err != nil {
+		t.Fatalf("credentials file not written: %v", err)
+	}
+	if got := string(data); !strings.Contains(got, "iam_env = dev") {
+		t.Errorf("credentials missing iam_env = dev; got:\n%s", got)
+	}
+}
+
+// `configure set agent_identity <name>` persists the agentbase current-agent
+// selection (the same key `agentbase identity workload use` writes) and is
+// readable back through `configure get` — proving the deferral is non-lossy.
+func TestSetAgentIdentity_WritesAndReadsBack(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	root := newConfigureTestCmd()
+	root.SetArgs([]string{"configure", "set", "agent_identity", "agent-42", "--profile", "default"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("set agent_identity failed: %v", err)
+	}
+
+	root2 := newConfigureTestCmd()
+	root2.SetArgs([]string{"configure", "get", "agent_identity", "--profile", "default"})
+	if err := root2.Execute(); err != nil {
+		t.Fatalf("get agent_identity failed: %v", err)
+	}
+}

@@ -60,6 +60,9 @@ func runGet(cmd *cobra.Command, args []string) {
 		if !cfg.TokenExpiresAt.IsZero() {
 			value = cfg.TokenExpiresAt.UTC().Format(time.RFC3339)
 		}
+	// agent_identity: the agentbase current-agent selection. Non-secret.
+	case "agent_identity":
+		value = cfg.AgentIdentity
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown configuration key: %s\n", key)
 		os.Exit(1)

@@ -10,8 +10,6 @@
 // Compiled in ONLY with `-tags agentbase`.
 package config
 
-import "fmt"
-
 // Env represents a deployment environment.
 type Env string
 
@@ -54,17 +52,4 @@ func EndpointsForEnv(env Env) Endpoints {
 		return eps
 	}
 	return endpointsByEnv[EnvProd]
-}
-
-// EnvFromString validates and parses an env string. It is the validation seam
-// `grn agentbase context switch <env>` uses before writing iam_env, so only
-// "dev"/"prod" can ever be persisted. Empty returns an error (switch requires a
-// value); callers that want the prod default for an unset iam_env use envFromIamEnv.
-func EnvFromString(s string) (Env, error) {
-	switch Env(s) {
-	case EnvDev, EnvProd:
-		return Env(s), nil
-	default:
-		return "", fmt.Errorf("invalid environment %q: must be 'dev' or 'prod'", s)
-	}
 }

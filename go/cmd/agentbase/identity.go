@@ -31,59 +31,10 @@ agentbase login/logout — the profile's auth_mode (user vs machine) selects the
 token source agentbase uses, exactly like vks/vserver.`,
 }
 
-// --- identity whoami ---
-
-var identityWhoamiCmd = &cobra.Command{
-	Use:   "whoami",
-	Short: "Show the currently active credentials",
-	Long:  `Display the current environment, client ID, and agent identity from the shared ~/.greennode profile.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ab := mustLoadAgentbaseCtx(cmd)
-		output.Table([]string{"Field", "Value"}, [][]string{
-			{"Profile", ab.shared.Profile},
-			{"Environment", string(ab.env)},
-			{"Auth Mode", output.StrOrDash(ab.shared.AuthMode)},
-			{"Client ID", output.StrOrDash(ab.shared.ClientID)},
-			{"Agent Identity", output.StrOrDash(ab.shared.AgentIdentity)},
-		})
-		return nil
-	},
-}
-
-// --- identity config ---
-
-var identityConfigCmd = &cobra.Command{
-	Use:   "config",
-	Short: "Show identity configuration",
-	Long:  `Display the current identity configuration including endpoints and credentials.`,
-}
-
-var identityConfigShowCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Display the current configuration",
-	Long:  `Display the current identity configuration including environment, credentials, and endpoint URLs resolved from the shared profile's iam_env.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ab := mustLoadAgentbaseCtx(cmd)
-		secret := "-"
-		if ab.shared.ClientSecret != "" {
-			secret = "***" + ab.shared.ClientSecret[max(0, len(ab.shared.ClientSecret)-4):]
-		}
-		output.Table([]string{"Key", "Value"}, [][]string{
-			{"profile", ab.shared.Profile},
-			{"iam_env", output.StrOrDash(ab.shared.IamEnv)},
-			{"environment", string(ab.env)},
-			{"auth_mode", output.StrOrDash(ab.shared.AuthMode)},
-			{"client_id", output.StrOrDash(ab.shared.ClientID)},
-			{"client_secret", secret},
-			{"agent_identity", output.StrOrDash(ab.shared.AgentIdentity)},
-			{"identity_url", ab.endpoints.Identity},
-			{"runtime_url", ab.endpoints.Runtime},
-			{"memory_url", ab.endpoints.Memory},
-			{"oauth2_token_url", ab.endpoints.OAuth2Token},
-		})
-		return nil
-	},
-}
+// identity whoami / config show were removed: agentbase defers config display to
+// 'grn configure get' (and 'grn configure list'), which already surfaces
+// auth_mode, iam_env, client_id, refresh_token and — now — agent_identity. The
+// current environment + resolved endpoints live at 'grn agentbase context current'.
 
 // --- identity workload ---
 
@@ -1086,11 +1037,6 @@ Optional flags: --session-id, --custom-parameters, --custom-state, --force-authe
 
 func init() {
 	AgentbaseCmd.AddCommand(identityCmd)
-
-	identityCmd.AddCommand(identityWhoamiCmd)
-
-	identityCmd.AddCommand(identityConfigCmd)
-	identityConfigCmd.AddCommand(identityConfigShowCmd)
 
 	// workload
 	identityCmd.AddCommand(workloadCmd)

@@ -6,58 +6,18 @@ import (
 
 	"github.com/spf13/cobra"
 
-	agentbaseconfig "github.com/vngcloud/greennode-cli/internal/agentbase/config"
 	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	coreconfig "github.com/vngcloud/greennode-cli/internal/config"
 )
 
 var contextCmd = &cobra.Command{
 	Use:   "context",
-	Short: "Manage the active environment context",
-	Long: `Manage the active environment context (dev or prod) for the agentbase subtree.
+	Short: "Show the active environment context",
+	Long: `Show the active environment context (dev or prod) for the agentbase subtree.
 
 The environment selects the agentbase API endpoints AND the IAM v2 token URL; it
 is stored as iam_env in the shared ~/.greennode profile (default prod), the same
-selector vks/vserver use. 'context switch <dev|prod>' repoints a machine
-profile's iam_env; a user profile is bound to its login token — re-login with
-'grn login --iam-env <env>' to switch it.`,
-}
-
-var contextSwitchCmd = &cobra.Command{
-	Use:   "switch <dev|prod>",
-	Short: "Switch the active environment",
-	Long: `Switch the active environment context to 'dev' or 'prod'.
-
-This writes the 'iam_env' key to the shared ~/.greennode profile, so all three
-services (vks/vserver/agentbase) resolve the v2 token URL + endpoints from one
-place. Only machine profiles can switch here: a user profile's iam_env is bound
-to its login token (the dev/prod client_id selected at login), so switching it
-would invalidate the refresh token — re-login with 'grn login --iam-env <env>'
-instead.`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		env, err := agentbaseconfig.EnvFromString(args[0])
-		if err != nil {
-			return err
-		}
-		profile := resolveProfile(cmd)
-		shared, err := coreconfig.LoadConfig(profile)
-		if err != nil {
-			return err
-		}
-		// A user profile's iam_env is bound to the login token (the dev/prod
-		// client selected at login). Repointing it here would invalidate the
-		// refresh token; refuse and point the user at re-login. Machine
-		// profiles switch freely.
-		if shared.AuthMode == "user" {
-			return fmt.Errorf("iam_env is bound to the login token on a user profile; re-login with 'grn login --iam-env %s' to switch", env)
-		}
-		if err := coreconfig.NewConfigFileWriter().WriteIamEnv(profile, string(env)); err != nil {
-			return err
-		}
-		fmt.Fprintf(os.Stdout, "Switched to environment: %s (iam_env written to profile %q)\n", env, profile)
-		return nil
-	},
+selector vks/vserver use. Switch it with 'grn configure set iam_env <dev|prod>'
+(machine) or 'grn login --iam-env <env>' (user).`,
 }
 
 var contextCurrentCmd = &cobra.Command{
@@ -138,7 +98,6 @@ var contextDecoratorsCmd = &cobra.Command{
 
 func init() {
 	AgentbaseCmd.AddCommand(contextCmd)
-	contextCmd.AddCommand(contextSwitchCmd)
 	contextCmd.AddCommand(contextCurrentCmd)
 	contextCmd.AddCommand(contextHeadersCmd)
 	contextCmd.AddCommand(contextDecoratorsCmd)

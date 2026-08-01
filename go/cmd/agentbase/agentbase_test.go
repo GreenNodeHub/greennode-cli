@@ -8,12 +8,14 @@ import (
 
 // TestAgentbaseCmd_HasContextSubtree verifies the scaffold mounted the `context`
 // group under `grn agentbase` with its expected children. No network, no creds.
+// `context switch` was dropped — env is set via 'grn configure set iam_env' or
+// 'grn login --iam-env'.
 func TestAgentbaseCmd_HasContextSubtree(t *testing.T) {
 	contextCmd, _, err := AgentbaseCmd.Find([]string{"context"})
 	if err != nil {
 		t.Fatalf("agentbase has no 'context' subcommand: %v", err)
 	}
-	for _, want := range []string{"switch", "current", "headers", "decorators"} {
+	for _, want := range []string{"current", "headers", "decorators"} {
 		if _, _, err := contextCmd.Find([]string{want}); err != nil {
 			t.Errorf("context missing subcommand %q: %v", want, err)
 		}
@@ -43,18 +45,19 @@ func TestAgentbaseCmd_PersistentFlags(t *testing.T) {
 
 // TestAgentbaseCmd_HasIdentitySubtree verifies the identity group and its
 // workload CRUD subtree mounted under `grn agentbase`. identity login/logout
-// were removed when agentbase unified onto `grn configure`/`grn login`/`grn logout`.
+// were removed when agentbase unified onto `grn configure`/`grn login`/`grn logout`;
+// identity whoami/config were removed to defer config display to 'grn configure'.
 func TestAgentbaseCmd_HasIdentitySubtree(t *testing.T) {
 	identityCmd, _, err := AgentbaseCmd.Find([]string{"identity"})
 	if err != nil {
 		t.Fatalf("agentbase has no 'identity' subcommand: %v", err)
 	}
-	for _, want := range []string{"whoami", "config", "workload", "outbound-auth"} {
+	for _, want := range []string{"workload", "outbound-auth"} {
 		if _, _, err := identityCmd.Find([]string{want}); err != nil {
 			t.Errorf("identity missing subcommand %q: %v", want, err)
 		}
 	}
-	for _, gone := range []string{"login", "logout"} {
+	for _, gone := range []string{"login", "logout", "whoami", "config"} {
 		found := false
 		for _, c := range identityCmd.Commands() {
 			if c.Name() == gone {
@@ -63,7 +66,7 @@ func TestAgentbaseCmd_HasIdentitySubtree(t *testing.T) {
 			}
 		}
 		if found {
-			t.Errorf("identity should no longer have %q (use grn configure/grn login/grn logout)", gone)
+			t.Errorf("identity should no longer have %q (defer to grn configure/grn login/grn logout)", gone)
 		}
 	}
 	workloadCmd, _, err := identityCmd.Find([]string{"workload"})

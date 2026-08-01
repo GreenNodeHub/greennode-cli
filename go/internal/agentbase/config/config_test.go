@@ -30,26 +30,3 @@ func TestEndpointsForEnv_UnknownFallsBackToProd(t *testing.T) {
 		t.Errorf("unknown env should fall back to prod; got %+v, want %+v", got, prod)
 	}
 }
-
-// TestEnvFromString_Valid: dev/prod parse cleanly.
-func TestEnvFromString_Valid(t *testing.T) {
-	for _, s := range []string{"dev", "prod"} {
-		env, err := EnvFromString(s)
-		if err != nil {
-			t.Errorf("EnvFromString(%q): unexpected error: %v", s, err)
-		}
-		if env != Env(s) {
-			t.Errorf("EnvFromString(%q)=%q, want %q", s, env, s)
-		}
-	}
-}
-
-// TestEnvFromString_Invalid: anything other than dev/prod (including empty) is
-// rejected, so `context switch` can never persist a bogus iam_env.
-func TestEnvFromString_Invalid(t *testing.T) {
-	for _, s := range []string{"", "staging", "DEV", "prod "} {
-		if _, err := EnvFromString(s); err == nil {
-			t.Errorf("EnvFromString(%q): expected error, got nil", s)
-		}
-	}
-}
