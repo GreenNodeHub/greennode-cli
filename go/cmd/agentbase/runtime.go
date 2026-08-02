@@ -252,14 +252,14 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if output.GetFormat() == output.FormatJSON {
 			example := &runtimepkg.CreateAgentRuntimeRequest{
-				Name:        "my-runtime",
-				Description: "",
-				ImageURL:    "fill-image-url",
-				Command:     []string{},
-				Args:        []string{},
+				Name:                 "my-runtime",
+				Description:          "",
+				ImageURL:             "fill-image-url",
+				Command:              []string{},
+				Args:                 []string{},
 				EnvironmentVariables: map[string]string{},
-				FlavorID:    "fill-flavor-id",
-				Autoscaling: runtimepkg.Autoscaling{MinReplicas: 1, MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
+				FlavorID:             "fill-flavor-id",
+				Autoscaling:          runtimepkg.Autoscaling{MinReplicas: 1, MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
 			}
 			b, err := json.MarshalIndent(example, "", "  ")
 			if err != nil {
@@ -480,34 +480,46 @@ var runtimeWaitCmd = &cobra.Command{
 		ctx := context.Background()
 		timeout, _ := cmd.Flags().GetDuration("timeout")
 		interval, _ := cmd.Flags().GetDuration("interval")
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
-
 		client, err := newRuntimeClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		id := args[0]
-		for {
-			rt, err := client.Get(ctx, id)
-			if err != nil {
-				return err
-			}
-			if runtimeTerminalFailure[rt.Status] {
-				return fmt.Errorf("runtime %q failed: state=%s %s", id, rt.Status, rt.StatusReason)
-			}
-			if runtimeTerminalSuccess[rt.Status] {
-				fmt.Fprintf(os.Stderr, "Runtime %q reached state %s.\n", id, rt.Status)
-				return output.PrintResource(rt, func() string { return rt.ID }, func() error { return renderRuntimeDetail(rt) })
-			}
-			fmt.Fprintf(os.Stderr, "Runtime %q state: %s ...\n", id, rt.Status)
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("timed out waiting for runtime %q (last state %s)", id, rt.Status)
-			case <-time.After(interval):
-			}
+		pctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		rt, err := pollRuntimeToTerminal(pctx, client, args[0], interval)
+		if err != nil {
+			return err
 		}
+		return output.PrintResource(rt, func() string { return rt.ID }, func() error { return renderRuntimeDetail(rt) })
 	},
+}
+
+// pollRuntimeToTerminal polls a runtime by id until it reaches a terminal state
+// (ACTIVE/DELETED = success, ERROR/SERVICE_ACCOUNT_ERROR = failure) or ctx
+// expires. Shared by `runtime wait`, `deploy up`, and `deploy destroy` so there
+// is one polling loop. Progress lines go to stderr. Returns the last-fetched
+// runtime and a non-nil error on failure/timeout (the caller decides whether to
+// render it).
+func pollRuntimeToTerminal(ctx context.Context, client *runtimepkg.Client, id string, interval time.Duration) (*runtimepkg.AgentRuntime, error) {
+	for {
+		rt, err := client.Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if runtimeTerminalFailure[rt.Status] {
+			return rt, fmt.Errorf("runtime %q failed: state=%s %s", id, rt.Status, rt.StatusReason)
+		}
+		if runtimeTerminalSuccess[rt.Status] {
+			fmt.Fprintf(os.Stderr, "Runtime %q reached state %s.\n", id, rt.Status)
+			return rt, nil
+		}
+		fmt.Fprintf(os.Stderr, "Runtime %q state: %s ...\n", id, rt.Status)
+		select {
+		case <-ctx.Done():
+			return rt, fmt.Errorf("timed out waiting for runtime %q (last state %s)", id, rt.Status)
+		case <-time.After(interval):
+		}
+	}
 }
 
 // runtimeTerminalSuccess / runtimeTerminalFailure partition the AgentRuntime
@@ -519,7 +531,7 @@ var (
 		"DELETED": true,
 	}
 	runtimeTerminalFailure = map[string]bool{
-		"ERROR":                true,
+		"ERROR":                 true,
 		"SERVICE_ACCOUNT_ERROR": true,
 	}
 )
