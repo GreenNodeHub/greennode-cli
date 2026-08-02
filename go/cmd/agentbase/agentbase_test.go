@@ -3,8 +3,42 @@ package agentbase
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
 )
+
+// subCmdExists reports whether cmd has a direct child named name. Used for
+// subtree assertions instead of cmd.Find([name]): cobra's Find treats unknown
+// trailing args as positionals and returns no error, so Find does not reliably
+// signal that a subcommand is absent (and an existence check via Find's error
+// is therefore vacuous). Iterating Commands() is unambiguous.
+func subCmdExists(c *cobra.Command, name string) bool {
+	for _, sub := range c.Commands() {
+		if sub.Name() == name {
+			return true
+		}
+	}
+	return false
+}
+
+func assertSubCommands(t *testing.T, c *cobra.Command, wants ...string) {
+	t.Helper()
+	for _, want := range wants {
+		if !subCmdExists(c, want) {
+			t.Errorf("%s missing subcommand %q", c.Name(), want)
+		}
+	}
+}
+
+func assertNoSubCommands(t *testing.T, c *cobra.Command, goners ...string) {
+	t.Helper()
+	for _, gone := range goners {
+		if subCmdExists(c, gone) {
+			t.Errorf("%s should not have subcommand %q", c.Name(), gone)
+		}
+	}
+}
 
 // TestAgentbaseCmd_HasContextSubtree verifies the scaffold mounted the `context`
 // group under `grn agentbase` with its expected children. No network, no creds.
