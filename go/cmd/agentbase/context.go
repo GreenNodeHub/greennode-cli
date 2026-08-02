@@ -41,6 +41,7 @@ var contextCurrentCmd = &cobra.Command{
 				{"Identity", ab.endpoints.Identity},
 				{"Runtime", ab.endpoints.Runtime},
 				{"Memory", ab.endpoints.Memory},
+				{"Gateway", ab.endpoints.Gateway},
 				{"OAuth2 Token", ab.endpoints.OAuth2Token},
 			},
 		)

@@ -15,9 +15,6 @@
 package agentbase
 
 import (
-	"os"
-
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
@@ -34,25 +31,6 @@ var (
 	outputFormat    string
 )
 
-const greennodeASCIIArt = `
-   _____ _____  ______ ______ _   _ _   _  ____  _____  ______
-  / ____|  __ \|  ____|  ____| \ | | \ | |/ __ \|  __ \|  ____|
- | |  __| |__) | |__  | |__  |  \| |  \| | |  | | |  | | |__
- | | |_ |  _  /|  __| |  __| | . ` + "`" + ` | . ` + "`" + ` | |  | | |  | |  __|
- | |__| | | \ \| |____| |____| |\  | |\  | |__| | |__| | |____
-  \_____|_|  \_\______|______|_| \_|_| \_|\____/|_____/|______| AGENTBASE
-`
-
-func printBanner() {
-	color.New(color.FgGreen, color.Bold).Fprint(os.Stderr, greennodeASCIIArt)
-}
-
-// skipBannerCommands suppresses the ASCII banner for non-product commands.
-var skipBannerCommands = map[string]bool{
-	"help":       true,
-	"completion": true,
-}
-
 // AgentbaseCmd is the `grn agentbase` subcommand. Its init() self-registers it
 // with grn's service registry (cli.RegisterService), mirroring cmd/vks—so
 // mounting requires no edit to root.go or main.go, only a build-tagged blank
@@ -62,9 +40,9 @@ var AgentbaseCmd = &cobra.Command{
 	Short:         "GreenNode AgentBase platform",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Long: `Manage the GreenNode AgentBase platform: agent identities and outbound
-authentication providers (Phase 1). Runtime, memory, and deploy commands arrive
-in later phases.
+	Long: `Manage the GreenNode AgentBase platform: agent identities, outbound
+authentication providers, and MCP gateways. Runtime, memory, and deploy commands
+arrive in later phases.
 
 agentbase shares the ~/.greennode profile with the rest of the CLI. Configure
 machine credentials with 'grn configure' (or log in as a user with 'grn login');
@@ -74,9 +52,6 @@ identity workload use <name>'. Run 'grn agentbase context current' to see the
 active environment and endpoints.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		output.SetFormat(output.ParseFormat(outputFormat))
-		if !skipBannerCommands[cmd.Name()] && output.GetFormat() == output.FormatTable {
-			printBanner()
-		}
 		cliinput.SetInteractive(interactiveMode)
 	},
 }

@@ -19,14 +19,15 @@ const (
 )
 
 // Endpoints holds the resolved API base URLs for a given environment. These are
-// the agentbase service endpoints (identity/runtime/memory) plus the IAM v2
-// token URL — identical to login.IamEndpoints[env].Token, kept here as the
+// the agentbase service endpoints (identity/runtime/memory/gateway) plus the IAM
+// v2 token URL — identical to login.IamEndpoints[env].Token, kept here as the
 // agentbase service-endpoint map so the agentbase subtree need not import
 // internal/login for endpoint resolution.
 type Endpoints struct {
 	Identity    string
 	Runtime     string
 	Memory      string
+	Gateway     string
 	OAuth2Token string
 }
 
@@ -35,12 +36,14 @@ var endpointsByEnv = map[Env]Endpoints{
 		Identity:    "https://agentbase.api-dev.vngcloud.tech/identity",
 		Runtime:     "https://pub-iamapis.api-dev.vngcloud.tech/agent-core-runtime",
 		Memory:      "https://pub-iamapis.api-dev.vngcloud.tech/agent-core-memory",
+		Gateway:     "https://agentbase.api-dev.vngcloud.tech/gateway",
 		OAuth2Token: "https://pub-iamapis.api-dev.vngcloud.tech/accounts-api/v2/auth/token",
 	},
 	EnvProd: {
 		Identity:    "https://agentbase.api.vngcloud.vn/identity",
 		Runtime:     "https://agentbase.api.vngcloud.vn/runtime",
 		Memory:      "https://agentbase.api.vngcloud.vn/memory",
+		Gateway:     "https://agentbase.api.vngcloud.vn/gateway",
 		OAuth2Token: "https://iam.api.vngcloud.vn/accounts-api/v2/auth/token",
 	},
 }

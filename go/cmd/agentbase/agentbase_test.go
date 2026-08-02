@@ -80,6 +80,20 @@ func TestAgentbaseCmd_HasIdentitySubtree(t *testing.T) {
 	}
 }
 
+// TestAgentbaseCmd_HasGatewaySubtree verifies the gateway lifecycle group and
+// its CRUD + wait + generate leaves are mounted under `grn agentbase`.
+func TestAgentbaseCmd_HasGatewaySubtree(t *testing.T) {
+	gwCmd, _, err := AgentbaseCmd.Find([]string{"gateway"})
+	if err != nil {
+		t.Fatalf("agentbase has no 'gateway' subcommand: %v", err)
+	}
+	for _, want := range []string{"create", "generate", "list", "get", "update", "delete", "wait"} {
+		if _, _, err := gwCmd.Find([]string{want}); err != nil {
+			t.Errorf("gateway missing subcommand %q: %v", want, err)
+		}
+	}
+}
+
 // TestJoinStrings_jsonsliceArray ports the agentbase helper test for joinStrings
 // (defined in identity.go).
 func TestJoinStrings_jsonsliceArray(t *testing.T) {

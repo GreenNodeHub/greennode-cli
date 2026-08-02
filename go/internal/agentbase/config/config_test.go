@@ -5,7 +5,7 @@ import "testing"
 // TestDevEndpoints: the dev env resolves a full endpoint set, distinct from prod.
 func TestDevEndpoints(t *testing.T) {
 	eps := EndpointsForEnv(EnvDev)
-	if eps.Identity == "" || eps.Runtime == "" || eps.Memory == "" || eps.OAuth2Token == "" {
+	if eps.Identity == "" || eps.Runtime == "" || eps.Memory == "" || eps.Gateway == "" || eps.OAuth2Token == "" {
 		t.Error("dev endpoints should not be empty")
 	}
 	if eps.Identity == EndpointsForEnv(EnvProd).Identity {
@@ -16,7 +16,7 @@ func TestDevEndpoints(t *testing.T) {
 // TestProdEndpoints: the prod env resolves a full endpoint set.
 func TestProdEndpoints(t *testing.T) {
 	eps := EndpointsForEnv(EnvProd)
-	if eps.Identity == "" || eps.Runtime == "" {
+	if eps.Identity == "" || eps.Runtime == "" || eps.Gateway == "" {
 		t.Error("prod endpoints should not be empty")
 	}
 }
