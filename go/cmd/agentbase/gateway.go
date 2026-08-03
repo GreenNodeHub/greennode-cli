@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 
 	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
@@ -789,8 +790,464 @@ func init() {
 	gatewayWaitCmd.Flags().Duration("timeout", 10*time.Minute, "Maximum time to wait")
 	gatewayWaitCmd.Flags().Duration("interval", 5*time.Second, "Poll interval")
 	gatewayCmd.AddCommand(gatewayWaitCmd)
+
+	// --- Slice 5 sub-resources ---
+
+	// flavors
+	gatewayFlavorsListCmd.Flags().String("resource-type", "", "Filter by resource type")
+	gatewayFlavorsListCmd.Flags().String("network-mode", "", "Filter by network mode (PUBLIC|PRIVATE)")
+	gatewayFlavorsListCmd.Flags().String("zone-id", "", "Filter by zone id")
+	gatewayFlavorsCmd.AddCommand(gatewayFlavorsListCmd)
+	gatewayCmd.AddCommand(gatewayFlavorsCmd)
+
+	// access-logs
+	addAccessLogFilterFlags(gatewayAccessLogsListCmd)
+	gatewayAccessLogsListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	gatewayAccessLogsListCmd.Flags().Int("page-size", 50, "Page size")
+	gatewayAccessLogsCmd.AddCommand(gatewayAccessLogsListCmd)
+	addAccessLogFilterFlags(gatewayAccessLogsStatsCmd)
+	gatewayAccessLogsStatsCmd.Flags().String("interval", "", "Time-series bucket interval (e.g. 1h)")
+	gatewayAccessLogsStatsCmd.Flags().Int("top-n", 5, "Number of top tools/targets/callers to return")
+	gatewayAccessLogsCmd.AddCommand(gatewayAccessLogsStatsCmd)
+	gatewayCmd.AddCommand(gatewayAccessLogsCmd)
+
+	// inbound-auth / jwt / idp-app
+	gatewayInboundAuthJwtIdpAppSetCmd.Flags().String("client-id", "", "IdP app client id (required)")
+	gatewayInboundAuthJwtIdpAppSetCmd.Flags().String("client-secret", "", "IdP app client secret (omit to preserve existing)")
+	gatewayInboundAuthJwtIdpAppSetCmd.Flags().StringArray("scope", nil, "IdP app scope (repeatable)")
+	gatewayInboundAuthJwtIdpAppCmd.AddCommand(gatewayInboundAuthJwtIdpAppSetCmd)
+	gatewayInboundAuthJwtIdpAppCmd.AddCommand(gatewayInboundAuthJwtIdpAppClearCmd)
+	gatewayInboundAuthJwtCmd.AddCommand(gatewayInboundAuthJwtIdpAppCmd)
+	gatewayInboundAuthCmd.AddCommand(gatewayInboundAuthJwtCmd)
+	gatewayCmd.AddCommand(gatewayInboundAuthCmd)
+
+	// private-network / routes
+	gatewayPrivateNetworkRoutesSetCmd.Flags().StringArray("route", nil, "CIDR route (repeatable; ignored with --file)")
+	gatewayPrivateNetworkRoutesSetCmd.Flags().String("if-match", "", "If-Match ETag for optimistic concurrency (optional)")
+	gatewayPrivateNetworkRoutesSetCmd.Flags().String("file", "", "JSON/YAML {routes: [...]} spec (authoritative when set)")
+	gatewayPrivateNetworkRoutesCmd.AddCommand(gatewayPrivateNetworkRoutesGetCmd)
+	gatewayPrivateNetworkRoutesCmd.AddCommand(gatewayPrivateNetworkRoutesSetCmd)
+	gatewayPrivateNetworkCmd.AddCommand(gatewayPrivateNetworkRoutesCmd)
+	gatewayCmd.AddCommand(gatewayPrivateNetworkCmd)
+
+	// service-account / repair
+	gatewayServiceAccountCmd.AddCommand(gatewayServiceAccountRepairCmd)
+	gatewayCmd.AddCommand(gatewayServiceAccountCmd)
 }
 
 // gatewayCreateName holds the --name value for create (the other create flags
 // are read directly via cmd.Flags()).
 var gatewayCreateName string
+
+// ---------------------------------------------------------------------------
+// Slice 5 sub-resources: flavors / access-logs / inbound-auth / private-network
+// / service-account
+// ---------------------------------------------------------------------------
+
+// flavors list --------------------------------------------------------------
+
+var gatewayFlavorsCmd = &cobra.Command{
+	Use:   "flavors",
+	Short: "Gateway placement flavors",
+}
+
+var gatewayFlavorsListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List gateway placement flavors",
+	Long: `List gateway placement flavors (GET /api/v1/flavors). These are the flavors
+selectable as a gateway's flavorId — distinct from the runtime compute-flavor
+catalog. Filters are optional.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		resourceType, _ := f.GetString("resource-type")
+		networkMode, _ := f.GetString("network-mode")
+		zoneID, _ := f.GetString("zone-id")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListFlavors(ctx, resourceType, networkMode, zoneID)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			if len(resp.Items) > 0 {
+				output.PrintID(resp.Items[0].ID)
+			}
+			return nil
+		}
+		if len(resp.Items) == 0 {
+			fmt.Fprintln(os.Stderr, "No flavors found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.Items))
+		for i := range resp.Items {
+			it := resp.Items[i]
+			rows = append(rows, []string{
+				it.ID, it.DisplayName, strconv.Itoa(it.CPU), strconv.Itoa(it.MemoryGi),
+				strList(it.NetworkModes), it.Availability, strconv.Itoa(it.SortOrder),
+			})
+		}
+		output.Table([]string{"ID", "Display", "CPU", "Mem(Gi)", "Modes", "Availability", "Sort"}, rows)
+		return nil
+	},
+}
+
+// access-logs ---------------------------------------------------------------
+
+var gatewayAccessLogsCmd = &cobra.Command{
+	Use:   "access-logs",
+	Short: "Gateway access logs",
+}
+
+// addAccessLogFilterFlags registers the shared access-log filter flags on a
+// command (from/to/mcp-method/tool-name/target-name/http-status/client-ip).
+func addAccessLogFilterFlags(cmd *cobra.Command) {
+	cmd.Flags().String("from", "", "Filter: ISO8601 from (inclusive)")
+	cmd.Flags().String("to", "", "Filter: ISO8601 to (exclusive)")
+	cmd.Flags().String("mcp-method", "", "Filter: MCP method (e.g. tools/call)")
+	cmd.Flags().String("tool-name", "", "Filter: MCP tool name")
+	cmd.Flags().String("target-name", "", "Filter: upstream target name")
+	cmd.Flags().String("http-status", "", "Filter: upstream HTTP status code")
+	cmd.Flags().String("client-ip", "", "Filter: caller client IP")
+}
+
+// readAccessLogQuery reads the shared filter flags into AccessLogQuery. Only
+// page/pageSize (list) or interval/topN (stats) are read by the caller.
+func readAccessLogQuery(f *pflag.FlagSet) gatewaypkg.AccessLogQuery {
+	return gatewaypkg.AccessLogQuery{
+		From:       flagStr(f, "from"),
+		To:         flagStr(f, "to"),
+		MCPMethod:  flagStr(f, "mcp-method"),
+		ToolName:   flagStr(f, "tool-name"),
+		TargetName: flagStr(f, "target-name"),
+		HTTPStatus: flagStr(f, "http-status"),
+		ClientIP:   flagStr(f, "client-ip"),
+	}
+}
+
+// flagStr reads a string flag, ignoring the lookup error (defaults to "").
+func flagStr(f *pflag.FlagSet, name string) string {
+	v, _ := f.GetString(name)
+	return v
+}
+
+var gatewayAccessLogsListCmd = &cobra.Command{
+	Use:   "list <name>",
+	Short: "List a gateway's access-log entries",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		q := readAccessLogQuery(f)
+		q.Page, _ = f.GetInt("page")
+		q.PageSize, _ = f.GetInt("page-size")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListAccessLogs(ctx, args[0], q)
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(resp)
+		}
+		if len(resp.Items) == 0 {
+			fmt.Fprintln(os.Stderr, "No access-log entries found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.Items))
+		for i := range resp.Items {
+			it := resp.Items[i]
+			rows = append(rows, []string{
+				it.Timestamp, it.TargetName, it.MCP.Method, it.MCP.ToolName,
+				strconv.Itoa(it.Response.Status), strconv.Itoa(it.DurationMs),
+				accessLogErrStr(it.ErrorCode, it.ErrorMessage),
+			})
+		}
+		output.Table([]string{"Time", "Target", "Method", "Tool", "Status", "DurMs", "Error"}, rows)
+		p := resp.Pagination
+		fmt.Fprintf(os.Stderr, "Page %d (size %d, %d total)\n", p.Page, p.PageSize, p.Total)
+		return nil
+	},
+}
+
+var gatewayAccessLogsStatsCmd = &cobra.Command{
+	Use:   "stats <name>",
+	Short: "Aggregate access-log stats for a gateway",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		q := readAccessLogQuery(f)
+		q.Interval, _ = f.GetString("interval")
+		q.TopN, _ = f.GetInt("top-n")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.AccessLogStats(ctx, args[0], q)
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(resp)
+		}
+		rows := [][]string{
+			{"Total Requests", strconv.Itoa(resp.TotalRequests)},
+			{"Success Rate", fmt.Sprintf("%.4f", resp.SuccessRate)},
+			{"Error Rate", fmt.Sprintf("%.4f", resp.ErrorRate)},
+			{"Duration Avg (ms)", fmt.Sprintf("%.2f", resp.Duration.AvgMs)},
+			{"Duration Max (ms)", fmt.Sprintf("%.2f", resp.Duration.MaxMs)},
+			{"Duration Min (ms)", fmt.Sprintf("%.2f", resp.Duration.MinMs)},
+			{"Range From", output.StrOrDash(resp.Range.From)},
+			{"Range To", output.StrOrDash(resp.Range.To)},
+			{"Interval", output.StrOrDash(resp.Range.Interval)},
+		}
+		output.Table([]string{"Metric", "Value"}, rows)
+		if len(resp.StatusHistogram) > 0 {
+			fmt.Fprintln(os.Stderr, "Status histogram:")
+			hrows := make([][]string, 0, len(resp.StatusHistogram))
+			for i := range resp.StatusHistogram {
+				b := resp.StatusHistogram[i]
+				hrows = append(hrows, []string{strconv.Itoa(b.Status), strconv.Itoa(b.Count)})
+			}
+			output.Table([]string{"Status", "Count"}, hrows)
+		}
+		printTermBuckets("Top tools", resp.TopTools)
+		printTermBuckets("Top targets", resp.TopTargets)
+		printTermBuckets("Top user agents", resp.TopUserAgents)
+		printCallerBuckets(resp.TopCallers)
+		return nil
+	},
+}
+
+func accessLogErrStr(code, msg string) string {
+	if code == "" && msg == "" {
+		return "-"
+	}
+	if msg == "" {
+		return code
+	}
+	return fmt.Sprintf("%s: %s", code, truncate(msg, 60))
+}
+
+func printTermBuckets(title string, buckets []gatewaypkg.AccessLogTermBucket) {
+	if len(buckets) == 0 {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "%s:\n", title)
+	rows := make([][]string, 0, len(buckets))
+	for i := range buckets {
+		rows = append(rows, []string{output.StrOrDash(buckets[i].Name), strconv.Itoa(buckets[i].Count)})
+	}
+	output.Table([]string{"Name", "Count"}, rows)
+}
+
+func printCallerBuckets(buckets []gatewaypkg.AccessLogCallerBucket) {
+	if len(buckets) == 0 {
+		return
+	}
+	fmt.Fprintln(os.Stderr, "Top callers:")
+	rows := make([][]string, 0, len(buckets))
+	for i := range buckets {
+		rows = append(rows, []string{buckets[i].AuthMode, buckets[i].ID, strconv.Itoa(buckets[i].Count)})
+	}
+	output.Table([]string{"AuthMode", "ID", "Count"}, rows)
+}
+
+// inbound-auth / jwt / idp-app ----------------------------------------------
+
+var gatewayInboundAuthCmd = &cobra.Command{
+	Use:   "inbound-auth",
+	Short: "Gateway inbound authentication",
+}
+
+var gatewayInboundAuthJwtCmd = &cobra.Command{
+	Use:   "jwt",
+	Short: "JWT inbound-auth configuration",
+}
+
+var gatewayInboundAuthJwtIdpAppCmd = &cobra.Command{
+	Use:   "idp-app",
+	Short: "Inbound-auth JWT IdP app credentials",
+	Long: `Manage the gateway's inbound-auth JWT IdP application credentials (the
+OAuth2 client/secret the gateway uses to talk to the IdP). The secret stays
+server-side after it is set.`,
+}
+
+var gatewayInboundAuthJwtIdpAppSetCmd = &cobra.Command{
+	Use:   "set <name>",
+	Short: "Set the inbound-auth JWT IdP app credentials",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		clientID, _ := f.GetString("client-id")
+		clientID, err := cliinput.RequireOrPromptString(clientID, "--client-id", "IdP app client id")
+		if err != nil {
+			return err
+		}
+		req := &gatewaypkg.PutIdpAppRequest{ClientID: clientID}
+		if f.Changed("client-secret") {
+			secret, _ := f.GetString("client-secret")
+			req.ClientSecret = &secret
+		}
+		if v, _ := f.GetStringArray("scope"); len(v) > 0 {
+			req.Scopes = v
+		}
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.PutIdpApp(ctx, args[0], req); err != nil {
+			return err
+		}
+		output.Successf("IdP app credentials set for gateway %q.", args[0])
+		return nil
+	},
+}
+
+var gatewayInboundAuthJwtIdpAppClearCmd = &cobra.Command{
+	Use:   "clear <name>",
+	Short: "Clear the inbound-auth JWT IdP app credentials",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.ClearIdpApp(ctx, args[0]); err != nil {
+			return err
+		}
+		return output.PrintDeletedID(args[0])
+	},
+}
+
+// private-network / routes --------------------------------------------------
+
+var gatewayPrivateNetworkCmd = &cobra.Command{
+	Use:   "private-network",
+	Short: "PRIVATE-mode gateway private network",
+}
+
+var gatewayPrivateNetworkRoutesCmd = &cobra.Command{
+	Use:   "routes",
+	Short: "Private-network node routes (CIDRs)",
+}
+
+var gatewayPrivateNetworkRoutesGetCmd = &cobra.Command{
+	Use:   "get <name>",
+	Short: "Show a PRIVATE-mode gateway's private-network routes",
+	Long: `Show the CIDR routes programmed on a PRIVATE-mode gateway's worker nodes
+(GET .../private-network/routes). A PUBLIC-mode gateway 404s with
+private_network_not_applicable, which is surfaced as-is.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.GetPrivateRoutes(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(resp)
+		}
+		rows := make([][]string, 0, len(resp.Routes))
+		for i := range resp.Routes {
+			rows = append(rows, []string{resp.Routes[i]})
+		}
+		if len(rows) == 0 {
+			fmt.Fprintln(os.Stderr, "No routes configured.")
+			return nil
+		}
+		output.Table([]string{"CIDR"}, rows)
+		return nil
+	},
+}
+
+var gatewayPrivateNetworkRoutesSetCmd = &cobra.Command{
+	Use:   "set <name>",
+	Short: "Replace a PRIVATE-mode gateway's private-network routes",
+	Long: `Replace (PUT, full replacement) the CIDR routes on a PRIVATE-mode gateway's
+worker nodes. Pass --route repeatedly, or --file with a {routes: [...]} JSON/YAML
+document. --if-match is the optional ETag (from a prior get) for optimistic
+concurrency; omit to force the replace.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		req := &gatewaypkg.ReplacePrivateRoutesRequest{}
+		if file, _ := f.GetString("file"); file != "" {
+			data, err := os.ReadFile(file)
+			if err != nil {
+				return fmt.Errorf("read --file: %w", err)
+			}
+			m, err := yamlToMap(data)
+			if err != nil {
+				return err
+			}
+			jb, err := json.Marshal(m)
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal(jb, req); err != nil {
+				return fmt.Errorf("invalid routes spec: %w", err)
+			}
+		} else {
+			req.Routes, _ = f.GetStringArray("route")
+		}
+		ifMatch, _ := f.GetString("if-match")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ReplacePrivateRoutes(ctx, args[0], ifMatch, req)
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(resp)
+		}
+		output.Successf("Replaced %d route(s) for gateway %q.", len(resp.Routes), args[0])
+		return nil
+	},
+}
+
+// service-account / repair --------------------------------------------------
+
+var gatewayServiceAccountCmd = &cobra.Command{
+	Use:   "service-account",
+	Short: "Gateway IAM service account",
+}
+
+var gatewayServiceAccountRepairCmd = &cobra.Command{
+	Use:   "repair <name>",
+	Short: "Repair a gateway's IAM service account",
+	Long: `Trigger an IAM service-account repair for a gateway (POST
+.../service-account/repair). Use when iam.lastAuthFailureAt is set — the gateway
+could not exchange for a token and needs its service account re-issued. Returns
+the refreshed gateway.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		gw, err := client.RepairServiceAccount(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		return output.PrintResource(gw, func() string { return gw.Name }, func() error { return renderGatewayDetail(gw) })
+	},
+}

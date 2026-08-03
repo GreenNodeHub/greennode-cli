@@ -214,3 +214,172 @@ type ListGatewaysResponse struct {
 	Items      []GatewayResponse `json:"items"`
 	Pagination Pagination        `json:"pagination"`
 }
+
+// ----------------------------------------------------------------------------
+// Sub-resources: flavors / access-logs / inbound-auth / private-network (Slice 5)
+// ----------------------------------------------------------------------------
+
+// FlavorResponse is one gateway placement flavor (GET /api/v1/flavors). Distinct
+// from the runtime compute-flavor catalog (cpu/ram vs memoryGi/networkModes).
+type FlavorResponse struct {
+	Availability  string   `json:"availability"`
+	CPU           int      `json:"cpu"`
+	Description   string   `json:"description"`
+	DisplayName   string   `json:"displayName"`
+	ID            string   `json:"id"`
+	MemoryGi      int      `json:"memoryGi"`
+	NetworkModes  []string `json:"networkModes"`
+	ResourceTypes []string `json:"resourceTypes"`
+	SortOrder     int      `json:"sortOrder"`
+}
+
+// FlavorListResponse is the body of GET /api/v1/flavors.
+type FlavorListResponse struct {
+	Items []FlavorResponse `json:"items"`
+}
+
+// AccessLogCaller is the caller block on an access-log entry.
+type AccessLogCaller struct {
+	AuthMode string `json:"authMode"`
+	ID       string `json:"id"`
+}
+
+// AccessLogMCP is the MCP-method block on an access-log entry.
+type AccessLogMCP struct {
+	JSONRPCID string `json:"jsonRpcId"`
+	Method    string `json:"method"`
+	ToolName  string `json:"toolName"`
+}
+
+// AccessLogRequest is the inbound-request block on an access-log entry.
+type AccessLogRequest struct {
+	ClientIP    string            `json:"clientIp"`
+	ContentType string            `json:"contentType"`
+	Headers     map[string]string `json:"headers"`
+	Method      string            `json:"method"`
+	Path        string            `json:"path"`
+	UserAgent   string            `json:"userAgent"`
+}
+
+// AccessLogResponse is the outbound-response block on an access-log entry.
+type AccessLogResponse struct {
+	ContentType string `json:"contentType"`
+	Status      int    `json:"status"`
+	Streaming   bool   `json:"streaming"`
+}
+
+// AccessLogEntry is one row of GET .../access-logs.
+type AccessLogEntry struct {
+	Caller       AccessLogCaller   `json:"caller"`
+	DurationMs   int               `json:"durationMs"`
+	ErrorCode    string            `json:"errorCode"`
+	ErrorMessage string            `json:"errorMessage"`
+	MCP          AccessLogMCP      `json:"mcp"`
+	Request      AccessLogRequest  `json:"request"`
+	Response     AccessLogResponse `json:"response"`
+	TargetName   string            `json:"targetName"`
+	Timestamp    string            `json:"timestamp"`
+	UpstreamURL  string            `json:"upstreamUrl"`
+}
+
+// AccessLogPagination is the pagination block on the access-log list (note:
+// `total`, not `totalItems` — distinct from the gateway-list Pagination).
+type AccessLogPagination struct {
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+	Total    int `json:"total"`
+}
+
+// AccessLogListResponse is the body of GET .../access-logs.
+type AccessLogListResponse struct {
+	Items      []AccessLogEntry    `json:"items"`
+	Pagination AccessLogPagination `json:"pagination"`
+}
+
+// AccessLogDurationStats is the duration block on the stats response.
+type AccessLogDurationStats struct {
+	AvgMs float64 `json:"avgMs"`
+	MaxMs float64 `json:"maxMs"`
+	MinMs float64 `json:"minMs"`
+}
+
+// AccessLogStatsRange is the time-range block on the stats response.
+type AccessLogStatsRange struct {
+	From     string `json:"from"`
+	Interval string `json:"interval"`
+	To       string `json:"to"`
+}
+
+// AccessLogStatusBucket is one status-code bucket in the stats histogram.
+type AccessLogStatusBucket struct {
+	Count  int `json:"count"`
+	Status int `json:"status"`
+}
+
+// AccessLogTimeBucket is one time-series bucket in the stats response.
+type AccessLogTimeBucket struct {
+	Count     int    `json:"count"`
+	Error     int    `json:"error"`
+	Success   int    `json:"success"`
+	Timestamp string `json:"timestamp"`
+}
+
+// AccessLogCallerBucket is one caller bucket in the stats top-callers.
+type AccessLogCallerBucket struct {
+	AuthMode string `json:"authMode"`
+	Count    int    `json:"count"`
+	ID       string `json:"id"`
+}
+
+// AccessLogTermBucket is one name/count bucket (top tools/targets/user-agents).
+type AccessLogTermBucket struct {
+	Count int    `json:"count"`
+	Name  string `json:"name"`
+}
+
+// AccessLogStatsResponse is the body of GET .../access-logs/stats. successRate
+// and errorRate are fractions (0..1) of totalRequests.
+type AccessLogStatsResponse struct {
+	Duration        AccessLogDurationStats  `json:"duration"`
+	ErrorRate       float64                 `json:"errorRate"`
+	Range           AccessLogStatsRange     `json:"range"`
+	StatusHistogram []AccessLogStatusBucket `json:"statusHistogram"`
+	SuccessRate     float64                 `json:"successRate"`
+	TimeSeries      []AccessLogTimeBucket   `json:"timeSeries"`
+	TopCallers      []AccessLogCallerBucket `json:"topCallers"`
+	TopTargets      []AccessLogTermBucket   `json:"topTargets"`
+	TopTools        []AccessLogTermBucket   `json:"topTools"`
+	TopUserAgents   []AccessLogTermBucket   `json:"topUserAgents"`
+	TotalRequests   int                     `json:"totalRequests"`
+}
+
+// AccessLogQuery carries the shared access-log filter params (list + stats).
+// List uses the filter fields + page/pageSize; stats uses the filter fields +
+// interval/topN.
+type AccessLogQuery struct {
+	From, To, MCPMethod, ToolName, TargetName, HTTPStatus, ClientIP string
+	Page, PageSize                                                  int
+	Interval                                                        string
+	TopN                                                            int
+}
+
+// PutIdpAppRequest is the body for PUT .../inbound-auth/jwt/idp-app. ClientID is
+// required; ClientSecret is nullable (absent/null preserves the existing secret,
+// a non-empty value replaces it); Scopes replaces the scope list.
+type PutIdpAppRequest struct {
+	ClientID     string   `json:"clientId"`
+	ClientSecret *string  `json:"clientSecret,omitempty"`
+	Scopes       []string `json:"scopes,omitempty"`
+}
+
+// PrivateRoutesResponse is the body of GET/PUT .../private-network/routes
+// (routes is a list of IPv4 CIDRs).
+type PrivateRoutesResponse struct {
+	Routes []string `json:"routes"`
+}
+
+// ReplacePrivateRoutesRequest is the body for PUT .../private-network/routes.
+// routes is required (omitting it is a 400).
+type ReplacePrivateRoutesRequest struct {
+	Routes []string `json:"routes"`
+}
