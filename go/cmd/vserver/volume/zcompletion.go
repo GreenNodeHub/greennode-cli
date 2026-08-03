@@ -1,6 +1,6 @@
 package volume
 
-import "github.com/vngcloud/greennode-cli/internal/vserverclient"
+import "github.com/greennodehub/greennode-cli/internal/vserverclient"
 
 func init() {
 	// --volume-id on commands that target an existing volume

@@ -8,5 +8,5 @@ package cmd
 // so the public release binary (built with `-tags vks_only`) ships VKS only while
 // vServer is still under development.
 import (
-	_ "github.com/vngcloud/greennode-cli/cmd/vks"
+	_ "github.com/greennodehub/greennode-cli/cmd/vks"
 )

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/cli"
 )
 
 func fetchClusterIDs(_ context.Context, cmd *cobra.Command) ([]string, error) {

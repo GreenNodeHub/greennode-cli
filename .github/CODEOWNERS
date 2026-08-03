@@ -1,23 +1,23 @@
-# Code ownership for review routing. Replace @vngcloud/* slugs with real teams.
+# Code ownership for review routing. Replace @GreenNodeHub/* slugs with real teams.
 
 # Platform / shared infrastructure — changes here affect every product.
-/go/internal/        @vngcloud/platform
-/go/cmd/root.go      @vngcloud/platform
-/go/cmd/register.go  @vngcloud/platform
-/go/cmd/configure/   @vngcloud/platform
-/go/main.go          @vngcloud/platform
+/go/internal/        @GreenNodeHub/platform
+/go/cmd/root.go      @GreenNodeHub/platform
+/go/cmd/register.go  @GreenNodeHub/platform
+/go/cmd/configure/   @GreenNodeHub/platform
+/go/main.go          @GreenNodeHub/platform
 
 # Shared release/CI config and docs — cross-team; platform reviews.
-/release-please-config.json      @vngcloud/platform
-/.release-please-manifest.json   @vngcloud/platform
-/.github/            @vngcloud/platform
-/mkdocs.yml          @vngcloud/platform
-/docs/development/  @vngcloud/platform
-/CLAUDE.md           @vngcloud/platform
+/release-please-config.json      @GreenNodeHub/platform
+/.release-please-manifest.json   @GreenNodeHub/platform
+/.github/            @GreenNodeHub/platform
+/mkdocs.yml          @GreenNodeHub/platform
+/docs/development/  @GreenNodeHub/platform
+/CLAUDE.md           @GreenNodeHub/platform
 
 # Product CLIs — owned by their product teams.
-/go/cmd/vks/             @vngcloud/vks
-/docs/commands/vks/      @vngcloud/vks
-/go/cmd/vserver/            @vngcloud/vserver
-/go/internal/vserverclient/ @vngcloud/vserver
-/docs/commands/vserver/     @vngcloud/vserver
+/go/cmd/vks/             @GreenNodeHub/vks
+/docs/commands/vks/      @GreenNodeHub/vks
+/go/cmd/vserver/            @GreenNodeHub/vserver
+/go/internal/vserverclient/ @GreenNodeHub/vserver
+/docs/commands/vserver/     @GreenNodeHub/vserver

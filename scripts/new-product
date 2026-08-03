@@ -62,7 +62,7 @@ render "$TMPL/docs-list-examples.md.tmpl"   "$DOCS_DIR/list-examples.md"
 # Wire self-registration: add a blank import to go/cmd/register.go before the
 # closing paren of the import block.
 REGISTER="$ROOT/go/cmd/register.go"
-IMPORT_LINE="	_ \"github.com/vngcloud/greennode-cli/cmd/$PRODUCT\""
+IMPORT_LINE="	_ \"github.com/greennodehub/greennode-cli/cmd/$PRODUCT\""
 if ! grep -q "cmd/$PRODUCT\"" "$REGISTER"; then
     awk -v line="$IMPORT_LINE" '
         /^\)/ && !done { print line; done=1 }
@@ -73,8 +73,8 @@ fi
 # Add CODEOWNERS lines (team slug is a placeholder to edit).
 CODEOWNERS="$ROOT/.github/CODEOWNERS"
 {
-    echo "/go/cmd/$PRODUCT/             @vngcloud/$PRODUCT"
-    echo "/docs/commands/$PRODUCT/      @vngcloud/$PRODUCT"
+    echo "/go/cmd/$PRODUCT/             @GreenNodeHub/$PRODUCT"
+    echo "/docs/commands/$PRODUCT/      @GreenNodeHub/$PRODUCT"
 } >>"$CODEOWNERS"
 
 echo
@@ -87,5 +87,5 @@ echo "Next steps:"
 echo "  1. Add \"${PRODUCT}_endpoint\" to every region in go/internal/config/config.go (REGIONS)."
 echo "  2. cd go && CGO_ENABLED=0 go build -o /tmp/grn . && /tmp/grn $PRODUCT --help"
 echo "  3. Replace the list-examples starter with real commands (TDD)."
-echo "  4. Edit the @vngcloud/$PRODUCT CODEOWNERS slug to your real team."
+echo "  4. Edit the @GreenNodeHub/$PRODUCT CODEOWNERS slug to your real team."
 echo "  5. Add docs/commands/$PRODUCT/ to mkdocs.yml nav if you maintain the nav manually."

@@ -8,7 +8,7 @@ The GreenNode CLI (`grn`) is a unified tool to manage your GreenNode services fr
 
 ```bash
 # Download binary (macOS Apple Silicon example)
-curl -L -o grn https://github.com/vngcloud/greennode-cli/releases/latest/download/grn-darwin-arm64
+curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-darwin-arm64
 chmod +x grn
 sudo mv grn /usr/local/bin/
 

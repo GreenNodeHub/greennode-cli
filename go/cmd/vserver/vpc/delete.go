@@ -3,9 +3,9 @@ package vpc
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
+	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/cli"
-	"github.com/vngcloud/greennode-cli/internal/validator"
 )
 
 var deleteCmd = &cobra.Command{

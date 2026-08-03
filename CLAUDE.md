@@ -4,8 +4,8 @@
 
 GreenNode CLI (`grn`) is a unified command-line tool for managing GreenNode services. Written in Go, distributed as a single binary. VKS (GreenNode Kubernetes Service) is the first service; other product teams add their own services.
 
-- **Repo**: `vngcloud/greennode-cli`
-- **Docs**: https://vngcloud.github.io/greennode-cli/
+- **Repo**: `GreenNodeHub/greennode-cli`
+- **Docs**: https://greennodehub.github.io/greennode-cli/
 - **Language**: Go (using cobra CLI framework)
 - **Binary**: Single file, zero runtime dependencies
 
@@ -109,7 +109,7 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 
 1. Create `cmd/<service>/` with a parent `cobra.Command` (e.g. `VserverCmd`)
 2. In the package `init()`, register it: `cli.RegisterService(VserverCmd)`
-3. Blank-import the package in `cmd/register.go`: `_ "github.com/vngcloud/greennode-cli/cmd/<service>"`
+3. Blank-import the package in `cmd/register.go`: `_ "github.com/greennodehub/greennode-cli/cmd/<service>"`
 4. Build clients with `cli.NewClient(cmd, "<service>")`; print with `cli.Output(cmd, data)`
 5. Add `<service>_endpoint` for each region in `internal/config/config.go` REGIONS
 6. root.go needs no change — it mounts everything in the registry

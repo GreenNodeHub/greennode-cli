@@ -42,8 +42,8 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
    package vserver
 
    import (
+       "github.com/greennodehub/greennode-cli/internal/cli"
        "github.com/spf13/cobra"
-       "github.com/vngcloud/greennode-cli/internal/cli"
    )
 
    var VserverCmd = &cobra.Command{
@@ -62,9 +62,9 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
 
    ```go
    import (
-       _ "github.com/vngcloud/greennode-cli/cmd/vks"
-       _ "github.com/vngcloud/greennode-cli/internal/resources/vserver"
-       _ "github.com/vngcloud/greennode-cli/cmd/vserver" // add this line
+       _ "github.com/greennodehub/greennode-cli/cmd/vks"
+       _ "github.com/greennodehub/greennode-cli/internal/resources/vserver"
+       _ "github.com/greennodehub/greennode-cli/cmd/vserver" // add this line
    )
    ```
 

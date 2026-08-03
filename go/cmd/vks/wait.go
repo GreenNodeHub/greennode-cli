@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/client"
-	"github.com/vngcloud/greennode-cli/internal/validator"
 )
 
 // statusOf extracts the "status" string from a decoded JSON object response.

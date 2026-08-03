@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/cli"
+	"github.com/greennodehub/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/formatter"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/auth"
-	"github.com/vngcloud/greennode-cli/internal/cli"
-	"github.com/vngcloud/greennode-cli/internal/client"
-	"github.com/vngcloud/greennode-cli/internal/config"
-	"github.com/vngcloud/greennode-cli/internal/formatter"
 )
 
 // BuildClient creates a GreennodeClient from cobra command flags.
