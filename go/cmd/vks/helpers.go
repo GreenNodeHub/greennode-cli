@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
+	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/cli"
-	"github.com/vngcloud/greennode-cli/internal/client"
 )
 
 // parseToggle converts an "enabled"/"disabled" flag value to a bool, erroring on

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/validator"
 )
 
 var serverNameRE = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-_]{0,63}[a-zA-Z0-9]$`)

@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/auth"
-	"github.com/vngcloud/greennode-cli/internal/config"
-	"github.com/vngcloud/greennode-cli/internal/login"
+	"github.com/greennodehub/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/login"
 )
 
 // vserverEndpointForRegion returns the vServer base URL for a region,

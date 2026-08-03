@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/client"
 )
 
 func TestEvaluateActive(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/cli"
 )
 
 var createClusterCmd = &cobra.Command{

@@ -3,8 +3,8 @@ package vserverclient
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/client"
 )
 
 // extractCompletions pulls "id\tname" pairs from an API response.

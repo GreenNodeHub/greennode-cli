@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vngcloud/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/client"
 )
 
 // SuggestZoneIDs fetches available zones and prints enabled ones to stderr,

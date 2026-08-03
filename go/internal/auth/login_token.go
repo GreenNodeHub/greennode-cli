@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/login"
+	"github.com/greennodehub/greennode-cli/internal/login"
 )
 
 // refreshExpirySkew is how long before the access token's real expiry the

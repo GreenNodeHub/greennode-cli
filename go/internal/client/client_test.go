@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/auth"
 )
 
 func TestNewGreennodeClientWiresConnectTimeout(t *testing.T) {

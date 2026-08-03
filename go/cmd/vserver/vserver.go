@@ -1,16 +1,16 @@
 package vserver
 
 import (
+	"github.com/greennodehub/greennode-cli/cmd/vserver/flavor"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/image"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/secgroup"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/server"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/subnet"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/volume"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/volumetype"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/vpc"
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/flavor"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/image"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/secgroup"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/server"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/subnet"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/volume"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/volumetype"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/vpc"
-	"github.com/vngcloud/greennode-cli/internal/cli"
 )
 
 // VServerCmd is the parent command for all vServer subcommands.

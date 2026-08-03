@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
 var listCmd = &cobra.Command{

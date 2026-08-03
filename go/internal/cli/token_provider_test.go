@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/ini.v1"
 
-	"github.com/vngcloud/greennode-cli/internal/auth"
-	"github.com/vngcloud/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/config"
 )
 
 func TestNewTokenProvider_UserMode_BuildsLoginTokenProvider(t *testing.T) {

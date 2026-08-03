@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/auth"
-	"github.com/vngcloud/greennode-cli/internal/client"
-	"github.com/vngcloud/greennode-cli/internal/config"
-	"github.com/vngcloud/greennode-cli/internal/login"
+	"github.com/greennodehub/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/login"
 )
 
 // tokenURLForEnv resolves the IAM /v2 token URL for a given iam_env. It is a

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/config"
 )
 
 // captureOutput swaps os.Stdout for a pipe for the duration of fn and returns

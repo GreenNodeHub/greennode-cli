@@ -1,6 +1,6 @@
 package subnet
 
-import "github.com/vngcloud/greennode-cli/internal/vserverclient"
+import "github.com/greennodehub/greennode-cli/internal/vserverclient"
 
 func init() {
 	// --vpc-id on all subnet commands

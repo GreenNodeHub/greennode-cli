@@ -18,8 +18,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/config"
-	loginpkg "github.com/vngcloud/greennode-cli/internal/login"
+	"github.com/greennodehub/greennode-cli/internal/config"
+	loginpkg "github.com/greennodehub/greennode-cli/internal/login"
 )
 
 // The IAM endpoint presets per environment live in loginpkg.IamEndpoints

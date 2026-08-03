@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 
-	"github.com/vngcloud/greennode-cli/internal/config"
-	loginpkg "github.com/vngcloud/greennode-cli/internal/login"
+	"github.com/greennodehub/greennode-cli/internal/config"
+	loginpkg "github.com/greennodehub/greennode-cli/internal/login"
 )
 
 // resolveConfig is the pure cobra-slice seam; these tests cover client-id

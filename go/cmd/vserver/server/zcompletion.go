@@ -1,6 +1,6 @@
 package server
 
-import "github.com/vngcloud/greennode-cli/internal/vserverclient"
+import "github.com/greennodehub/greennode-cli/internal/vserverclient"
 
 func init() {
 	// --server-id on all commands that target an existing server

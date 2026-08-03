@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/vserverclient"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/client"
-	"github.com/vngcloud/greennode-cli/internal/config"
-	"github.com/vngcloud/greennode-cli/internal/vserverclient"
 )
 
 func createClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, error) {
