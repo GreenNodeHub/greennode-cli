@@ -13,7 +13,7 @@ grn vserver placement-group <command> [options]
 | [list](#list) | List all placement groups |
 | [list-policies](#list-policies) | List available placement policies |
 | [create](#create) | Create a new placement group |
-| [edit](#edit) | Update a placement group |
+| [update](#update) | Update a placement group |
 | [delete](#delete) | Delete a placement group |
 
 ---
@@ -115,14 +115,14 @@ grn vserver placement-group create \
 
 ---
 
-## edit
+## update
 
 Update a placement group's name or description. Only the fields you provide are updated.
 
 ### Synopsis
 
 ```
-grn vserver placement-group edit
+grn vserver placement-group update
     --placement-group-id <value>
     [--name <value>]
     [--description <value>]
@@ -142,11 +142,11 @@ grn vserver placement-group edit
 ### Examples
 
 ```bash
-grn vserver placement-group edit \
+grn vserver placement-group update \
   --placement-group-id pg-abc12345-0000-0000-0000-000000000001 \
   --name new-name
 
-grn vserver placement-group edit \
+grn vserver placement-group update \
   --placement-group-id pg-abc12345-0000-0000-0000-000000000001 \
   --description "Updated description"
 ```
@@ -163,6 +163,7 @@ Delete a placement group. Shows a confirmation prompt unless `--force` is used.
 grn vserver placement-group delete
     --placement-group-id <value>
     [--force]
+    [--dry-run]
 ```
 
 ### Options
@@ -173,6 +174,9 @@ grn vserver placement-group delete
 `--force` (boolean)
 : Skip the confirmation prompt.
 
+`--dry-run` (boolean)
+: Preview the deletion without executing it.
+
 ### Examples
 
 ```bash
@@ -182,4 +186,8 @@ grn vserver placement-group delete \
 grn vserver placement-group delete \
   --placement-group-id pg-abc12345-0000-0000-0000-000000000001 \
   --force
+
+grn vserver placement-group delete \
+  --placement-group-id pg-abc12345-0000-0000-0000-000000000001 \
+  --dry-run
 ```

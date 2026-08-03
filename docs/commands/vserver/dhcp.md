@@ -192,6 +192,7 @@ Delete a DHCP option set. Shows a confirmation prompt unless `--force` is used.
 grn vserver dhcp delete
     --dhcp-option-id <value>
     [--force]
+    [--dry-run]
 ```
 
 ### Options
@@ -202,9 +203,13 @@ grn vserver dhcp delete
 `--force` (boolean)
 : Skip the confirmation prompt.
 
+`--dry-run` (boolean)
+: Preview the deletion without executing it.
+
 ### Examples
 
 ```bash
 grn vserver dhcp delete --dhcp-option-id dhcp-abc12345-0000-0000-0000-000000000001
 grn vserver dhcp delete --dhcp-option-id dhcp-abc12345-0000-0000-0000-000000000001 --force
+grn vserver dhcp delete --dhcp-option-id dhcp-abc12345-0000-0000-0000-000000000001 --dry-run
 ```

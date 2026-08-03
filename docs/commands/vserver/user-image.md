@@ -95,6 +95,7 @@ Delete a user image. Shows a confirmation prompt unless `--force` is used.
 grn vserver user-image delete
     --user-image-id <value>
     [--force]
+    [--dry-run]
 ```
 
 ### Options
@@ -105,9 +106,13 @@ grn vserver user-image delete
 `--force` (boolean)
 : Skip the confirmation prompt.
 
+`--dry-run` (boolean)
+: Preview the deletion without executing it.
+
 ### Examples
 
 ```bash
 grn vserver user-image delete --user-image-id img-abc12345-0000-0000-0000-000000000001
 grn vserver user-image delete --user-image-id img-abc12345-0000-0000-0000-000000000001 --force
+grn vserver user-image delete --user-image-id img-abc12345-0000-0000-0000-000000000001 --dry-run
 ```

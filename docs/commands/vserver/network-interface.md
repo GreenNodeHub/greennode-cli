@@ -12,7 +12,7 @@ grn vserver network-interface <command> [options]
 |---------|-------------|
 | [list](#list) | List all network interfaces |
 | [create](#create) | Create a new network interface |
-| [edit](#edit) | Rename a network interface |
+| [update](#update) | Rename a network interface |
 | [update-tags](#update-tags) | Update tags on a network interface |
 | [delete](#delete) | Delete a network interface |
 
@@ -91,14 +91,14 @@ grn vserver network-interface create \
 
 ---
 
-## edit
+## update
 
 Rename an existing network interface.
 
 ### Synopsis
 
 ```
-grn vserver network-interface edit
+grn vserver network-interface update
     --network-interface-id <value>
     --name <value>
 ```
@@ -114,7 +114,7 @@ grn vserver network-interface edit
 ### Examples
 
 ```bash
-grn vserver network-interface edit \
+grn vserver network-interface update \
   --network-interface-id eni-abc12345-0000-0000-0000-000000000001 \
   --name new-name
 ```
@@ -166,6 +166,7 @@ Delete a network interface. Shows a confirmation prompt unless `--force` is used
 grn vserver network-interface delete
     --network-interface-id <value>
     [--force]
+    [--dry-run]
 ```
 
 ### Options
@@ -176,6 +177,9 @@ grn vserver network-interface delete
 `--force` (boolean)
 : Skip the confirmation prompt.
 
+`--dry-run` (boolean)
+: Preview the deletion without executing it.
+
 ### Examples
 
 ```bash
@@ -185,4 +189,8 @@ grn vserver network-interface delete \
 grn vserver network-interface delete \
   --network-interface-id eni-abc12345-0000-0000-0000-000000000001 \
   --force
+
+grn vserver network-interface delete \
+  --network-interface-id eni-abc12345-0000-0000-0000-000000000001 \
+  --dry-run
 ```

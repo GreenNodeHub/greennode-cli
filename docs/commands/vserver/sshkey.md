@@ -127,6 +127,7 @@ Delete an SSH key. Shows a confirmation prompt unless `--force` is used.
 grn vserver sshkey delete
     --sshkey-id <value>
     [--force]
+    [--dry-run]
 ```
 
 ### Options
@@ -137,9 +138,13 @@ grn vserver sshkey delete
 `--force` (boolean)
 : Skip the confirmation prompt.
 
+`--dry-run` (boolean)
+: Preview the deletion without executing it.
+
 ### Examples
 
 ```bash
 grn vserver sshkey delete --sshkey-id key-abc12345-0000-0000-0000-000000000001
 grn vserver sshkey delete --sshkey-id key-abc12345-0000-0000-0000-000000000001 --force
+grn vserver sshkey delete --sshkey-id key-abc12345-0000-0000-0000-000000000001 --dry-run
 ```

@@ -72,8 +72,28 @@ nav:
       - get-quota: commands/vks/get-quota.md
     - Waiter:
       - wait: commands/vks/wait.md
-  # vServer Commands are omitted from the published nav until vServer is released.
-  # The pages under docs/commands/vserver/ remain for development reference.
+  - vServer Commands:
+    - Overview: commands/vserver/index.md
+    - Instances:
+      - server: commands/vserver/server.md
+    - Storage:
+      - volume: commands/vserver/volume.md
+      - volume-type: commands/vserver/volume-type.md
+    - Networking:
+      - vpc: commands/vserver/vpc.md
+      - subnet: commands/vserver/subnet.md
+      - floating-ip: commands/vserver/floating-ip.md
+      - network-interface: commands/vserver/network-interface.md
+      - dhcp: commands/vserver/dhcp.md
+    - Security:
+      - secgroup: commands/vserver/secgroup.md
+    - Compute Resources:
+      - flavor: commands/vserver/flavor.md
+      - image: commands/vserver/image.md
+      - sshkey: commands/vserver/sshkey.md
+      - placement-group: commands/vserver/placement-group.md
+    - Images:
+      - user-image: commands/vserver/user-image.md
   - Development:
     - Contributing: development/contributing.md
     - Architecture & Adding a Service: development/architecture.md
