@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jmespath/go-jmespath"
 )
@@ -269,6 +270,41 @@ func padRight(s string, n int) string {
 		return s
 	}
 	return s + strings.Repeat(" ", n-len(s))
+}
+
+// Truncate shortens s to at most n runes, appending "..." when truncated.
+func Truncate(s string, n int) string {
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
+	if n <= 3 {
+		return string(runes[:n])
+	}
+	return string(runes[:n-3]) + "..."
+}
+
+// ShortDate reformats an RFC3339 (or similar) timestamp string to "2006-01-02".
+// If the string cannot be parsed it returns the first 10 characters, or the
+// original string when it is shorter than 10.
+func ShortDate(s string) string {
+	formats := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05.000Z",
+		"2006-01-02T15:04:05Z",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	}
+	for _, f := range formats {
+		if t, err := time.Parse(f, s); err == nil {
+			return t.UTC().Format("2006-01-02")
+		}
+	}
+	if len(s) >= 10 {
+		return s[:10]
+	}
+	return s
 }
 func FormatTableWithColumns(data interface{}, columns []string, query string, w io.Writer) error {
 	return FormatTableWithColumnsColor(data, columns, query, w, false)
