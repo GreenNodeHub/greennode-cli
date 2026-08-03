@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/auth"
-	"github.com/vngcloud/greennode-cli/internal/client"
-	"github.com/vngcloud/greennode-cli/internal/config"
 )
 
 // NewClient builds a GreennodeClient for the given service from the command's

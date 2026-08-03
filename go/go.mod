@@ -1,4 +1,4 @@
-module github.com/vngcloud/greennode-cli
+module github.com/greennodehub/greennode-cli
 
 go 1.22.2
 

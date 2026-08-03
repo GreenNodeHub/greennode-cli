@@ -8,6 +8,6 @@ package cmd
 // development. Remove this tag (and the build flag in release.yml) once vServer
 // is ready to ship.
 import (
-	_ "github.com/vngcloud/greennode-cli/cmd/vserver"
-	_ "github.com/vngcloud/greennode-cli/internal/resources/vserver"
+	_ "github.com/greennodehub/greennode-cli/cmd/vserver"
+	_ "github.com/greennodehub/greennode-cli/internal/resources/vserver"
 )

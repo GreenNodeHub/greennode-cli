@@ -14,13 +14,13 @@ The GreenNode CLI (`grn`) is a unified tool to manage your GreenNode services fr
 
 ### Installation
 
-Download the latest binary for your platform from [GitHub Releases](https://github.com/vngcloud/greennode-cli/releases):
+Download the latest binary for your platform from [GitHub Releases](https://github.com/GreenNodeHub/greennode-cli/releases):
 
 **macOS / Linux:**
 
 ```bash
 # Download (replace OS and ARCH as needed)
-curl -L -o grn https://github.com/vngcloud/greennode-cli/releases/latest/download/grn-darwin-arm64
+curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-darwin-arm64
 chmod +x grn
 sudo mv grn /usr/local/bin/
 ```
@@ -28,7 +28,7 @@ sudo mv grn /usr/local/bin/
 **Or build from source:**
 
 ```bash
-git clone https://github.com/vngcloud/greennode-cli.git
+git clone https://github.com/GreenNodeHub/greennode-cli.git
 cd greennode-cli/go
 go build -o grn .
 sudo mv grn /usr/local/bin/
@@ -98,7 +98,7 @@ grn configure --profile staging
 grn --profile staging vks list-clusters
 ```
 
-For more configuration options, see the [Configuration Guide](https://vngcloud.github.io/greennode-cli/configuration/).
+For more configuration options, see the [Configuration Guide](https://greennodehub.github.io/greennode-cli/configuration/).
 
 ### Basic Commands
 
@@ -186,12 +186,12 @@ grn --version
 
 The best way to interact with our team is through GitHub:
 
-- [Open an issue](https://github.com/vngcloud/greennode-cli/issues/new/choose) — Bug reports and feature requests
-- Search [existing issues](https://github.com/vngcloud/greennode-cli/issues) before opening a new one
+- [Open an issue](https://github.com/GreenNodeHub/greennode-cli/issues/new/choose) — Bug reports and feature requests
+- Search [existing issues](https://github.com/GreenNodeHub/greennode-cli/issues) before opening a new one
 
 ## More Resources
 
-- [Documentation](https://vngcloud.github.io/greennode-cli/)
+- [Documentation](https://greennodehub.github.io/greennode-cli/)
 - [Changelog](CHANGELOG.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [GreenNode Console](https://hcm-3.console.vngcloud.vn/)

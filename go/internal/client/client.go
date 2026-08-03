@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vngcloud/greennode-cli/internal/auth"
+	"github.com/greennodehub/greennode-cli/internal/auth"
 )
 
 const (

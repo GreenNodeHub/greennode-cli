@@ -1,13 +1,13 @@
 # Contributing
 
-See [CONTRIBUTING.md](https://github.com/vngcloud/greennode-cli/blob/main/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://github.com/GreenNodeHub/greennode-cli/blob/main/CONTRIBUTING.md)
 for the full contributing guide, and [Architecture & Adding a Service](architecture.md)
 for how the codebase is structured and how to add a new product CLI.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/vngcloud/greennode-cli.git
+git clone https://github.com/GreenNodeHub/greennode-cli.git
 cd greennode-cli/go
 go build -o grn .
 ./grn --version

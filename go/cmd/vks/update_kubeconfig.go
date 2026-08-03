@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/kubeconfig"
+	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/kubeconfig"
-	"github.com/vngcloud/greennode-cli/internal/validator"
 )
 
 var updateKubeconfigCmd = &cobra.Command{

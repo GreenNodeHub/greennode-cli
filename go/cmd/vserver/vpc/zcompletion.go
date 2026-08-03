@@ -1,6 +1,6 @@
 package vpc
 
-import "github.com/vngcloud/greennode-cli/internal/vserverclient"
+import "github.com/greennodehub/greennode-cli/internal/vserverclient"
 
 func init() {
 	getCmd.RegisterFlagCompletionFunc("vpc-id", vserverclient.CompleteVPCIDs)    //nolint:errcheck

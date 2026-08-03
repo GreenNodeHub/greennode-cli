@@ -1,8 +1,8 @@
 package vks
 
 import (
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/cli"
 )
 
 // VksCmd is the parent command for all VKS subcommands.

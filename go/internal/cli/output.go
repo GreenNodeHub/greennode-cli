@@ -3,9 +3,9 @@ package cli
 import (
 	"os"
 
+	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/formatter"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/config"
-	"github.com/vngcloud/greennode-cli/internal/formatter"
 )
 
 // Output formats and prints an API response using the command's --output/--query

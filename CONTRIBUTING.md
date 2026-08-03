@@ -10,7 +10,7 @@
 ### Setup development environment
 
 ```bash
-git clone https://github.com/vngcloud/greennode-cli.git
+git clone https://github.com/GreenNodeHub/greennode-cli.git
 cd greennode-cli/go
 go build -o grn .
 ./grn --version

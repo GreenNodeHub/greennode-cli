@@ -1,8 +1,8 @@
 package secgroup
 
 import (
+	"github.com/greennodehub/greennode-cli/cmd/vserver/secgroup/rule"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/cmd/vserver/secgroup/rule"
 )
 
 // SecgroupCmd is the parent command for all security group subcommands.
