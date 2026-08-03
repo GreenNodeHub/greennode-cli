@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -585,6 +586,517 @@ func loadRuntimeSpec(data []byte) (*runtimepkg.CreateAgentRuntimeRequest, error)
 // init
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Sub-resources (Slice 4): endpoints / runtime-level ops / tracing
+// ---------------------------------------------------------------------------
+
+var runtimeEndpointCmd = &cobra.Command{Use: "endpoint", Short: "Manage a runtime's endpoints"}
+var runtimeTraceCmd = &cobra.Command{
+	Use:   "trace",
+	Short: "Query the tracing backend (raw passthrough)",
+	Long: `Query the agent-core-runtime tracing backend.
+
+These are Google-AIP custom verbs that forward arbitrary query params to the
+tracing backend and return that backend's raw JSON. Use --param key=value
+(repeatable) to pass query params through verbatim; the response is printed
+raw (use -o json for clean stdout).`,
+}
+
+// --- endpoint list/create/update/delete/start/stop ---
+
+var runtimeEndpointListCmd = &cobra.Command{
+	Use:   "list <id>",
+	Short: "List a runtime's endpoints",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		page, _ := cmd.Flags().GetInt("page")
+		size, _ := cmd.Flags().GetInt("size")
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListEndpoints(ctx, args[0], page, size)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			if len(resp.ListData) > 0 {
+				output.PrintID(resp.ListData[0].ID)
+			}
+			return nil
+		}
+		if len(resp.ListData) == 0 {
+			fmt.Fprintln(os.Stderr, "No endpoints found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.ListData))
+		for i := range resp.ListData {
+			e := resp.ListData[i]
+			rows = append(rows, []string{
+				e.ID, e.Name, fmt.Sprintf("%d", e.Version), fmt.Sprintf("%d", e.LiveVersion),
+				fmt.Sprintf("%d", e.CurrentReplicaCount), e.URL, e.DisplayStatus,
+			})
+		}
+		output.Table([]string{"ID", "Name", "Version", "Live", "Replicas", "URL", "Status"}, rows)
+		fmt.Fprintf(os.Stderr, "Page %d of %d (%d total items)\n", resp.Page, resp.TotalPage, resp.TotalItem)
+		return nil
+	},
+}
+
+var runtimeEndpointCreateCmd = &cobra.Command{
+	Use:   "create <id>",
+	Short: "Create a new endpoint on a runtime",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		name, _ := cmd.Flags().GetString("name")
+		if name == "" {
+			return fmt.Errorf("required flag %q not set", "name")
+		}
+		version, _ := cmd.Flags().GetInt("version")
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		ep, err := client.CreateEndpoint(ctx, args[0], &runtimepkg.AgentRuntimeEndpointCreateRequest{
+			Name: name, Version: version,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "Endpoint %q created (id %s, status %s).\n", ep.Name, ep.ID, ep.DisplayStatus)
+		return output.PrintResource(ep, func() string { return ep.ID }, func() error { return renderEndpointDetail(ep) })
+	},
+}
+
+var runtimeEndpointUpdateCmd = &cobra.Command{
+	Use:   "update <id> <endpoint-id>",
+	Short: "Roll an endpoint to a target version",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		version, _ := cmd.Flags().GetInt("version")
+		if version <= 0 {
+			return fmt.Errorf("required flag %q must be a positive version", "version")
+		}
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		ep, err := client.UpdateEndpoint(ctx, args[0], args[1], version)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "Endpoint %s rolled to version %d.\n", args[1], ep.Version)
+		return output.PrintResource(ep, func() string { return ep.ID }, func() error { return renderEndpointDetail(ep) })
+	},
+}
+
+var runtimeEndpointDeleteCmd = &cobra.Command{
+	Use:   "delete <id> <endpoint-id>",
+	Short: "Delete an endpoint",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		ep, err := client.DeleteEndpoint(ctx, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "Endpoint %q deleted.\n", args[1])
+		if ep.ID != "" {
+			return output.PrintResource(ep, func() string { return ep.ID }, func() error { return renderEndpointDetail(ep) })
+		}
+		output.PrintDeletedID(args[1])
+		return nil
+	},
+}
+
+var runtimeEndpointStartCmd = &cobra.Command{
+	Use:   "start <id> <endpoint-id>",
+	Short: "Start an endpoint",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.StartEndpoint(ctx, args[0], args[1]); err != nil {
+			return err
+		}
+		output.Successf("Endpoint %s started.", args[1])
+		return nil
+	},
+}
+
+var runtimeEndpointStopCmd = &cobra.Command{
+	Use:   "stop <id> <endpoint-id>",
+	Short: "Stop an endpoint",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.StopEndpoint(ctx, args[0], args[1]); err != nil {
+			return err
+		}
+		output.Successf("Endpoint %s stopped.", args[1])
+		return nil
+	},
+}
+
+// --- endpoint logs / metrics / events ---
+
+var runtimeEndpointLogsCmd = &cobra.Command{
+	Use:   "logs <id> <endpoint-id>",
+	Short: "Search an endpoint's logs",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		req, err := readLogSearchRequest(cmd)
+		if err != nil {
+			return err
+		}
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		result, err := client.EndpointLogs(ctx, args[0], args[1], req)
+		if err != nil {
+			return err
+		}
+		return renderLogs(result)
+	},
+}
+
+var runtimeEndpointMetricsCmd = &cobra.Command{
+	Use:   "metrics <id> <endpoint-id>",
+	Short: "Fetch an endpoint's CPU/memory metrics",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		from, _ := cmd.Flags().GetString("from")
+		to, _ := cmd.Flags().GetString("to")
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		m, err := client.EndpointMetrics(ctx, args[0], args[1], from, to)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(m)
+		case output.FormatID:
+			return nil
+		}
+		return renderMetrics(m)
+	},
+}
+
+var runtimeEndpointEventsCmd = &cobra.Command{
+	Use:   "events <id> <endpoint-id>",
+	Short: "List kubernetes events for an endpoint",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		events, err := client.EndpointEvents(ctx, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(events)
+		case output.FormatID:
+			return nil
+		}
+		if len(events) == 0 {
+			fmt.Fprintln(os.Stderr, "No events found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(events))
+		for i := range events {
+			e := events[i]
+			rows = append(rows, []string{formatTimeVal(e.LastTimestamp), e.Message})
+		}
+		output.Table([]string{"Last Timestamp", "Message"}, rows)
+		return nil
+	},
+}
+
+// --- runtime-level logs / reset-service-account / versions ---
+
+var runtimeLogsCmd = &cobra.Command{
+	Use:   "logs <id>",
+	Short: "Search a runtime's logs (runtime-level)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		req, err := readLogSearchRequest(cmd)
+		if err != nil {
+			return err
+		}
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		result, err := client.Logs(ctx, args[0], req)
+		if err != nil {
+			return err
+		}
+		return renderLogs(result)
+	},
+}
+
+var runtimeResetServiceAccountCmd = &cobra.Command{
+	Use:   "reset-service-account <id>",
+	Short: "Reset a runtime's IAM service account",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.ResetServiceAccount(ctx, args[0]); err != nil {
+			return err
+		}
+		output.Successf("Service account reset for runtime %s.", args[0])
+		return nil
+	},
+}
+
+var runtimeVersionsCmd = &cobra.Command{
+	Use:   "versions <id>",
+	Short: "List a runtime's versions (full spec per version)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		page, _ := cmd.Flags().GetInt("page")
+		size, _ := cmd.Flags().GetInt("size")
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListVersions(ctx, args[0], page, size)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			if len(resp.ListData) > 0 {
+				output.PrintID(fmt.Sprintf("%d", resp.ListData[0].Version))
+			}
+			return nil
+		}
+		if len(resp.ListData) == 0 {
+			fmt.Fprintln(os.Stderr, "No versions found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.ListData))
+		for i := range resp.ListData {
+			v := resp.ListData[i]
+			mode := ""
+			if v.NetworkConfig != nil {
+				mode = v.NetworkConfig.Mode
+			}
+			rows = append(rows, []string{
+				fmt.Sprintf("%d", v.Version), v.ImageURL, v.FlavorID, v.Protocol, mode, formatTimeVal(v.CreatedAt),
+			})
+		}
+		output.Table([]string{"Version", "Image", "Flavor", "Protocol", "Network Mode", "Created"}, rows)
+		fmt.Fprintf(os.Stderr, "Page %d of %d (%d total items)\n", resp.Page, resp.TotalPage, resp.TotalItem)
+		return nil
+	},
+}
+
+// --- trace get / search / tag-values ---
+
+// runtimeTraceParams holds the repeatable --param key=value values.
+var runtimeTraceParams []string
+
+var runtimeTraceGetCmd = &cobra.Command{
+	Use:   "get <trace-id>",
+	Short: "Fetch a single trace by id (raw JSON)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		params, err := parseTraceParams(runtimeTraceParams)
+		if err != nil {
+			return err
+		}
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		raw, err := client.GetTrace(ctx, args[0], params)
+		if err != nil {
+			return err
+		}
+		return printRawJSON(raw)
+	},
+}
+
+var runtimeTraceSearchCmd = &cobra.Command{
+	Use:   "search",
+	Short: "Search traces (raw JSON)",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		params, err := parseTraceParams(runtimeTraceParams)
+		if err != nil {
+			return err
+		}
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		raw, err := client.SearchTraces(ctx, params)
+		if err != nil {
+			return err
+		}
+		return printRawJSON(raw)
+	},
+}
+
+var runtimeTraceTagValuesCmd = &cobra.Command{
+	Use:   "tag-values",
+	Short: "List distinct values for a trace tag (raw JSON)",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		tagKey, _ := cmd.Flags().GetString("tag-key")
+		if tagKey == "" {
+			return fmt.Errorf("required flag %q not set", "tag-key")
+		}
+		params, err := parseTraceParams(runtimeTraceParams)
+		if err != nil {
+			return err
+		}
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		raw, err := client.TraceTagValues(ctx, tagKey, params)
+		if err != nil {
+			return err
+		}
+		return printRawJSON(raw)
+	},
+}
+
+// ---------------------------------------------------------------------------
+// helpers (Slice 4)
+// ---------------------------------------------------------------------------
+
+func renderEndpointDetail(ep *runtimepkg.AgentRuntimeEndpointDto) error {
+	rows := [][]string{
+		{"ID", ep.ID},
+		{"Runtime ID", ep.AgentRuntimeID},
+		{"Name", ep.Name},
+		{"Version", fmt.Sprintf("%d", ep.Version)},
+		{"Target Version", fmt.Sprintf("%d", ep.TargetVersion)},
+		{"Live Version", fmt.Sprintf("%d", ep.LiveVersion)},
+		{"Replicas", fmt.Sprintf("%d", ep.CurrentReplicaCount)},
+		{"URL", output.StrOrDash(ep.URL)},
+		{"Status", ep.Status},
+		{"Display Status", ep.DisplayStatus},
+		{"Created", formatTimeVal(ep.CreatedAt)},
+		{"Updated", formatTimeVal(ep.UpdatedAt)},
+	}
+	output.Table([]string{"Field", "Value"}, rows)
+	return nil
+}
+
+func renderLogs(result *runtimepkg.LogSearchResult) error {
+	switch output.GetFormat() {
+	case output.FormatJSON:
+		return output.JSON(result)
+	case output.FormatID:
+		return nil
+	}
+	fmt.Fprintf(os.Stderr, "%d log line(s) (total %d).\n", len(result.Logs), result.TotalCount)
+	if len(result.Logs) == 0 {
+		fmt.Fprintln(os.Stderr, "No logs found.")
+		return nil
+	}
+	rows := make([][]string, 0, len(result.Logs))
+	for i := range result.Logs {
+		l := result.Logs[i]
+		rows = append(rows, []string{l.Timestamp, l.Content})
+	}
+	output.Table([]string{"Timestamp", "Content"}, rows)
+	return nil
+}
+
+func renderMetrics(m *runtimepkg.AgentRuntimeEndpointMetrics) error {
+	if len(m.CpuCoresUsage) == 0 && len(m.MemoryBytesUsage) == 0 {
+		fmt.Fprintln(os.Stderr, "No metrics found.")
+		return nil
+	}
+	rows := make([][]string, 0, len(m.CpuCoresUsage)+len(m.MemoryBytesUsage))
+	for i := range m.CpuCoresUsage {
+		p := m.CpuCoresUsage[i]
+		rows = append(rows, []string{"CPU cores", formatTimeVal(p.Timestamp), fmt.Sprintf("%.3f", p.Value)})
+	}
+	for i := range m.MemoryBytesUsage {
+		p := m.MemoryBytesUsage[i]
+		rows = append(rows, []string{"Memory bytes", formatTimeVal(p.Timestamp), fmt.Sprintf("%d", p.Value)})
+	}
+	output.Table([]string{"Series", "Timestamp", "Value"}, rows)
+	return nil
+}
+
+// readLogSearchRequest builds a LogSearchRequest from the shared log flags.
+func readLogSearchRequest(cmd *cobra.Command) (*runtimepkg.LogSearchRequest, error) {
+	from, _ := cmd.Flags().GetInt("from")
+	limit, _ := cmd.Flags().GetInt("limit")
+	fromTs, _ := cmd.Flags().GetString("from-timestamp")
+	toTs, _ := cmd.Flags().GetString("to-timestamp")
+	query, _ := cmd.Flags().GetString("query")
+	order, _ := cmd.Flags().GetString("order")
+	return &runtimepkg.LogSearchRequest{
+		From: from, Limit: limit, FromTimestamp: fromTs, ToTimestamp: toTs, Query: query, Order: order,
+	}, nil
+}
+
+// parseTraceParams turns --param key=value entries into url.Values.
+func parseTraceParams(raw []string) (url.Values, error) {
+	q := url.Values{}
+	for _, p := range raw {
+		idx := strings.IndexByte(p, '=')
+		if idx <= 0 {
+			return nil, fmt.Errorf("--param %q must be key=value", p)
+		}
+		q.Set(p[:idx], p[idx+1:])
+	}
+	return q, nil
+}
+
+// printRawJSON writes the tracing backend's raw JSON to stdout verbatim.
+func printRawJSON(raw json.RawMessage) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	_, err := fmt.Println(string(raw))
+	return err
+}
+
 func init() {
 	AgentbaseCmd.AddCommand(runtimeCmd)
 
@@ -619,6 +1131,82 @@ func init() {
 	runtimeWaitCmd.Flags().Duration("timeout", 10*time.Minute, "Maximum time to wait")
 	runtimeWaitCmd.Flags().Duration("interval", 5*time.Second, "Poll interval")
 	runtimeCmd.AddCommand(runtimeWaitCmd)
+
+	// --- sub-resources (Slice 4): endpoints ---
+
+	// endpoint list
+	runtimeEndpointListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	runtimeEndpointListCmd.Flags().Int("size", 10, "Page size")
+	runtimeEndpointCmd.AddCommand(runtimeEndpointListCmd)
+
+	// endpoint create
+	runtimeEndpointCreateCmd.Flags().String("name", "", "Endpoint name (required)")
+	runtimeEndpointCreateCmd.Flags().Int("version", 0, "Target version (optional, defaults server-side)")
+	runtimeEndpointCmd.AddCommand(runtimeEndpointCreateCmd)
+
+	// endpoint update
+	runtimeEndpointUpdateCmd.Flags().Int("version", 0, "Target version (required, positive)")
+	runtimeEndpointCmd.AddCommand(runtimeEndpointUpdateCmd)
+
+	// endpoint delete
+	runtimeEndpointCmd.AddCommand(runtimeEndpointDeleteCmd)
+
+	// endpoint start / stop
+	runtimeEndpointCmd.AddCommand(runtimeEndpointStartCmd)
+	runtimeEndpointCmd.AddCommand(runtimeEndpointStopCmd)
+
+	// endpoint logs
+	addLogFlags(runtimeEndpointLogsCmd)
+	runtimeEndpointCmd.AddCommand(runtimeEndpointLogsCmd)
+
+	// endpoint metrics
+	runtimeEndpointMetricsCmd.Flags().String("from", "", "fromTimestamp (RFC3339)")
+	runtimeEndpointMetricsCmd.Flags().String("to", "", "toTimestamp (RFC3339)")
+	runtimeEndpointCmd.AddCommand(runtimeEndpointMetricsCmd)
+
+	// endpoint events
+	runtimeEndpointCmd.AddCommand(runtimeEndpointEventsCmd)
+
+	runtimeCmd.AddCommand(runtimeEndpointCmd)
+
+	// --- sub-resources: runtime-level ops ---
+
+	// runtime logs
+	addLogFlags(runtimeLogsCmd)
+	runtimeCmd.AddCommand(runtimeLogsCmd)
+
+	// reset-service-account
+	runtimeCmd.AddCommand(runtimeResetServiceAccountCmd)
+
+	// versions
+	runtimeVersionsCmd.Flags().Int("page", 1, "Page number (1-based)")
+	runtimeVersionsCmd.Flags().Int("size", 10, "Page size")
+	runtimeCmd.AddCommand(runtimeVersionsCmd)
+
+	// --- sub-resources: tracing ---
+
+	runtimeTraceGetCmd.Flags().StringArrayVar(&runtimeTraceParams, "param", nil, "Passthrough query param key=value (repeatable)")
+	runtimeTraceCmd.AddCommand(runtimeTraceGetCmd)
+
+	runtimeTraceSearchCmd.Flags().StringArrayVar(&runtimeTraceParams, "param", nil, "Passthrough query param key=value (repeatable)")
+	runtimeTraceCmd.AddCommand(runtimeTraceSearchCmd)
+
+	runtimeTraceTagValuesCmd.Flags().String("tag-key", "", "Tag key (required)")
+	runtimeTraceTagValuesCmd.Flags().StringArrayVar(&runtimeTraceParams, "param", nil, "Passthrough query param key=value (repeatable)")
+	runtimeTraceCmd.AddCommand(runtimeTraceTagValuesCmd)
+
+	runtimeCmd.AddCommand(runtimeTraceCmd)
+}
+
+// addLogFlags registers the shared log-search flags (from/limit/from-timestamp/
+// to-timestamp/query/order) on a logs command.
+func addLogFlags(cmd *cobra.Command) {
+	cmd.Flags().Int("from", 0, "Offset (max 5000)")
+	cmd.Flags().Int("limit", 100, "Max lines (max 500)")
+	cmd.Flags().String("from-timestamp", "", "fromTimestamp (RFC3339)")
+	cmd.Flags().String("to-timestamp", "", "toTimestamp (RFC3339)")
+	cmd.Flags().String("query", "", "Log query filter")
+	cmd.Flags().String("order", "", "Sort order")
 }
 
 // addRuntimeSpecFlags registers the mutable spec flags shared by create and

@@ -11,7 +11,10 @@
 // Compiled in ONLY with `-tags agentbase`.
 package runtime
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // ----------------------------------------------------------------------------
 // Shared sub-DTOs (create + update)
@@ -98,4 +101,163 @@ type ListAgentRuntimesResponse struct {
 	PageSize  int            `json:"pageSize"`
 	TotalPage int            `json:"totalPage"`
 	TotalItem int            `json:"totalItem"`
+}
+
+// ----------------------------------------------------------------------------
+// Sub-resources: endpoints (Slice 4)
+// ----------------------------------------------------------------------------
+
+// AgentRuntimeEndpointDto is one endpoint of a runtime (returned by get/create
+// and one row of list). version/targetVersion/liveVersion/currentReplicaCount
+// are int32; targetVersion/liveVersion track a rolling update.
+type AgentRuntimeEndpointDto struct {
+	ID                  string    `json:"id"`
+	AgentRuntimeID      string    `json:"agentRuntimeId"`
+	Name                string    `json:"name"`
+	Version             int       `json:"version"`
+	TargetVersion       int       `json:"targetVersion"`
+	LiveVersion         int       `json:"liveVersion"`
+	CurrentReplicaCount int       `json:"currentReplicaCount"`
+	URL                 string    `json:"url"`
+	Status              string    `json:"status"`
+	DisplayStatus       string    `json:"displayStatus"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
+}
+
+// AgentRuntimeEndpointCreateRequest is the body for POST
+// /agent-runtimes/{id}/endpoints. name is required; version is optional
+// (defaults server-side, minimum 1).
+type AgentRuntimeEndpointCreateRequest struct {
+	Name    string `json:"name"`
+	Version int    `json:"version,omitempty"`
+}
+
+// ListResponseAgentRuntimeEndpointDto is the body of GET .../endpoints.
+type ListResponseAgentRuntimeEndpointDto struct {
+	ListData  []AgentRuntimeEndpointDto `json:"listData"`
+	Page      int                       `json:"page"`
+	PageSize  int                       `json:"pageSize"`
+	TotalPage int                       `json:"totalPage"`
+	TotalItem int                       `json:"totalItem"`
+}
+
+// ----------------------------------------------------------------------------
+// Sub-resources: logs / metrics / events (Slice 4)
+// ----------------------------------------------------------------------------
+
+// LogSearchRequest is the body for POST .../logs (runtime- and endpoint-level).
+// from max 5000; limit max 500; fromTimestamp/toTimestamp/query/order optional.
+type LogSearchRequest struct {
+	From          int    `json:"from,omitempty"`
+	Limit         int    `json:"limit,omitempty"`
+	FromTimestamp string `json:"fromTimestamp,omitempty"`
+	ToTimestamp   string `json:"toTimestamp,omitempty"`
+	Query         string `json:"query,omitempty"`
+	Order         string `json:"order,omitempty"`
+}
+
+// LogRecord is one log line.
+type LogRecord struct {
+	Timestamp string `json:"timestamp"`
+	Content   string `json:"content"`
+}
+
+// LogSearchResult is the response of POST .../logs.
+type LogSearchResult struct {
+	TotalCount int         `json:"totalCount"`
+	Logs       []LogRecord `json:"logs"`
+}
+
+// MetricDataPointDouble is one CPU-usage sample (timestamp + double value).
+type MetricDataPointDouble struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+}
+
+// MetricDataPointLong is one memory-usage sample (timestamp + int64 bytes).
+type MetricDataPointLong struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     int64     `json:"value"`
+}
+
+// AgentRuntimeEndpointMetrics is the response of GET .../metrics.
+type AgentRuntimeEndpointMetrics struct {
+	CpuCoresUsage    []MetricDataPointDouble `json:"cpuCoresUsage"`
+	MemoryBytesUsage []MetricDataPointLong   `json:"memoryBytesUsage"`
+}
+
+// KubeEventDto is one kubernetes event (GET .../events).
+type KubeEventDto struct {
+	Message       string    `json:"message"`
+	LastTimestamp time.Time `json:"lastTimestamp"`
+}
+
+// ----------------------------------------------------------------------------
+// Sub-resources: versions (Slice 4)
+// ----------------------------------------------------------------------------
+
+// AgentRuntimeImageAuthDto is the image-auth view on a version (no password —
+// distinct from the create/update ImageAuth, which is send-only with password).
+type AgentRuntimeImageAuthDto struct {
+	Enabled                         bool   `json:"enabled"`
+	UseAgentBaseRegistryCredentials bool   `json:"useAgentBaseRegistryCredentials"`
+	Username                        string `json:"username"`
+}
+
+// AgentRuntimeNetworkConfigEntity is the network config on a version.
+type AgentRuntimeNetworkConfigEntity struct {
+	Mode       string   `json:"mode"`
+	VpcID      string   `json:"vpcId"`
+	SubnetID   string   `json:"subnetId"`
+	RouteCidrs []string `json:"routeCidrs"`
+}
+
+// AgentRuntimeInboundAuthJwtDto is the JWT inbound-auth config on a version.
+// JWKS is an arbitrary JSON node (json.RawMessage) — the service models it as a
+// raw JsonNode.
+type AgentRuntimeInboundAuthJwtDto struct {
+	Source           string          `json:"source"`
+	JWKS             json.RawMessage `json:"jwks,omitempty"`
+	DiscoveryURL     string          `json:"discoveryUrl"`
+	AllowedAudiences []string        `json:"allowedAudiences"`
+	AllowedClients   []string        `json:"allowedClients"`
+	AllowedScopes    []string        `json:"allowedScopes"`
+	PrincipalClaim   string          `json:"principalClaim"`
+}
+
+// AgentRuntimeInboundAuthDto is the inbound-auth config on a version.
+type AgentRuntimeInboundAuthDto struct {
+	Mode string                         `json:"mode"`
+	JWT  *AgentRuntimeInboundAuthJwtDto `json:"jwt,omitempty"`
+}
+
+// AgentRuntimeVersionDto is one row of GET .../versions — the full spec of a
+// runtime version (image, command/args/env, network, inbound auth, autoscaling).
+// Reuses the existing Autoscaling type (same fields as the create request).
+type AgentRuntimeVersionDto struct {
+	AgentRuntimeID       string                           `json:"agentRuntimeId"`
+	Version              int                              `json:"version"`
+	Description          string                           `json:"description"`
+	ImageURL             string                           `json:"imageUrl"`
+	ImageAuth            *AgentRuntimeImageAuthDto        `json:"imageAuth,omitempty"`
+	Command              []string                         `json:"command"`
+	Args                 []string                         `json:"args"`
+	EnvironmentVariables map[string]string                `json:"environmentVariables"`
+	NetworkConfig        *AgentRuntimeNetworkConfigEntity `json:"networkConfig,omitempty"`
+	AllowedCidrs         []string                         `json:"allowedCidrs"`
+	InboundAuth          *AgentRuntimeInboundAuthDto      `json:"inboundAuth,omitempty"`
+	Protocol             string                           `json:"protocol"`
+	FlavorID             string                           `json:"flavorId"`
+	Autoscaling          Autoscaling                      `json:"autoscaling"`
+	CreatedAt            time.Time                        `json:"createdAt"`
+}
+
+// ListResponseAgentRuntimeVersionDto is the body of GET .../versions.
+type ListResponseAgentRuntimeVersionDto struct {
+	ListData  []AgentRuntimeVersionDto `json:"listData"`
+	Page      int                      `json:"page"`
+	PageSize  int                      `json:"pageSize"`
+	TotalPage int                      `json:"totalPage"`
+	TotalItem int                      `json:"totalItem"`
 }

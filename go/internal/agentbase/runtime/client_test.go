@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
@@ -247,5 +248,267 @@ func TestGet_404ReturnsAPIError(t *testing.T) {
 func TestNewClient(t *testing.T) {
 	if c := NewClient("https://example.com", nil); c == nil {
 		t.Fatal("expected non-nil client")
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Slice 4: sub-resources (endpoints / logs / metrics / events / versions / trace)
+// ----------------------------------------------------------------------------
+
+func wantMethodPath(t *testing.T, r *http.Request, method, path string) {
+	t.Helper()
+	if r.Method != method {
+		t.Errorf("method: got %s, want %s", r.Method, method)
+	}
+	if r.URL.Path != path {
+		t.Errorf("path: got %s, want %s", r.URL.Path, path)
+	}
+}
+
+func TestListEndpoints(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/endpoints")
+		if r.URL.Query().Get("page") != "1" || r.URL.Query().Get("size") != "10" {
+			t.Errorf("query: %s", r.URL.Query().Encode())
+		}
+		_ = json.NewEncoder(w).Encode(ListResponseAgentRuntimeEndpointDto{
+			ListData: []AgentRuntimeEndpointDto{{ID: "e1", Name: "ep", Version: 2}},
+		})
+	})
+	out, err := c.ListEndpoints(context.Background(), "r1", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ListData) != 1 || out.ListData[0].Version != 2 {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+func TestCreateEndpoint(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/endpoints")
+		gotBody, _ = io.ReadAll(r.Body)
+		_ = json.NewEncoder(w).Encode(AgentRuntimeEndpointDto{ID: "e1", Name: "ep"})
+	})
+	out, err := c.CreateEndpoint(context.Background(), "r1", &AgentRuntimeEndpointCreateRequest{Name: "ep", Version: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got AgentRuntimeEndpointCreateRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "ep" || got.Version != 2 {
+		t.Errorf("body: %+v", got)
+	}
+	if out.ID != "e1" {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestUpdateEndpoint(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodPut, "/agent-runtimes/r1/endpoints/e1")
+		if got := r.URL.Query().Get("version"); got != "3" {
+			t.Errorf("version: %q", got)
+		}
+		if r.ContentLength > 0 {
+			t.Errorf("expected no body, got %d bytes", r.ContentLength)
+		}
+		_ = json.NewEncoder(w).Encode(AgentRuntimeEndpointDto{ID: "e1", Version: 3})
+	})
+	out, err := c.UpdateEndpoint(context.Background(), "r1", "e1", 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Version != 3 {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestDeleteEndpoint(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodDelete, "/agent-runtimes/r1/endpoints/e1")
+		_ = json.NewEncoder(w).Encode(AgentRuntimeEndpointDto{ID: "e1", Status: "DELETED"})
+	})
+	out, err := c.DeleteEndpoint(context.Background(), "r1", "e1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.ID != "e1" || out.Status != "DELETED" {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestStartStopEndpoint(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method: %s", r.Method)
+		}
+		if r.Body != nil && r.ContentLength > 0 {
+			t.Errorf("expected no body")
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.StartEndpoint(context.Background(), "r1", "e1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.StopEndpoint(context.Background(), "r1", "e1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEndpointLogs(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/endpoints/e1/logs")
+		gotBody, _ = io.ReadAll(r.Body)
+		_ = json.NewEncoder(w).Encode(LogSearchResult{TotalCount: 1, Logs: []LogRecord{{Content: "hi"}}})
+	})
+	out, err := c.EndpointLogs(context.Background(), "r1", "e1", &LogSearchRequest{Limit: 50, Query: "err"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got LogSearchRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Query != "err" || got.Limit != 50 {
+		t.Errorf("body: %+v", got)
+	}
+	if out.TotalCount != 1 || len(out.Logs) != 1 {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestEndpointMetrics(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/endpoints/e1/metrics")
+		if got := r.URL.Query().Get("fromTimestamp"); got != "t0" {
+			t.Errorf("from: %q", got)
+		}
+		_ = json.NewEncoder(w).Encode(AgentRuntimeEndpointMetrics{
+			CpuCoresUsage: []MetricDataPointDouble{{Value: 0.5}},
+		})
+	})
+	out, err := c.EndpointMetrics(context.Background(), "r1", "e1", "t0", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.CpuCoresUsage) != 1 || out.CpuCoresUsage[0].Value != 0.5 {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestEndpointEvents(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/endpoints/e1/events")
+		_ = json.NewEncoder(w).Encode([]KubeEventDto{{Message: "pulled"}})
+	})
+	out, err := c.EndpointEvents(context.Background(), "r1", "e1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 1 || out[0].Message != "pulled" {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestLogs(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/logs")
+		_ = json.NewEncoder(w).Encode(LogSearchResult{TotalCount: 2})
+	})
+	out, err := c.Logs(context.Background(), "r1", &LogSearchRequest{Limit: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.TotalCount != 2 {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestResetServiceAccount(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/reset-service-account")
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.ResetServiceAccount(context.Background(), "r1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestListVersions(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/versions")
+		_ = json.NewEncoder(w).Encode(ListResponseAgentRuntimeVersionDto{
+			ListData: []AgentRuntimeVersionDto{{Version: 1, ImageURL: "img", FlavorID: "f1"}},
+		})
+	})
+	out, err := c.ListVersions(context.Background(), "r1", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ListData) != 1 || out.ListData[0].FlavorID != "f1" {
+		t.Errorf("decode: %+v", out)
+	}
+}
+
+func TestGetTrace(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes:get-trace")
+		if got := r.URL.Query().Get("traceId"); got != "abc" {
+			t.Errorf("traceId: %q", got)
+		}
+		if got := r.URL.Query().Get("service"); got != "runtime" {
+			t.Errorf("passthrough param: %q", got)
+		}
+		_, _ = w.Write([]byte(`{"traceID":"abc"}`))
+	})
+	params := url.Values{}
+	params.Set("service", "runtime")
+	out, err := c.GetTrace(context.Background(), "abc", params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(out) != `{"traceID":"abc"}` {
+		t.Errorf("raw: %s", out)
+	}
+}
+
+func TestSearchTraces(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes:search-traces")
+		if got := r.URL.Query().Get("service"); got != "runtime" {
+			t.Errorf("param: %q", got)
+		}
+		_, _ = w.Write([]byte(`{"traces":[]}`))
+	})
+	params := url.Values{}
+	params.Set("service", "runtime")
+	out, err := c.SearchTraces(context.Background(), params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(out) != `{"traces":[]}` {
+		t.Errorf("raw: %s", out)
+	}
+}
+
+func TestTraceTagValues(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes:trace-search-tag-values")
+		if got := r.URL.Query().Get("tagKey"); got != "env" {
+			t.Errorf("tagKey: %q", got)
+		}
+		_, _ = w.Write([]byte(`["prod","dev"]`))
+	})
+	out, err := c.TraceTagValues(context.Background(), "env", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(out) != `["prod","dev"]` {
+		t.Errorf("raw: %s", out)
 	}
 }
