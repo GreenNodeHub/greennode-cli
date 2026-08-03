@@ -5,12 +5,12 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/spf13/cobra"
 	"github.com/greennodehub/greennode-cli/cmd/configure"
 	"github.com/greennodehub/greennode-cli/cmd/login"
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/spf13/cobra"
 )
 
 const cliVersion = "1.9.1" // x-release-please-version

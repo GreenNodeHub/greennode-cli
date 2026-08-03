@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/spf13/cobra"
 )
 
 // NewClient builds a GreennodeClient for the given service from the command's

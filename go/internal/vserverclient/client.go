@@ -5,11 +5,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/greennodehub/greennode-cli/internal/formatter"
+	"github.com/spf13/cobra"
 )
 
 // BuildClient creates a GreennodeClient from cobra command flags.
