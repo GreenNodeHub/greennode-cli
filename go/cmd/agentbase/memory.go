@@ -441,6 +441,464 @@ func loadMemorySpec(data []byte) (*memorypkg.CreateMemoryRequest, error) {
 }
 
 // ---------------------------------------------------------------------------
+// sub-resources (Slice 3): actor / session / event / strategy / record
+// ---------------------------------------------------------------------------
+
+var memoryActorCmd = &cobra.Command{Use: "actor", Short: "Browse a memory's actors"}
+var memorySessionCmd = &cobra.Command{Use: "session", Short: "Browse a memory's sessions"}
+var memoryEventCmd = &cobra.Command{Use: "event", Short: "Manage a session's events"}
+var memoryStrategyCmd = &cobra.Command{Use: "strategy", Short: "Browse a memory's long-term-memory strategies"}
+var memoryRecordCmd = &cobra.Command{Use: "record", Short: "Manage a memory's long-term records"}
+
+// --- actor list ---
+
+var memoryActorListCmd = &cobra.Command{
+	Use:   "list <id>",
+	Short: "List actors in a memory",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		page, _ := cmd.Flags().GetInt("page")
+		size, _ := cmd.Flags().GetInt("size")
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListActors(ctx, args[0], page, size)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			if len(resp.ListData) > 0 {
+				output.PrintID(resp.ListData[0].ActorID)
+			}
+			return nil
+		}
+		if len(resp.ListData) == 0 {
+			fmt.Fprintln(os.Stderr, "No actors found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.ListData))
+		for i := range resp.ListData {
+			a := resp.ListData[i]
+			rows = append(rows, []string{a.ActorID, a.Status})
+		}
+		output.Table([]string{"Actor ID", "Status"}, rows)
+		fmt.Fprintf(os.Stderr, "Page %d of %d (%d total items)\n", resp.Page, resp.TotalPage, resp.TotalItem)
+		return nil
+	},
+}
+
+// --- session list ---
+
+var memorySessionListCmd = &cobra.Command{
+	Use:   "list <id> <actor-id>",
+	Short: "List an actor's sessions in a memory",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		page, _ := cmd.Flags().GetInt("page")
+		size, _ := cmd.Flags().GetInt("size")
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListSessions(ctx, args[0], args[1], page, size)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			if len(resp.ListData) > 0 {
+				output.PrintID(resp.ListData[0].SessionID)
+			}
+			return nil
+		}
+		if len(resp.ListData) == 0 {
+			fmt.Fprintln(os.Stderr, "No sessions found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.ListData))
+		for i := range resp.ListData {
+			s := resp.ListData[i]
+			rows = append(rows, []string{s.SessionID, s.Status})
+		}
+		output.Table([]string{"Session ID", "Status"}, rows)
+		fmt.Fprintf(os.Stderr, "Page %d of %d (%d total items)\n", resp.Page, resp.TotalPage, resp.TotalItem)
+		return nil
+	},
+}
+
+// --- event list / create / delete ---
+
+var memoryEventListCmd = &cobra.Command{
+	Use:   "list <id> <actor-id> <session-id>",
+	Short: "List events in a session",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		from, _ := cmd.Flags().GetString("from")
+		to, _ := cmd.Flags().GetString("to")
+		page, _ := cmd.Flags().GetInt("page")
+		size, _ := cmd.Flags().GetInt("size")
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		events, err := client.ListSessionEvents(ctx, args[0], args[1], args[2], from, to, page, size)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(events)
+		case output.FormatID:
+			return nil
+		}
+		return renderSessionEvents(events)
+	},
+}
+
+var memoryEventCreateCmd = &cobra.Command{
+	Use:   "create <id> <actor-id> <session-id>",
+	Short: "Append an event to a session",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		eventType, _ := f.GetString("type")
+		if eventType == "" {
+			return fmt.Errorf("required flag %q not set", "type")
+		}
+		role, _ := f.GetString("role")
+		message, _ := f.GetString("message")
+		binaryData, _ := f.GetString("binary-data")
+		req := &memorypkg.EventCreateRequest{
+			Payload: memorypkg.EventPayload{
+				Type:       eventType,
+				Role:       role,
+				Message:    message,
+				BinaryData: binaryData,
+			},
+		}
+		if v, _ := f.GetString("event-timestamp"); v != "" {
+			req.EventTimestamp = v
+		}
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.CreateSessionEvent(ctx, args[0], args[1], args[2], req); err != nil {
+			return err
+		}
+		output.Successf("Event appended to session %s.", args[2])
+		return nil
+	},
+}
+
+var memoryEventDeleteCmd = &cobra.Command{
+	Use:   "delete <id> <actor-id> <session-id> <event-id>",
+	Short: "Delete a session event",
+	Args:  cobra.ExactArgs(4),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.DeleteSessionEvent(ctx, args[0], args[1], args[2], args[3]); err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "Event %q deleted.\n", args[3])
+		output.PrintDeletedID(args[3])
+		return nil
+	},
+}
+
+// --- strategy list ---
+
+var memoryStrategyListCmd = &cobra.Command{
+	Use:   "list <id>",
+	Short: "List a memory's long-term-memory strategies",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		strategies, err := client.ListStrategies(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(strategies)
+		case output.FormatID:
+			if len(strategies) > 0 {
+				output.PrintID(strategies[0].ID)
+			}
+			return nil
+		}
+		if len(strategies) == 0 {
+			fmt.Fprintln(os.Stderr, "No strategies found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(strategies))
+		for i := range strategies {
+			s := strategies[i]
+			rows = append(rows, []string{s.ID, s.Name, s.Type, s.NamespaceTemplate, s.Status})
+		}
+		output.Table([]string{"ID", "Name", "Type", "Namespace Template", "Status"}, rows)
+		return nil
+	},
+}
+
+// --- record list / delete / insert / generate-from-session / generate-from-content ---
+
+var memoryRecordListCmd = &cobra.Command{
+	Use:   "list <id>",
+	Short: "List a memory's long-term records (under a namespace)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		namespace, _ := cmd.Flags().GetString("namespace")
+		if namespace == "" {
+			return fmt.Errorf("required flag %q not set", "namespace")
+		}
+		limit, _ := cmd.Flags().GetInt("limit")
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		records, err := client.ListRecords(ctx, args[0], namespace, limit)
+		if err != nil {
+			return err
+		}
+		switch output.GetFormat() {
+		case output.FormatJSON:
+			return output.JSON(records)
+		case output.FormatID:
+			if len(records) > 0 {
+				output.PrintID(records[0].ID)
+			}
+			return nil
+		}
+		fmt.Fprintf(os.Stderr, "namespace=%s → %d record(s)\n", namespace, len(records))
+		if len(records) == 0 {
+			fmt.Fprintln(os.Stderr, "No memory records found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(records))
+		for i := range records {
+			r := records[i]
+			rows = append(rows, []string{r.ID, r.Memory, formatTimeVal(r.UpdatedAt)})
+		}
+		output.Table([]string{"ID", "Memory", "Updated"}, rows)
+		return nil
+	},
+}
+
+var memoryRecordDeleteCmd = &cobra.Command{
+	Use:   "delete <id> <record-id>",
+	Short: "Delete a memory record",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.DeleteRecord(ctx, args[0], args[1]); err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "Memory record %q deleted.\n", args[1])
+		output.PrintDeletedID(args[1])
+		return nil
+	},
+}
+
+// memoryInsertRecords holds the repeatable --record values for 'record insert'.
+var memoryInsertRecords []string
+
+var memoryRecordInsertCmd = &cobra.Command{
+	Use:   "insert <id>",
+	Short: "Insert long-term records directly (skip extraction)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		namespace, _ := cmd.Flags().GetString("namespace")
+		if namespace == "" {
+			return fmt.Errorf("required flag %q not set", "namespace")
+		}
+		if len(memoryInsertRecords) == 0 {
+			return fmt.Errorf("required flag %q not set", "record")
+		}
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.InsertRecords(ctx, args[0], namespace, &memorypkg.MemoryRecordInsertDirectlyRequest{
+			MemoryRecords: memoryInsertRecords,
+		}); err != nil {
+			return err
+		}
+		output.Successf("Inserted %d record(s) into namespace %s.", len(memoryInsertRecords), namespace)
+		return nil
+	},
+}
+
+var memoryRecordGenerateFromSessionCmd = &cobra.Command{
+	Use:   "generate-from-session <id>",
+	Short: "Generate long-term records from a session",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		actorID, _ := f.GetString("actor-id")
+		sessionID, _ := f.GetString("session-id")
+		strategyID, _ := f.GetString("strategy-id")
+		if actorID == "" || sessionID == "" || strategyID == "" {
+			return fmt.Errorf("required flags not set: --actor-id, --session-id, --strategy-id")
+		}
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.GenerateRecordsFromSession(ctx, args[0], actorID, sessionID, strategyID); err != nil {
+			return err
+		}
+		output.Successf("Record generation from session %s queued.", sessionID)
+		return nil
+	},
+}
+
+// memoryGenerateFile / memoryGenerateMessages hold the --file / --message values
+// for 'record generate-from-content'.
+var memoryGenerateFile string
+var memoryGenerateMessages []string
+
+var memoryRecordGenerateFromContentCmd = &cobra.Command{
+	Use:   "generate-from-content <id>",
+	Short: "Generate long-term records from chat content",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		strategyID, _ := f.GetString("strategy-id")
+		if strategyID == "" {
+			return fmt.Errorf("required flag %q not set", "strategy-id")
+		}
+		actorID, _ := f.GetString("actor-id")
+		sessionID, _ := f.GetString("session-id")
+
+		var req *memorypkg.MemoryRecordGenerateFromContentRequest
+		if memoryGenerateFile != "" {
+			data, err := os.ReadFile(memoryGenerateFile)
+			if err != nil {
+				return fmt.Errorf("read --file: %w", err)
+			}
+			req, err = loadGenerateFromContentSpec(data)
+			if err != nil {
+				return err
+			}
+		} else if len(memoryGenerateMessages) > 0 {
+			msgs := make([]memorypkg.ChatMessage, len(memoryGenerateMessages))
+			for i, m := range memoryGenerateMessages {
+				msgs[i] = memorypkg.ChatMessage{Role: "user", Content: m}
+			}
+			req = &memorypkg.MemoryRecordGenerateFromContentRequest{ChatMessages: msgs}
+		} else {
+			return fmt.Errorf("provide --file or at least one --message")
+		}
+
+		client, err := newMemoryClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.GenerateRecordsFromContent(ctx, args[0], strategyID, actorID, sessionID, req); err != nil {
+			return err
+		}
+		output.Successf("Record generation from content queued (%d message(s)).", len(req.ChatMessages))
+		return nil
+	},
+}
+
+// renderSessionEvents renders the raw event messages as a best-effort table.
+// The memory service publishes no response schema for the events list, so each
+// event is parsed leniently; unparseable elements render as <raw>.
+func renderSessionEvents(events []json.RawMessage) error {
+	fmt.Fprintf(os.Stderr, "%d event(s).\n", len(events))
+	if len(events) == 0 {
+		return nil
+	}
+	rows := make([][]string, 0, len(events))
+	for i, raw := range events {
+		var v struct {
+			Type           string `json:"type"`
+			Message        string `json:"message"`
+			EventTimestamp string `json:"eventTimestamp"`
+			LastTimestamp  string `json:"lastTimestamp"`
+			Timestamp      string `json:"timestamp"`
+		}
+		if err := json.Unmarshal(raw, &v); err != nil {
+			rows = append(rows, []string{fmt.Sprintf("%d", i), "<raw>", truncate(string(raw), 60)})
+			continue
+		}
+		ts := v.EventTimestamp
+		if ts == "" {
+			ts = v.LastTimestamp
+		}
+		if ts == "" {
+			ts = v.Timestamp
+		}
+		rows = append(rows, []string{fmt.Sprintf("%d", i), v.Type, truncate(v.Message, 60), ts})
+	}
+	output.Table([]string{"#", "Type", "Message", "Timestamp"}, rows)
+	return nil
+}
+
+// truncate clips s to n runes with an ellipsis.
+func truncate(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
+}
+
+// loadGenerateFromContentSpec parses a YAML/JSON spec (a chatMessages array)
+// into MemoryRecordGenerateFromContentRequest.
+func loadGenerateFromContentSpec(data []byte) (*memorypkg.MemoryRecordGenerateFromContentRequest, error) {
+	m, err := yamlToMap(data)
+	if err != nil {
+		return nil, err
+	}
+	// The file is a chatMessages array, not an object wrapping it. Wrap so it
+	// decodes into the request struct.
+	if _, ok := m["chatMessages"]; !ok {
+		m = map[string]interface{}{"chatMessages": m}
+	}
+	jb, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	var req memorypkg.MemoryRecordGenerateFromContentRequest
+	if err := json.Unmarshal(jb, &req); err != nil {
+		return nil, fmt.Errorf("invalid generate-from-content spec: %w", err)
+	}
+	if len(req.ChatMessages) == 0 {
+		return nil, fmt.Errorf("spec has no chatMessages")
+	}
+	return &req, nil
+}
+
+// ---------------------------------------------------------------------------
 // init
 // ---------------------------------------------------------------------------
 
@@ -480,6 +938,66 @@ func init() {
 	memorySearchCmd.Flags().Int("limit", 100, "Max results (5-200)")
 	memorySearchCmd.Flags().Float64("threshold", 0, "Min relevance score (0-1)")
 	memoryCmd.AddCommand(memorySearchCmd)
+
+	// --- sub-resources (Slice 3) ---
+
+	// actor
+	memoryActorListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	memoryActorListCmd.Flags().Int("size", 10, "Page size")
+	memoryActorCmd.AddCommand(memoryActorListCmd)
+	memoryCmd.AddCommand(memoryActorCmd)
+
+	// session
+	memorySessionListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	memorySessionListCmd.Flags().Int("size", 10, "Page size")
+	memorySessionCmd.AddCommand(memorySessionListCmd)
+	memoryCmd.AddCommand(memorySessionCmd)
+
+	// event
+	memoryEventListCmd.Flags().String("from", "", "fromTimestamp (RFC3339)")
+	memoryEventListCmd.Flags().String("to", "", "toTimestamp (RFC3339)")
+	memoryEventListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	memoryEventListCmd.Flags().Int("size", 100, "Page size (capped to 100)")
+	memoryEventCmd.AddCommand(memoryEventListCmd)
+
+	memoryEventCreateCmd.Flags().String("type", "", "Event type (required)")
+	memoryEventCreateCmd.Flags().String("role", "", "Event role")
+	memoryEventCreateCmd.Flags().String("message", "", "Event message (max 100k chars)")
+	memoryEventCreateCmd.Flags().String("binary-data", "", "Event binary data (max ~10 MiB)")
+	memoryEventCreateCmd.Flags().String("event-timestamp", "", "Event timestamp (RFC3339)")
+	memoryEventCmd.AddCommand(memoryEventCreateCmd)
+
+	memoryEventCmd.AddCommand(memoryEventDeleteCmd)
+	memoryCmd.AddCommand(memoryEventCmd)
+
+	// strategy
+	memoryStrategyCmd.AddCommand(memoryStrategyListCmd)
+	memoryCmd.AddCommand(memoryStrategyCmd)
+
+	// record
+	memoryRecordListCmd.Flags().String("namespace", "", "Resolved namespace (required)")
+	memoryRecordListCmd.Flags().Int("limit", 100, "Max results")
+	memoryRecordCmd.AddCommand(memoryRecordListCmd)
+
+	memoryRecordCmd.AddCommand(memoryRecordDeleteCmd)
+
+	memoryRecordInsertCmd.Flags().String("namespace", "", "Resolved namespace (required)")
+	memoryRecordInsertCmd.Flags().StringArrayVar(&memoryInsertRecords, "record", nil, "Record text (repeatable; at least one required)")
+	memoryRecordCmd.AddCommand(memoryRecordInsertCmd)
+
+	memoryRecordGenerateFromSessionCmd.Flags().String("actor-id", "", "Actor id (required)")
+	memoryRecordGenerateFromSessionCmd.Flags().String("session-id", "", "Session id (required)")
+	memoryRecordGenerateFromSessionCmd.Flags().String("strategy-id", "", "Long-term-memory strategy id (required)")
+	memoryRecordCmd.AddCommand(memoryRecordGenerateFromSessionCmd)
+
+	memoryRecordGenerateFromContentCmd.Flags().String("strategy-id", "", "Long-term-memory strategy id (required)")
+	memoryRecordGenerateFromContentCmd.Flags().String("actor-id", "", "Actor id (optional)")
+	memoryRecordGenerateFromContentCmd.Flags().String("session-id", "", "Session id (optional)")
+	memoryRecordGenerateFromContentCmd.Flags().StringVar(&memoryGenerateFile, "file", "", "Spec file with a chatMessages array (authoritative when set)")
+	memoryRecordGenerateFromContentCmd.Flags().StringArrayVar(&memoryGenerateMessages, "message", nil, "Chat message content, role=user (repeatable)")
+	memoryRecordCmd.AddCommand(memoryRecordGenerateFromContentCmd)
+
+	memoryCmd.AddCommand(memoryRecordCmd)
 }
 
 // memoryName holds the --name value for create.

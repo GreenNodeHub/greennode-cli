@@ -206,3 +206,241 @@ func TestNewClient(t *testing.T) {
 }
 
 func ptrFloat(v float64) *float64 { return &v }
+
+// ----------------------------------------------------------------------------
+// Slice 3: sub-resources (actors / sessions / events / strategies / records)
+// ----------------------------------------------------------------------------
+
+func TestListActors(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/memories/m1/actors" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("page") != "1" || r.URL.Query().Get("size") != "10" {
+			t.Errorf("query: %s", r.URL.Query().Encode())
+		}
+		_ = json.NewEncoder(w).Encode(ListResponseActorDto{
+			ListData: []ActorDto{{MemoryID: "m1", ActorID: "a1", Status: "ACTIVE"}},
+			Page:     1, PageSize: 10, TotalPage: 1, TotalItem: 1,
+		})
+	})
+	out, err := c.ListActors(context.Background(), "m1", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ListData) != 1 || out.ListData[0].ActorID != "a1" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+func TestListSessions(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/memories/m1/actors/a1/sessions" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(ListResponseSessionDto{
+			ListData: []SessionDto{{SessionID: "s1", Status: "ACTIVE"}},
+		})
+	})
+	out, err := c.ListSessions(context.Background(), "m1", "a1", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ListData) != 1 || out.ListData[0].SessionID != "s1" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+func TestListSessionEvents(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/memories/m1/actors/a1/sessions/s1/events" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("fromTimestamp"); got != "t0" {
+			t.Errorf("from: %q", got)
+		}
+		if got := r.URL.Query().Get("toTimestamp"); got != "t1" {
+			t.Errorf("to: %q", got)
+		}
+		// size clamped to 100.
+		if got := r.URL.Query().Get("size"); got != "100" {
+			t.Errorf("size: %q, want 100 (clamped)", got)
+		}
+		// Undefined schema → raw JSON array.
+		_ = json.NewEncoder(w).Encode([]map[string]string{
+			{"type": "USER", "message": "hi"},
+			{"type": "AGENT", "message": "hello"},
+		})
+	})
+	out, err := c.ListSessionEvents(context.Background(), "m1", "a1", "s1", "t0", "t1", 1, 9999)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 2 {
+		t.Fatalf("events: %d, want 2", len(out))
+	}
+}
+
+func TestCreateSessionEvent(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/memories/m1/actors/a1/sessions/s1/events" {
+			t.Errorf("method/path: %s %s", r.Method, r.URL.Path)
+		}
+		gotBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.CreateSessionEvent(context.Background(), "m1", "a1", "s1", &EventCreateRequest{
+		Payload: EventPayload{Type: "USER", Message: "hi"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var got EventCreateRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Payload.Type != "USER" || got.Payload.Message != "hi" {
+		t.Errorf("body: %+v", got)
+	}
+}
+
+func TestDeleteSessionEvent(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete || r.URL.Path != "/memories/m1/actors/a1/sessions/s1/events/e1" {
+			t.Errorf("method/path: %s %s", r.Method, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.DeleteSessionEvent(context.Background(), "m1", "a1", "s1", "e1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestListStrategies(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/memories/m1/long-term-memory-strategies" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode([]LongTermMemoryStrategyEntity{{
+			ID: "st1", Name: "sem", Type: "SEMANTIC", NamespaceTemplate: "/ns",
+		}})
+	})
+	out, err := c.ListStrategies(context.Background(), "m1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 1 || out[0].Type != "SEMANTIC" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+func TestListRecords(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/memories/m1/memory-records" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("namespace"); got != "/ns" {
+			t.Errorf("namespace: %q", got)
+		}
+		if got := r.URL.Query().Get("limit"); got != "50" {
+			t.Errorf("limit: %q", got)
+		}
+		// snake_case timestamps.
+		_ = json.NewEncoder(w).Encode([]MemoryRecord{{ID: "r1", Memory: "fact"}})
+	})
+	out, err := c.ListRecords(context.Background(), "m1", "/ns", 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 1 || out[0].Memory != "fact" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+func TestDeleteRecord(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete || r.URL.Path != "/memories/m1/memory-records/r1" {
+			t.Errorf("method/path: %s %s", r.Method, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.DeleteRecord(context.Background(), "m1", "r1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestInsertRecords(t *testing.T) {
+	var gotBody []byte
+	var gotNS string
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/memories/m1/memory-records:insert-directly" {
+			t.Errorf("method/path: %s %s", r.Method, r.URL.Path)
+		}
+		gotNS = r.URL.Query().Get("namespace")
+		gotBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.InsertRecords(context.Background(), "m1", "/ns", &MemoryRecordInsertDirectlyRequest{
+		MemoryRecords: []string{"fact-1", "fact-2"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if gotNS != "/ns" {
+		t.Errorf("namespace: %q", gotNS)
+	}
+	var got MemoryRecordInsertDirectlyRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.MemoryRecords) != 2 {
+		t.Errorf("records: %d", len(got.MemoryRecords))
+	}
+}
+
+func TestGenerateRecordsFromSession(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/memories/m1/memory-records:generate-from-session" {
+			t.Errorf("method/path: %s %s", r.Method, r.URL.Path)
+		}
+		q := r.URL.Query()
+		if q.Get("actorId") != "a1" || q.Get("sessionId") != "s1" || q.Get("longTermMemoryStrategyId") != "st1" {
+			t.Errorf("query: %s", q.Encode())
+		}
+		gotBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.GenerateRecordsFromSession(context.Background(), "m1", "a1", "s1", "st1"); err != nil {
+		t.Fatal(err)
+	}
+	if len(gotBody) != 0 {
+		t.Errorf("expected no body, got %d bytes", len(gotBody))
+	}
+}
+
+func TestGenerateRecordsFromContent(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/memories/m1/memory-records:generate-from-content" {
+			t.Errorf("method/path: %s %s", r.Method, r.URL.Path)
+		}
+		q := r.URL.Query()
+		if q.Get("longTermMemoryStrategyId") != "st1" || q.Get("actorId") != "a1" || q.Get("sessionId") != "s1" {
+			t.Errorf("query: %s", q.Encode())
+		}
+		gotBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.GenerateRecordsFromContent(context.Background(), "m1", "st1", "a1", "s1", &MemoryRecordGenerateFromContentRequest{
+		ChatMessages: []ChatMessage{{Role: "user", Content: "hi"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var got MemoryRecordGenerateFromContentRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.ChatMessages) != 1 || got.ChatMessages[0].Role != "user" {
+		t.Errorf("body: %+v", got)
+	}
+}

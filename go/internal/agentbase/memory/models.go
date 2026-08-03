@@ -94,3 +94,100 @@ type MemoryRecord struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// ----------------------------------------------------------------------------
+// Sub-resources: actors / sessions / events (Slice 3)
+// ----------------------------------------------------------------------------
+
+// ActorDto is one row of GET /memories/{id}/actors.
+type ActorDto struct {
+	MemoryID string `json:"memoryId"`
+	ActorID  string `json:"actorId"`
+	Status   string `json:"status"`
+}
+
+// SessionDto is one row of GET /memories/{id}/actors/{actorId}/sessions.
+type SessionDto struct {
+	MemoryID  string `json:"memoryId"`
+	ActorID   string `json:"actorId"`
+	SessionID string `json:"sessionId"`
+	Status    string `json:"status"`
+}
+
+// ListResponseActorDto is the body of GET .../actors. Same envelope as lists.
+type ListResponseActorDto struct {
+	ListData  []ActorDto `json:"listData"`
+	Page      int        `json:"page"`
+	PageSize  int        `json:"pageSize"`
+	TotalPage int        `json:"totalPage"`
+	TotalItem int        `json:"totalItem"`
+}
+
+// ListResponseSessionDto is the body of GET .../sessions.
+type ListResponseSessionDto struct {
+	ListData  []SessionDto `json:"listData"`
+	Page      int          `json:"page"`
+	PageSize  int          `json:"pageSize"`
+	TotalPage int          `json:"totalPage"`
+	TotalItem int          `json:"totalItem"`
+}
+
+// EventPayload is the payload of a session event. Type is required (minLength 1);
+// role/message/binaryData are optional. message max 100k chars; binaryData max
+// ~10 MiB.
+type EventPayload struct {
+	Type       string `json:"type"`
+	Role       string `json:"role,omitempty"`
+	Message    string `json:"message,omitempty"`
+	BinaryData string `json:"binaryData,omitempty"`
+}
+
+// EventCreateRequest is the body for POST .../sessions/{sessionId}/events.
+// Payload is required; eventTimestamp is optional (pass-through string).
+type EventCreateRequest struct {
+	Payload        EventPayload `json:"payload"`
+	EventTimestamp string       `json:"eventTimestamp,omitempty"`
+}
+
+// ----------------------------------------------------------------------------
+// Sub-resources: long-term-memory strategies / memory-records (Slice 3)
+// ----------------------------------------------------------------------------
+
+// LongTermMemoryStrategyEntity is the persisted form of a strategy (one row of
+// GET /memories/{id}/long-term-memory-strategies). Mirrors the create-time
+// LongTermMemoryStrategy plus the server-assigned id/memoryId/portalUserId/
+// status/timestamps.
+type LongTermMemoryStrategyEntity struct {
+	ID                                    string    `json:"id"`
+	MemoryID                              string    `json:"memoryId"`
+	Name                                  string    `json:"name"`
+	Type                                  string    `json:"type"`
+	CustomFactExtractionPrompt            string    `json:"customFactExtractionPrompt"`
+	NamespaceTemplate                     string    `json:"namespaceTemplate"`
+	EnableAutomaticMemoryRecordGeneration bool      `json:"enableAutomaticMemoryRecordGeneration"`
+	PortalUserID                          int64     `json:"portalUserId"`
+	Status                                string    `json:"status"`
+	CreatedAt                             time.Time `json:"createdAt"`
+	UpdatedAt                             time.Time `json:"updatedAt"`
+}
+
+// MemoryRecordInsertDirectlyRequest is the body for POST
+// /memories/{id}/memory-records:insert-directly?namespace=. memoryRecords is
+// required (minItems 1, each non-empty).
+type MemoryRecordInsertDirectlyRequest struct {
+	MemoryRecords []string `json:"memoryRecords"`
+}
+
+// ChatMessage is one message in a generate-from-content request. role + content
+// are both required (minLength 1).
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// MemoryRecordGenerateFromContentRequest is the body for POST
+// /memories/{id}/memory-records:generate-from-content. chatMessages is required
+// (minItems 1).
+type MemoryRecordGenerateFromContentRequest struct {
+	ChatMessages []ChatMessage `json:"chatMessages"`
+}
