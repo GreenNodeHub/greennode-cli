@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.9.1...v1.10.0) (2026-08-03)
+
+
+### Features
+
+* **vserver:** vserver cli ([#9](https://github.com/GreenNodeHub/greennode-cli/issues/9)) ([9260b23](https://github.com/GreenNodeHub/greennode-cli/commit/9260b23483902c7147b84d8347f3238deb96f3a2))
+
 ## [1.9.1](https://github.com/GreenNodeHub/greennode-cli/compare/v1.9.0...v1.9.1) (2026-07-27)
 
 
