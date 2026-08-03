@@ -111,6 +111,7 @@ nav:
   #     - outbound-auth oauth2 delete: commands/agentbase/identity/outbound-auth-oauth2-delete.md
   #     - outbound-auth oauth2 m2m-token: commands/agentbase/identity/outbound-auth-oauth2-m2m-token.md
   #     - outbound-auth oauth2 3lo-token: commands/agentbase/identity/outbound-auth-oauth2-3lo-token.md
+  #     - api-key delegate: commands/agentbase/identity/api-key-delegate.md
   #   - gateway:
   #     - Overview: commands/agentbase/gateway/index.md
   #     - create: commands/agentbase/gateway/create.md
@@ -120,6 +121,14 @@ nav:
   #     - update: commands/agentbase/gateway/update.md
   #     - delete: commands/agentbase/gateway/delete.md
   #     - wait: commands/agentbase/gateway/wait.md
+  #     - flavors list: commands/agentbase/gateway/flavors-list.md
+  #     - access-logs list: commands/agentbase/gateway/access-logs-list.md
+  #     - access-logs stats: commands/agentbase/gateway/access-logs-stats.md
+  #     - inbound-auth jwt idp-app set: commands/agentbase/gateway/inbound-auth-jwt-idp-app-set.md
+  #     - inbound-auth jwt idp-app clear: commands/agentbase/gateway/inbound-auth-jwt-idp-app-clear.md
+  #     - private-network routes get: commands/agentbase/gateway/private-network-routes-get.md
+  #     - private-network routes set: commands/agentbase/gateway/private-network-routes-set.md
+  #     - service-account repair: commands/agentbase/gateway/service-account-repair.md
   #   - runtime:
   #     - Overview: commands/agentbase/runtime/index.md
   #     - create: commands/agentbase/runtime/create.md
@@ -129,6 +138,21 @@ nav:
   #     - update: commands/agentbase/runtime/update.md
   #     - delete: commands/agentbase/runtime/delete.md
   #     - wait: commands/agentbase/runtime/wait.md
+  #     - endpoint list: commands/agentbase/runtime/endpoint-list.md
+  #     - endpoint create: commands/agentbase/runtime/endpoint-create.md
+  #     - endpoint update: commands/agentbase/runtime/endpoint-update.md
+  #     - endpoint delete: commands/agentbase/runtime/endpoint-delete.md
+  #     - endpoint start: commands/agentbase/runtime/endpoint-start.md
+  #     - endpoint stop: commands/agentbase/runtime/endpoint-stop.md
+  #     - endpoint logs: commands/agentbase/runtime/endpoint-logs.md
+  #     - endpoint metrics: commands/agentbase/runtime/endpoint-metrics.md
+  #     - endpoint events: commands/agentbase/runtime/endpoint-events.md
+  #     - logs: commands/agentbase/runtime/logs.md
+  #     - reset-service-account: commands/agentbase/runtime/reset-service-account.md
+  #     - versions: commands/agentbase/runtime/versions.md
+  #     - trace get: commands/agentbase/runtime/trace-get.md
+  #     - trace search: commands/agentbase/runtime/trace-search.md
+  #     - trace tag-values: commands/agentbase/runtime/trace-tag-values.md
   #   - memory:
   #     - Overview: commands/agentbase/memory/index.md
   #     - create: commands/agentbase/memory/create.md
@@ -137,6 +161,28 @@ nav:
   #     - get: commands/agentbase/memory/get.md
   #     - delete: commands/agentbase/memory/delete.md
   #     - search: commands/agentbase/memory/search.md
+  #     - actor list: commands/agentbase/memory/actor-list.md
+  #     - session list: commands/agentbase/memory/session-list.md
+  #     - event list: commands/agentbase/memory/event-list.md
+  #     - event create: commands/agentbase/memory/event-create.md
+  #     - event delete: commands/agentbase/memory/event-delete.md
+  #     - strategy list: commands/agentbase/memory/strategy-list.md
+  #     - record list: commands/agentbase/memory/record-list.md
+  #     - record delete: commands/agentbase/memory/record-delete.md
+  #     - record insert: commands/agentbase/memory/record-insert.md
+  #     - record generate-from-session: commands/agentbase/memory/record-generate-from-session.md
+  #     - record generate-from-content: commands/agentbase/memory/record-generate-from-content.md
+  #   - catalog:
+  #     - Overview: commands/agentbase/catalog/index.md
+  #     - flavors list: commands/agentbase/catalog/flavors-list.md
+  #     - openclaw-versions list: commands/agentbase/catalog/openclaw-versions-list.md
+  #     - openclaw list: commands/agentbase/catalog/openclaw-list.md
+  #     - openclaw create: commands/agentbase/catalog/openclaw-create.md
+  #     - openclaw get: commands/agentbase/catalog/openclaw-get.md
+  #     - openclaw delete: commands/agentbase/catalog/openclaw-delete.md
+  #     - openclaw start: commands/agentbase/catalog/openclaw-start.md
+  #     - openclaw stop: commands/agentbase/catalog/openclaw-stop.md
+  #     - openclaw update-version: commands/agentbase/catalog/openclaw-update-version.md
   #   - policy:
   #     - Overview: commands/agentbase/policy/index.md
   #     - group create: commands/agentbase/policy/group-create.md

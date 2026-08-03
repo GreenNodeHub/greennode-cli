@@ -22,6 +22,7 @@ plus a client-side orchestrator, `deploy`:
 | `identity` | agent-core-identity | Manage agent digital identities + outbound auth (OAuth2/API key) |
 | `gateway` | agent-core-gateway | Create/manage MCP gateways (provision VKS runtime, DNS, load balancer, quota) |
 | `runtime` | agent-core-runtime | Deploy the container that runs the agent code (image/command/args/env/autoscaling) |
+| `catalog` | agent-core-runtime | Browse the catalog: runtime flavors, OpenClaw versions + workspaces |
 | `memory` | agent-core-memory | Long-term memory for agents (Mem0 vector store, semantic search) |
 | `policy` | agent-core-policy | Cedar policy engine (policy-groups + policies + decision) |
 | `cr` | agent-core-container-registry | Wrapper for VNG Cloud Container Registry (vCR): auto-provisioned repo + robot account |
@@ -92,10 +93,11 @@ All commands accept the common flags `-o json|table|id` (output format) and
 | Command group | Description |
 |---|---|
 | [context](context/index.md) | Show the active environment + standard headers/decorators |
-| [identity](identity/index.md) | Workload identities + outbound auth (OAuth2 / static API key / delegated) |
+| [identity](identity/index.md) | Workload identities + outbound auth (OAuth2 / static API key / delegated) + api-key delegate |
 | [gateway](gateway/index.md) | Create/manage MCP gateways (async FSM; use `wait` to converge) |
 | [runtime](runtime/index.md) | Deploy the agent container (image/command/args/env/autoscaling) |
 | [memory](memory/index.md) | Long-term memory container (Mem0 vector store, semantic search) |
+| [catalog](catalog/index.md) | Runtime placement flavors + OpenClaw versions/workspaces |
 | [policy](policy/index.md) | Cedar policy engine (policy-groups + policies + decision) |
 | [cr](cr/index.md) | VNG Cloud Container Registry wrapper (auto-provisioned repo + robot account) |
 | [deploy](deploy/index.md) | Client-side orchestrator (identity + memory + runtime + cr) |

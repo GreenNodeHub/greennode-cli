@@ -51,3 +51,9 @@ grn agentbase identity <command> [options]
 | [outbound-auth-oauth2-delete](outbound-auth-oauth2-delete.md) | Delete an OAuth2 provider |
 | [outbound-auth-oauth2-m2m-token](outbound-auth-oauth2-m2m-token.md) | Get an M2M OAuth2 token |
 | [outbound-auth-oauth2-3lo-token](outbound-auth-oauth2-3lo-token.md) | Get a 3-legged OAuth2 token |
+
+### API Key — Delegate
+
+| Command | Description |
+|---------|-------------|
+| [api-key-delegate](api-key-delegate.md) | Authorize a delegated API key against a provider |

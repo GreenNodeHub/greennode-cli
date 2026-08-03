@@ -26,6 +26,16 @@ terminal state.
 | [delete](delete.md) | Delete a gateway |
 | [wait](wait.md) | Wait for a gateway to reach a terminal state |
 
+## Sub-resource groups
+
+| Group | Commands |
+|-------|----------|
+| [flavors](flavors-list.md) | [`list`](flavors-list.md) |
+| [access-logs](access-logs-list.md) | [`list`](access-logs-list.md) · [`stats`](access-logs-stats.md) |
+| [inbound-auth](inbound-auth-jwt-idp-app-set.md) | [`jwt idp-app set`](inbound-auth-jwt-idp-app-set.md) · [`jwt idp-app clear`](inbound-auth-jwt-idp-app-clear.md) |
+| [private-network](private-network-routes-get.md) | [`routes get`](private-network-routes-get.md) · [`routes set`](private-network-routes-set.md) |
+| [service-account](service-account-repair.md) | [`repair`](service-account-repair.md) |
+
 ## Recommended workflow for complex specs
 
 Gateway creation exposes many nested, mutually-exclusive fields (targets,

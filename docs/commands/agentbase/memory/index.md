@@ -18,3 +18,13 @@ grn agentbase memory <command> [options]
 | [get](get.md) | Show a memory |
 | [delete](delete.md) | Delete a memory |
 | [search](search.md) | Semantic-search a memory's long-term facts |
+
+## Sub-resource groups
+
+| Group | Commands |
+|-------|----------|
+| [actor](actor-list.md) | [`actor list <id>`](actor-list.md) |
+| [session](session-list.md) | [`session list <id> <actor-id>`](session-list.md) |
+| [event](event-list.md) | [`event list`](event-list.md) · [`event create`](event-create.md) · [`event delete`](event-delete.md) |
+| [strategy](strategy-list.md) | [`strategy list <id>`](strategy-list.md) |
+| [record](record-list.md) | [`record list`](record-list.md) · [`record delete`](record-delete.md) · [`record insert`](record-insert.md) · [`record generate-from-session`](record-generate-from-session.md) · [`record generate-from-content`](record-generate-from-content.md) |
