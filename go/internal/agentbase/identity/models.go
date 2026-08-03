@@ -228,3 +228,18 @@ type GetDelegatedApiKeyResponse struct {
 	SessionID        *string `json:"sessionId"`
 	Status           *string `json:"status"`
 }
+
+// AuthorizeDelegatedApiKeyRequest is the body for POST /api-key/delegate/{providerId}
+// (operation authorizeApiKey). apikey is required.
+type AuthorizeDelegatedApiKeyRequest struct {
+	APIKey string `json:"apikey"`
+}
+
+// AuthorizeDelegatedApiKeyResponse is the response of the delegate-authorize
+// call. All fields are optional per the OpenAPI schema. redirectUrl is where the
+// caller's user-agent is sent next; success/message describe the outcome.
+type AuthorizeDelegatedApiKeyResponse struct {
+	Message     *string `json:"message"`
+	RedirectURL *string `json:"redirectUrl"`
+	Success     *bool   `json:"success"`
+}

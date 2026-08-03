@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -368,5 +369,46 @@ func TestNewClient(t *testing.T) {
 	c := NewClient("https://example.com", nil)
 	if c == nil {
 		t.Fatal("expected non-nil client")
+	}
+}
+
+func TestDelegateApiKey(t *testing.T) {
+	var gotMethod, gotPath, gotState string
+	var gotBody []byte
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotState = r.URL.Query().Get("state")
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		ok := true
+		_ = json.NewEncoder(w).Encode(AuthorizeDelegatedApiKeyResponse{
+			Success:     &ok,
+			RedirectURL: sp("https://idp/authorize"),
+			Message:     sp("ok"),
+		})
+	})
+	out, err := c.DelegateApiKey(context.Background(), "prov-1", "abc-state", "ak-secret")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method: %s", gotMethod)
+	}
+	if gotPath != "/api-key/delegate/prov-1" {
+		t.Errorf("path: %s", gotPath)
+	}
+	if gotState != "abc-state" {
+		t.Errorf("state: %q", gotState)
+	}
+	var got AuthorizeDelegatedApiKeyRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.APIKey != "ak-secret" {
+		t.Errorf("apikey body: %+v", got)
+	}
+	if out.RedirectURL == nil || *out.RedirectURL != "https://idp/authorize" {
+		t.Errorf("decode: %+v", out)
 	}
 }
