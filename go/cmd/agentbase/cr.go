@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	crpkg "github.com/vngcloud/greennode-cli/internal/agentbase/cr"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	crpkg "github.com/greennodehub/greennode-cli/internal/agentbase/cr"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 // crCmd groups the agent-core-container-registry commands. The service wraps

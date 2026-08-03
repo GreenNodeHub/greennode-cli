@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	agentbaseconfig "github.com/vngcloud/greennode-cli/internal/agentbase/config"
-	"github.com/vngcloud/greennode-cli/internal/auth"
-	coreconfig "github.com/vngcloud/greennode-cli/internal/config"
+	agentbaseconfig "github.com/greennodehub/greennode-cli/internal/agentbase/config"
+	"github.com/greennodehub/greennode-cli/internal/auth"
+	coreconfig "github.com/greennodehub/greennode-cli/internal/config"
 )
 
 // envFromIamEnv maps the profile's iam_env to an agentbase env. The mapping is

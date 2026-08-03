@@ -10,11 +10,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	identitypkg "github.com/vngcloud/greennode-cli/internal/agentbase/identity"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	coreconfig "github.com/vngcloud/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	identitypkg "github.com/greennodehub/greennode-cli/internal/agentbase/identity"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/jsonslice"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
+	coreconfig "github.com/greennodehub/greennode-cli/internal/config"
 )
 
 // --- root identity command ---

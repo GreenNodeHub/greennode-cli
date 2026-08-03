@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/client"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
 )
 
 // fakeTokenProvider satisfies coreclient.TokenProvider so the runtime tests do
@@ -42,8 +42,8 @@ func TestList(t *testing.T) {
 		gotSize = r.URL.Query().Get("size")
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(ListAgentRuntimesResponse{
-			ListData:  []AgentRuntime{{ID: "1", Name: "rt-one", Status: "ACTIVE"}},
-			Page:      1, PageSize: 10, TotalPage: 1, TotalItem: 1,
+			ListData: []AgentRuntime{{ID: "1", Name: "rt-one", Status: "ACTIVE"}},
+			Page:     1, PageSize: 10, TotalPage: 1, TotalItem: 1,
 		})
 	})
 	out, err := c.List(context.Background(), 1, 10)
@@ -129,14 +129,14 @@ func TestCreate(t *testing.T) {
 	})
 	pw := "secret"
 	out, err := c.Create(context.Background(), &CreateAgentRuntimeRequest{
-		Name:        "rt",
-		ImageURL:    "img:1",
-		FlavorID:    "f1",
-		Command:     []string{"run"},
-		Args:        []string{},
+		Name:                 "rt",
+		ImageURL:             "img:1",
+		FlavorID:             "f1",
+		Command:              []string{"run"},
+		Args:                 []string{},
 		EnvironmentVariables: map[string]string{"K": "V"},
-		ImageAuth:   &ImageAuth{Enabled: true, Username: "u", Password: pw},
-		Autoscaling: Autoscaling{MinReplicas: 1, MaxReplicas: 3, CPUUtilization: 70, MemoryUtilization: 70},
+		ImageAuth:            &ImageAuth{Enabled: true, Username: "u", Password: pw},
+		Autoscaling:          Autoscaling{MinReplicas: 1, MaxReplicas: 3, CPUUtilization: 70, MemoryUtilization: 70},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -189,13 +189,13 @@ func TestUpdate(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(AgentRuntime{ID: "abc-123", Name: "rt", Status: "UPDATING"})
 	})
 	out, err := c.Update(context.Background(), "abc-123", &UpdateAgentRuntimeRequest{
-		Description: "changed",
-		ImageURL:    "img:2",
-		FlavorID:    "f1",
-		Command:     []string{"run"},
-		Args:        []string{},
+		Description:          "changed",
+		ImageURL:             "img:2",
+		FlavorID:             "f1",
+		Command:              []string{"run"},
+		Args:                 []string{},
 		EnvironmentVariables: map[string]string{"K": "V"},
-		Autoscaling: Autoscaling{MinReplicas: 1, MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
+		Autoscaling:          Autoscaling{MinReplicas: 1, MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

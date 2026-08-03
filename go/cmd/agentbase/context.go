@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 var contextCmd = &cobra.Command{

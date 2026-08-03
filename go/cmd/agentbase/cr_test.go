@@ -3,7 +3,7 @@ package agentbase
 import (
 	"testing"
 
-	crpkg "github.com/vngcloud/greennode-cli/internal/agentbase/cr"
+	crpkg "github.com/greennodehub/greennode-cli/internal/agentbase/cr"
 )
 
 // TestAgentbaseCmd_HasCRSubtree verifies the cr command tree mirrors the

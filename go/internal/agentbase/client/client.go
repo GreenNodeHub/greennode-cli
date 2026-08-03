@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	coreclient "github.com/vngcloud/greennode-cli/internal/client"
+	coreclient "github.com/greennodehub/greennode-cli/internal/client"
 )
 
 // Client is the authenticated HTTP client for a single API base URL.

@@ -3,7 +3,7 @@ package agentbase
 import (
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 // TestAgentbaseCmd_HasDeploySubtree verifies the deploy command tree: generate,

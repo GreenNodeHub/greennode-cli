@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	memorypkg "github.com/vngcloud/greennode-cli/internal/agentbase/memory"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	memorypkg "github.com/greennodehub/greennode-cli/internal/agentbase/memory"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 // TestAgentbaseCmd_HasMemorySubtree verifies the memory group and its leaves.

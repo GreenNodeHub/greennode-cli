@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	policypkg "github.com/vngcloud/greennode-cli/internal/agentbase/policy"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
+	policypkg "github.com/greennodehub/greennode-cli/internal/agentbase/policy"
 )
 
 // TestAgentbaseCmd_HasPolicySubtree verifies the policy group + nested policy

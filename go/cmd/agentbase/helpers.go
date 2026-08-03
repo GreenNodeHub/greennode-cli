@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	agentbaseconfig "github.com/vngcloud/greennode-cli/internal/agentbase/config"
-	"github.com/vngcloud/greennode-cli/internal/cli"
-	coreclient "github.com/vngcloud/greennode-cli/internal/client"
-	coreconfig "github.com/vngcloud/greennode-cli/internal/config"
+	agentbaseconfig "github.com/greennodehub/greennode-cli/internal/agentbase/config"
+	"github.com/greennodehub/greennode-cli/internal/cli"
+	coreclient "github.com/greennodehub/greennode-cli/internal/client"
+	coreconfig "github.com/greennodehub/greennode-cli/internal/config"
 )
 
 // agentbaseCtx is the resolved per-invocation context for the agentbase

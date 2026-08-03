@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/client"
-	coreclient "github.com/vngcloud/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
+	coreclient "github.com/greennodehub/greennode-cli/internal/client"
 )
 
 // Client is the API client for the agent-core-memory service. It wraps the

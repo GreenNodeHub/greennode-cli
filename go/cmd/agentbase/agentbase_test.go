@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/jsonslice"
 )
 
 // subCmdExists reports whether cmd has a direct child named name. Used for

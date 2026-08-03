@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/jsonslice"
 )
 
 // fakeTokenProvider satisfies coreclient.TokenProvider so identity tests no

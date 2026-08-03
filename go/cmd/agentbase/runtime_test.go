@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	runtimepkg "github.com/vngcloud/greennode-cli/internal/agentbase/runtime"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
+	runtimepkg "github.com/greennodehub/greennode-cli/internal/agentbase/runtime"
 )
 
 // TestAgentbaseCmd_HasRuntimeSubtree verifies the runtime lifecycle group and

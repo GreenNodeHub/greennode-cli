@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	gatewaypkg "github.com/vngcloud/greennode-cli/internal/agentbase/gateway"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	gatewaypkg "github.com/greennodehub/greennode-cli/internal/agentbase/gateway"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 // gatewayCmd groups the MCP gateway lifecycle commands. The agentbase /gateway
@@ -599,9 +599,9 @@ var (
 		"DELETED": true,
 	}
 	gatewayTerminalFailure = map[string]bool{
-		"CREATE_ERROR":  true,
-		"UPDATE_ERROR":  true,
-		"ERROR":         true,
+		"CREATE_ERROR":   true,
+		"UPDATE_ERROR":   true,
+		"ERROR":          true,
 		"ERROR_DELETING": true,
 	}
 )

@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	policypkg "github.com/vngcloud/greennode-cli/internal/agentbase/policy"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
+	policypkg "github.com/greennodehub/greennode-cli/internal/agentbase/policy"
 )
 
 // policyCmd groups the agent-core-policy commands: Cedar-backed authorization

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/jsonslice"
 )
 
 func TestCreateAgentIdentityRequestJSON(t *testing.T) {

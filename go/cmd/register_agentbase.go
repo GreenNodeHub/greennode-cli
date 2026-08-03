@@ -8,5 +8,5 @@ package cmd
 // development. Drop this build constraint once agentbase is feature-complete
 // and ready to ship in the default binary.
 import (
-	_ "github.com/vngcloud/greennode-cli/cmd/agentbase"
+	_ "github.com/greennodehub/greennode-cli/cmd/agentbase"
 )

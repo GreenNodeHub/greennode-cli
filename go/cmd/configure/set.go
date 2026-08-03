@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/greennodehub/greennode-cli/internal/config"
+	loginpkg "github.com/greennodehub/greennode-cli/internal/login"
 	"github.com/spf13/cobra"
-	"github.com/vngcloud/greennode-cli/internal/config"
-	loginpkg "github.com/vngcloud/greennode-cli/internal/login"
 )
 
 var setCmd = &cobra.Command{

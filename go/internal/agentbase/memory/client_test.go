@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/client"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
 )
 
 // fakeTokenProvider satisfies coreclient.TokenProvider so the memory tests do
@@ -38,8 +38,8 @@ func TestList(t *testing.T) {
 		gotSize = r.URL.Query().Get("size")
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(ListMemoriesResponse{
-			ListData:  []Memory{{ID: "1", Name: "mem-one", Status: "ACTIVE"}},
-			Page:      1, PageSize: 10, TotalPage: 1, TotalItem: 1,
+			ListData: []Memory{{ID: "1", Name: "mem-one", Status: "ACTIVE"}},
+			Page:     1, PageSize: 10, TotalPage: 1, TotalItem: 1,
 		})
 	})
 	out, err := c.List(context.Background(), 1, 10)

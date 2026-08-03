@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/client"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
 )
 
 // fakeTokenProvider satisfies coreclient.TokenProvider so the gateway tests do
@@ -42,7 +42,7 @@ func TestList(t *testing.T) {
 		gotPageSize = r.URL.Query().Get("pageSize")
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(ListGatewaysResponse{
-			Items: []GatewayResponse{{ID: "1", Name: "gw-one", NetworkMode: "PUBLIC", State: "ACTIVE"}},
+			Items:      []GatewayResponse{{ID: "1", Name: "gw-one", NetworkMode: "PUBLIC", State: "ACTIVE"}},
 			Pagination: Pagination{Page: 1, PageSize: 50, TotalItems: 1},
 		})
 	})

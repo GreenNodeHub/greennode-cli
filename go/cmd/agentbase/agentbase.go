@@ -17,9 +17,9 @@ package agentbase
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	"github.com/vngcloud/greennode-cli/internal/cli"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/cli"
 )
 
 // Persistent-flag targets for the `grn agentbase` subtree. The --output flag

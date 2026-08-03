@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	memorypkg "github.com/vngcloud/greennode-cli/internal/agentbase/memory"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	memorypkg "github.com/greennodehub/greennode-cli/internal/agentbase/memory"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 // memoryCmd groups the agent-memory commands. The agentbase /memory endpoint

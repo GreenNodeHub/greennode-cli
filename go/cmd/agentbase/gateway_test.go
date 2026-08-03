@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
 // captureStdout swaps os.Stdout for a pipe and returns everything fn wrote.

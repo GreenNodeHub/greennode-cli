@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vngcloud/greennode-cli/internal/agentbase/client"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
 )
 
 // fakeTokenProvider satisfies coreclient.TokenProvider so the cr tests do not

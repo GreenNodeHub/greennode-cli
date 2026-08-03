@@ -43,22 +43,22 @@ type PrivateNetworkInput struct {
 
 // InboundAuthRequest is the gateway's inbound (caller) authentication config.
 type InboundAuthRequest struct {
-	Mode               string         `json:"mode"` // NONE | IAM | JWT
-	ClientRedirectURIs []string       `json:"clientRedirectUris,omitempty"`
-	JWT                *JWTConfigReq  `json:"jwt,omitempty"`
-	IAMRequireOwner    *bool          `json:"iamRequireOwner,omitempty"`
+	Mode               string        `json:"mode"` // NONE | IAM | JWT
+	ClientRedirectURIs []string      `json:"clientRedirectUris,omitempty"`
+	JWT                *JWTConfigReq `json:"jwt,omitempty"`
+	IAMRequireOwner    *bool         `json:"iamRequireOwner,omitempty"`
 }
 
 // JWTConfigReq is the JWT-mode inbound config. source is DISCOVERY or JWKS.
 type JWTConfigReq struct {
-	Source            string              `json:"source,omitempty"`
-	DiscoveryURL      string              `json:"discoveryUrl,omitempty"`
-	JWKS              string              `json:"jwks,omitempty"`
-	AllowedAudiences  []string            `json:"allowedAudiences,omitempty"`
-	AllowedClients    []string            `json:"allowedClients,omitempty"`
-	AllowedScopes     []string            `json:"allowedScopes,omitempty"`
-	CustomClaims      []map[string]string `json:"customClaims,omitempty"`
-	PrincipalClaim    string              `json:"principalClaim,omitempty"`
+	Source           string              `json:"source,omitempty"`
+	DiscoveryURL     string              `json:"discoveryUrl,omitempty"`
+	JWKS             string              `json:"jwks,omitempty"`
+	AllowedAudiences []string            `json:"allowedAudiences,omitempty"`
+	AllowedClients   []string            `json:"allowedClients,omitempty"`
+	AllowedScopes    []string            `json:"allowedScopes,omitempty"`
+	CustomClaims     []map[string]string `json:"customClaims,omitempty"`
+	PrincipalClaim   string              `json:"principalClaim,omitempty"`
 }
 
 // CreateTargetInput is one upstream MCP target.
@@ -72,15 +72,15 @@ type CreateTargetInput struct {
 // OutboundAuthRequest is a target's outbound (upstream) auth. type is
 // NONE | APIKEY | OAUTH | INBOUND_FORWARD.
 type OutboundAuthRequest struct {
-	Type              string             `json:"type"`
-	ProviderSource    *string            `json:"providerSource,omitempty"` // CUSTOM | MANAGED (OAUTH only)
-	Flow              string             `json:"flow,omitempty"`           // 2LO | 3LO
-	ProviderName      string             `json:"providerName,omitempty"`
-	Scopes            []string           `json:"scopes,omitempty"`
-	ReturnURL         string             `json:"returnUrl,omitempty"`
-	HeaderName        string             `json:"headerName,omitempty"`
-	HeaderValuePrefix string             `json:"headerValuePrefix,omitempty"`
-	CustomParameters  map[string]string  `json:"customParameters,omitempty"`
+	Type              string            `json:"type"`
+	ProviderSource    *string           `json:"providerSource,omitempty"` // CUSTOM | MANAGED (OAUTH only)
+	Flow              string            `json:"flow,omitempty"`           // 2LO | 3LO
+	ProviderName      string            `json:"providerName,omitempty"`
+	Scopes            []string          `json:"scopes,omitempty"`
+	ReturnURL         string            `json:"returnUrl,omitempty"`
+	HeaderName        string            `json:"headerName,omitempty"`
+	HeaderValuePrefix string            `json:"headerValuePrefix,omitempty"`
+	CustomParameters  map[string]string `json:"customParameters,omitempty"`
 }
 
 // HostAliasInput is one /etc/hosts override entry.
@@ -96,30 +96,30 @@ type HostAliasInput struct {
 
 // GatewayResponse is the body returned by get/create and one element of list.
 type GatewayResponse struct {
-	ID                    string                  `json:"id"`
-	Name                  string                  `json:"name"`
-	DisplayName           string                  `json:"displayName"`
-	Description           string                  `json:"description"`
-	NetworkMode           string                  `json:"networkMode"`
-	PrivateNetwork        *PrivateNetworkResponse `json:"privateNetwork,omitempty"`
-	Flavor                *FlavorSnapshotResponse `json:"flavor,omitempty"`
-	Replicas              int                     `json:"replicas,omitempty"`
-	InboundAuth           InboundAuthResponse     `json:"inboundAuth"`
-	PolicyGroupID         string                  `json:"policyGroupId,omitempty"`
-	AgentIdentityName     string                  `json:"agentIdentityName,omitempty"`
-	IAM                   IAMResponse             `json:"iam"`
-	Endpoint              string                  `json:"endpoint,omitempty"`
-	PrivateEndpoint       string                  `json:"privateEndpoint,omitempty"`
-	PublicEndpoint        string                  `json:"publicEndpoint,omitempty"`
-	Targets               []TargetResponse        `json:"targets"`
-	AllowedCIDRs          []string                `json:"allowedCidrs"`
-	HostAliases           []HostAliasResponse     `json:"hostAliases"`
-	State                 string                  `json:"state"`
-	LastError             *LastErrorResponse      `json:"lastError,omitempty"`
-	AppliedResourceVersion string                 `json:"appliedResourceVersion,omitempty"`
-	AppliedAt             *time.Time              `json:"appliedAt,omitempty"`
-	CreatedAt             time.Time               `json:"createdAt"`
-	UpdatedAt             time.Time               `json:"updatedAt"`
+	ID                     string                  `json:"id"`
+	Name                   string                  `json:"name"`
+	DisplayName            string                  `json:"displayName"`
+	Description            string                  `json:"description"`
+	NetworkMode            string                  `json:"networkMode"`
+	PrivateNetwork         *PrivateNetworkResponse `json:"privateNetwork,omitempty"`
+	Flavor                 *FlavorSnapshotResponse `json:"flavor,omitempty"`
+	Replicas               int                     `json:"replicas,omitempty"`
+	InboundAuth            InboundAuthResponse     `json:"inboundAuth"`
+	PolicyGroupID          string                  `json:"policyGroupId,omitempty"`
+	AgentIdentityName      string                  `json:"agentIdentityName,omitempty"`
+	IAM                    IAMResponse             `json:"iam"`
+	Endpoint               string                  `json:"endpoint,omitempty"`
+	PrivateEndpoint        string                  `json:"privateEndpoint,omitempty"`
+	PublicEndpoint         string                  `json:"publicEndpoint,omitempty"`
+	Targets                []TargetResponse        `json:"targets"`
+	AllowedCIDRs           []string                `json:"allowedCidrs"`
+	HostAliases            []HostAliasResponse     `json:"hostAliases"`
+	State                  string                  `json:"state"`
+	LastError              *LastErrorResponse      `json:"lastError,omitempty"`
+	AppliedResourceVersion string                  `json:"appliedResourceVersion,omitempty"`
+	AppliedAt              *time.Time              `json:"appliedAt,omitempty"`
+	CreatedAt              time.Time               `json:"createdAt"`
+	UpdatedAt              time.Time               `json:"updatedAt"`
 }
 
 // PrivateNetworkResponse is the user-facing PRIVATE-mode VPC projection.
@@ -140,10 +140,10 @@ type FlavorSnapshotResponse struct {
 
 // InboundAuthResponse mirrors the stored inbound-auth config.
 type InboundAuthResponse struct {
-	Mode               string           `json:"mode"`
-	ClientRedirectURIs []string         `json:"clientRedirectUris,omitempty"`
-	JWT                *JWTConfigResp   `json:"jwt,omitempty"`
-	IAMRequireOwner    *bool            `json:"iamRequireOwner,omitempty"`
+	Mode               string         `json:"mode"`
+	ClientRedirectURIs []string       `json:"clientRedirectUris,omitempty"`
+	JWT                *JWTConfigResp `json:"jwt,omitempty"`
+	IAMRequireOwner    *bool          `json:"iamRequireOwner,omitempty"`
 }
 
 // JWTConfigResp is the response-side JWT config.
@@ -167,10 +167,10 @@ type IAMResponse struct {
 
 // TargetResponse is one upstream target as returned.
 type TargetResponse struct {
-	Name         string                `json:"name"`
-	Type         string                `json:"type"`
-	Endpoint     string                `json:"endpoint"`
-	OutboundAuth OutboundAuthResponse  `json:"outboundAuth"`
+	Name         string               `json:"name"`
+	Type         string               `json:"type"`
+	Endpoint     string               `json:"endpoint"`
+	OutboundAuth OutboundAuthResponse `json:"outboundAuth"`
 }
 
 // OutboundAuthResponse is the response-side outbound auth.

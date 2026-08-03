@@ -12,17 +12,17 @@ import (
 
 	"github.com/spf13/cobra"
 
-	abclient "github.com/vngcloud/greennode-cli/internal/agentbase/client"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/cliinput"
-	crpkg "github.com/vngcloud/greennode-cli/internal/agentbase/cr"
-	deploypkg "github.com/vngcloud/greennode-cli/internal/agentbase/deploy"
-	identitypkg "github.com/vngcloud/greennode-cli/internal/agentbase/identity"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/jsonslice"
-	memorypkg "github.com/vngcloud/greennode-cli/internal/agentbase/memory"
-	"github.com/vngcloud/greennode-cli/internal/agentbase/output"
-	runtimepkg "github.com/vngcloud/greennode-cli/internal/agentbase/runtime"
-	coreclient "github.com/vngcloud/greennode-cli/internal/client"
-	coreconfig "github.com/vngcloud/greennode-cli/internal/config"
+	abclient "github.com/greennodehub/greennode-cli/internal/agentbase/client"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
+	crpkg "github.com/greennodehub/greennode-cli/internal/agentbase/cr"
+	deploypkg "github.com/greennodehub/greennode-cli/internal/agentbase/deploy"
+	identitypkg "github.com/greennodehub/greennode-cli/internal/agentbase/identity"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/jsonslice"
+	memorypkg "github.com/greennodehub/greennode-cli/internal/agentbase/memory"
+	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
+	runtimepkg "github.com/greennodehub/greennode-cli/internal/agentbase/runtime"
+	coreclient "github.com/greennodehub/greennode-cli/internal/client"
+	coreconfig "github.com/greennodehub/greennode-cli/internal/config"
 )
 
 // deployCmd groups the agent-lifecycle orchestrator. deploy has NO backend of
