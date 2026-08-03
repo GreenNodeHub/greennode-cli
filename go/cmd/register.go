@@ -9,4 +9,6 @@ package cmd
 // vServer is still under development.
 import (
 	_ "github.com/greennodehub/greennode-cli/cmd/vks"
+	_ "github.com/greennodehub/greennode-cli/cmd/vserver"
+	_ "github.com/greennodehub/greennode-cli/internal/resources/vserver"
 )
