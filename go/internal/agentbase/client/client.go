@@ -54,6 +54,20 @@ func (e *APIError) Error() string {
 // drives the HTTP call itself. A nil provider (construction tests) panics on
 // Do — never construct a Client with nil for a real request.
 func (c *Client) Do(ctx context.Context, method, path string, query url.Values, body, out interface{}) error {
+	return c.doReq(ctx, method, path, query, nil, body, out)
+}
+
+// DoWithHeaders is Do with extra request headers (e.g. If-Match for OCC PUTs).
+// headers may be nil. It is additive: Authorization/Content-Type/Accept are
+// still applied as in Do, and extra headers never overwrite those three.
+func (c *Client) DoWithHeaders(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}) error {
+	return c.doReq(ctx, method, path, query, headers, body, out)
+}
+
+// doReq is the single implementation behind Do and DoWithHeaders. Extra headers
+// are applied after the standard Auth/Content-Type/Accept set and never
+// overwrite those three.
+func (c *Client) doReq(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}) error {
 	token, err := c.auth.GetToken()
 	if err != nil {
 		return err
@@ -83,6 +97,12 @@ func (c *Client) Do(ctx context.Context, method, path string, query url.Values, 
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Accept", "application/json")
+	for k, v := range headers {
+		if k == "Authorization" || k == "Content-Type" || k == "Accept" {
+			continue
+		}
+		req.Header.Set(k, v)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

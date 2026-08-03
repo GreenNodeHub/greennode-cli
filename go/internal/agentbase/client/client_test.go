@@ -206,3 +206,55 @@ func TestAPIError_Error(t *testing.T) {
 		t.Errorf("unexpected error message: %s", msg)
 	}
 }
+
+// TestDoWithHeaders_ExtraHeadersApplied: DoWithHeaders forwards caller-supplied
+// headers (e.g. If-Match for OCC PUTs) while still applying the standard
+// Authorization/Content-Type/Accept set. Reserved headers in the map are
+// ignored so a caller cannot clobber auth.
+func TestDoWithHeaders_ExtraHeadersApplied(t *testing.T) {
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		if got := r.Header.Get("If-Match"); got != `"v3"` {
+			t.Errorf("expected If-Match=\"v3\", got %q", got)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("Authorization not applied: %q", got)
+		}
+		if got := r.Header.Get("Content-Type"); got != "application/json" {
+			t.Errorf("Content-Type not applied: %q", got)
+		}
+		if got := r.Header.Get("Accept"); got != "application/json" {
+			t.Errorf("Accept not applied: %q", got)
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(stubResponse{Message: "ok"})
+	})
+	headers := map[string]string{
+		"If-Match":      `"v3"`,
+		"X-Custom":      "yes",
+		"Authorization": "Bearer should-be-ignored", // reserved — must not clobber
+	}
+	var out stubResponse
+	if err := c.DoWithHeaders(context.Background(), http.MethodPut, "/test", nil, headers, map[string]string{"k": "v"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Message != "ok" {
+		t.Errorf("expected ok, got %s", out.Message)
+	}
+}
+
+// TestDo_UnchangedByHeaderSeam: factoring Do through doReq must not change Do's
+// behavior — no extra headers, standard set still applied.
+func TestDo_UnchangedByHeaderSeam(t *testing.T) {
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("Authorization not applied: %q", got)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.Do(context.Background(), http.MethodGet, "/test", nil, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+}
