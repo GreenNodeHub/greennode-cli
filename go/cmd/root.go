@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const cliVersion = "1.10.0" // x-release-please-version
+const cliVersion = "1.11.0" // x-release-please-version
 
 // Global flags
 var (
