@@ -62,6 +62,7 @@ func flagCompleters() map[string]cli.CompFunc {
 		"block-store-csi-plugin": cli.FlagValues("enabled", "disabled"),
 		"vpc-id":                 cli.ResourceCompletion("vserver:network"),
 		"subnet-id":              cli.ResourceCompletion("vserver:subnet"),
+		"subnet-ids":             cli.ResourceCompletion("vserver:subnet"),
 		"ssh-key-id":             cli.ResourceCompletion("vserver:sshkey"),
 		"security-groups":        cli.ResourceCompletion("vserver:secgroup"),
 		"disk-type":              cli.ResourceCompletion("vserver:volumetype"),

@@ -16,8 +16,7 @@ grn vks create-cluster
     --k8s-version <value>
     --network-type <value>
     --vpc-id <value>
-    [--subnet-id <value>]
-    [--list-subnet-ids <value>]
+    --subnet-ids <value>
     [--cidr <value>]
     [--description <value>]
     [--private-cluster <enabled|disabled>]
@@ -62,19 +61,21 @@ ID of the VPC to provision the cluster in.
 
 - Required: Yes
 
-**`--subnet-id`** (string)
+**`--subnet-ids`** (list&lt;string&gt;)
 
-Subnet ID for the cluster control plane.
+Subnet IDs for the cluster, comma-separated. Pass one ID for a single-subnet
+cluster and several for a multi-subnet one — both go through the same field.
 
-- Required: No
-- Provide `--subnet-id`, `--list-subnet-ids`, or neither — the server validates the combination.
+- Required: Yes
+- Syntax: `sub-aaa` or `sub-aaa,sub-bbb`
 
-**`--list-subnet-ids`** (list&lt;string&gt;)
+!!! warning "Replaces `--subnet-id`"
 
-Subnet IDs for the cluster, comma-separated.
+    `--subnet-id` was removed: the API no longer has a single-subnet `subnetId`
+    field. Pass the same ID to `--subnet-ids` instead.
 
-- Required: No
-- Syntax: `sub-aaa,sub-bbb`
+    `--list-subnet-ids` still works as a deprecated alias for `--subnet-ids` and
+    prints a warning. Setting both is an error.
 
 **`--cidr`** (string)
 
@@ -215,9 +216,21 @@ grn vks create-cluster \
   --k8s-version v1.29.13-vks.1740045600 \
   --network-type CILIUM_NATIVE_ROUTING \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
-  --subnet-id sub-abc12345-0000-0000-0000-000000000001 \
+  --subnet-ids sub-abc12345-0000-0000-0000-000000000001 \
   --node-netmask-size 25 \
   --secondary-subnets 10.5.60.0/22,10.5.71.0/26
+```
+
+Create a cluster spanning several subnets — same flag, more IDs:
+
+```bash
+grn vks create-cluster \
+  --name multi-subnet-cluster \
+  --k8s-version v1.29.13-vks.1740045600 \
+  --network-type CILIUM_OVERLAY \
+  --cidr 10.96.0.0/12 \
+  --vpc-id net-abc12345-0000-0000-0000-000000000001 \
+  --subnet-ids sub-abc12345-0000-0000-0000-000000000001,sub-abc12345-0000-0000-0000-000000000002
 ```
 
 Create a cluster with TIGERA (CIDR required) and auto-healing:
@@ -229,7 +242,7 @@ grn vks create-cluster \
   --network-type TIGERA \
   --cidr 10.96.0.0/12 \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
-  --subnet-id sub-abc12345-0000-0000-0000-000000000001 \
+  --subnet-ids sub-abc12345-0000-0000-0000-000000000001 \
   --auto-healing-config 'enableAutoHealing=true,maxUnhealthy=20%,timeoutUnhealthy=10'
 ```
 
@@ -241,6 +254,7 @@ grn vks create-cluster \
   --k8s-version v1.29.13-vks.1740045600 \
   --network-type CILIUM_NATIVE_ROUTING \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
+  --subnet-ids sub-abc12345-0000-0000-0000-000000000001 \
   --node-netmask-size 25 \
   --secondary-subnets 10.5.60.0/22,10.5.71.0/26 \
   --dry-run

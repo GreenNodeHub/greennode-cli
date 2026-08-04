@@ -8,6 +8,7 @@ import (
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var createClusterCmd = &cobra.Command{
@@ -25,11 +26,14 @@ func init() {
 	f.String("k8s-version", "", "Kubernetes version (required)")
 	f.String("network-type", "", "Network type: TIGERA, CILIUM_OVERLAY, CILIUM_NATIVE_ROUTING (required). TIGERA/CILIUM_OVERLAY need --cidr; CILIUM_NATIVE_ROUTING needs --node-netmask-size and --secondary-subnets")
 	f.String("vpc-id", "", "VPC ID (required)")
-	f.String("subnet-id", "", "Subnet ID")
+	f.String("subnet-ids", "", "Subnet IDs for the cluster, comma-separated (required, at least one)")
 
 	for _, name := range []string{"name", "k8s-version", "network-type", "vpc-id"} {
 		createClusterCmd.MarkFlagRequired(name)
 	}
+	// --subnet-ids is required too, but it is enforced in resolveSubnetIDs rather
+	// than with MarkFlagRequired: that would reject callers who pass only the
+	// deprecated --list-subnet-ids alias.
 
 	// Cluster settings (optional)
 	f.String("cidr", "", "CIDR block (required for TIGERA and CILIUM_OVERLAY)")
@@ -42,6 +46,8 @@ func init() {
 	f.String("az-strategy", "SINGLE", "Availability zone strategy")
 	f.String("secondary-subnets", "", "Secondary subnet CIDRs, comma-separated, e.g. 10.5.60.0/22 (required for CILIUM_NATIVE_ROUTING, at least one, max 10). NOT subnet IDs")
 	f.String("list-subnet-ids", "", "Subnet IDs for the cluster (comma-separated)")
+	// Deprecating hides the alias from help and prints a warning when it is used.
+	_ = f.MarkDeprecated("list-subnet-ids", "use --subnet-ids instead")
 	f.Int("node-netmask-size", 0, "Node netmask size: 24, 25, or 26 (required for CILIUM_NATIVE_ROUTING)")
 	f.String("auto-upgrade-config", "", "Auto-upgrade config (shorthand time=03:00,weekdays=Mon or JSON; use JSON for multiple weekdays)")
 	f.String("auto-healing-config", "", "Auto-healing config; set exactly one of maxUnhealthy or unhealthyRange (shorthand enableAutoHealing=true,maxUnhealthy=20%,timeoutUnhealthy=10 or JSON)")
@@ -53,13 +59,11 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	k8sVersion, _ := cmd.Flags().GetString("k8s-version")
 	networkType, _ := cmd.Flags().GetString("network-type")
 	vpcID, _ := cmd.Flags().GetString("vpc-id")
-	subnetID, _ := cmd.Flags().GetString("subnet-id")
 	cidr, _ := cmd.Flags().GetString("cidr")
 	description, _ := cmd.Flags().GetString("description")
 	releaseChannel, _ := cmd.Flags().GetString("release-channel")
 	azStrategy, _ := cmd.Flags().GetString("az-strategy")
 	secondarySubnets, _ := cmd.Flags().GetString("secondary-subnets")
-	listSubnetIDs, _ := cmd.Flags().GetString("list-subnet-ids")
 	autoUpgradeStr, _ := cmd.Flags().GetString("auto-upgrade-config")
 	autoHealingStr, _ := cmd.Flags().GetString("auto-healing-config")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -86,6 +90,11 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	subnetIDs, err := resolveSubnetIDs(cmd.Flags())
+	if err != nil {
+		return err
+	}
+
 	// Build cluster body. Node groups are created separately via
 	// 'grn vks create-nodegroup'.
 	body := map[string]interface{}{
@@ -93,6 +102,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 		"version":                    k8sVersion,
 		"networkType":                networkType,
 		"vpcId":                      vpcID,
+		"listSubnetIds":              subnetIDs,
 		"enablePrivateCluster":       enablePrivateCluster,
 		"releaseChannel":             releaseChannel,
 		"enabledBlockStoreCsiPlugin": enabledCSIPlugin,
@@ -101,9 +111,6 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 		"azStrategy":                 azStrategy,
 	}
 
-	if subnetID != "" {
-		body["subnetId"] = subnetID
-	}
 	if cidr != "" {
 		body["cidr"] = cidr
 	}
@@ -112,9 +119,6 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 	if secondarySubnets != "" {
 		body["secondarySubnets"] = parseCommaSeparated(secondarySubnets)
-	}
-	if listSubnetIDs != "" {
-		body["listSubnetIds"] = parseCommaSeparated(listSubnetIDs)
 	}
 	if cmd.Flags().Changed("node-netmask-size") {
 		nodeNetmaskSize, _ := cmd.Flags().GetInt("node-netmask-size")
@@ -165,6 +169,29 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 
 	return outputResult(cmd, result)
+}
+
+// resolveSubnetIDs returns the cluster's subnet IDs. The API has no
+// single-subnet "subnetId" field any more, so one subnet and many subnets both
+// travel in "listSubnetIds" — hence a single required list flag. The deprecated
+// --list-subnet-ids alias is still accepted, but not together with --subnet-ids,
+// where there would be no safe way to guess which one the caller meant.
+func resolveSubnetIDs(flags *pflag.FlagSet) ([]string, error) {
+	subnetIDs, _ := flags.GetString("subnet-ids")
+	deprecated, _ := flags.GetString("list-subnet-ids")
+
+	if subnetIDs != "" && deprecated != "" {
+		return nil, fmt.Errorf("--subnet-ids and --list-subnet-ids set the same field; pass only --subnet-ids")
+	}
+	if deprecated != "" {
+		subnetIDs = deprecated
+	}
+
+	ids := parseCommaSeparated(subnetIDs)
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("--subnet-ids is required (at least one subnet ID, comma-separated)")
+	}
+	return ids, nil
 }
 
 // validateNetworkRequirements checks the fields each network type requires.
