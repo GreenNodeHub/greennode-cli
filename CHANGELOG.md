@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.10.0...v1.11.0) (2026-08-04)
+
+
+### Features
+
+* **login:** add login method using PKCE + change iam v2 endpoint ([#12](https://github.com/GreenNodeHub/greennode-cli/issues/12)) ([eb1fef9](https://github.com/GreenNodeHub/greennode-cli/commit/eb1fef96c809c0a5bd52ada9786e67d707f5a74e))
+
 ## [1.10.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.9.1...v1.10.0) (2026-08-03)
 
 
