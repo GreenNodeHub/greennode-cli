@@ -24,7 +24,7 @@ func init() {
 	// Cluster settings (required)
 	f.String("name", "", "Cluster name (required)")
 	f.String("k8s-version", "", "Kubernetes version (required)")
-	f.String("network-type", "", "Network type: TIGERA, CILIUM_OVERLAY, CILIUM_NATIVE_ROUTING (required). TIGERA/CILIUM_OVERLAY need --cidr; CILIUM_NATIVE_ROUTING needs --node-netmask-size and --secondary-subnets")
+	f.String("network-type", "", "Network type: TIGERA, CILIUM_OVERLAY, CILIUM_NATIVE_ROUTING (required). TIGERA/CILIUM_OVERLAY need --cidr; CILIUM_NATIVE_ROUTING needs --node-netmask-size")
 	f.String("vpc-id", "", "VPC ID (required)")
 	f.String("subnet-ids", "", "Subnet IDs for the cluster, comma-separated (required, at least one)")
 
@@ -44,7 +44,6 @@ func init() {
 	f.String("block-store-csi-plugin", "enabled", "Block store CSI plugin (enabled, disabled)")
 	f.String("service-endpoint", "disabled", "Service endpoint (enabled, disabled)")
 	f.String("az-strategy", "SINGLE", "Availability zone strategy")
-	f.String("secondary-subnets", "", "Secondary subnet CIDRs, comma-separated, e.g. 10.5.60.0/22 (required for CILIUM_NATIVE_ROUTING, at least one, max 10). NOT subnet IDs")
 	f.String("list-subnet-ids", "", "Subnet IDs for the cluster (comma-separated)")
 	// Deprecating hides the alias from help and prints a warning when it is used.
 	_ = f.MarkDeprecated("list-subnet-ids", "use --subnet-ids instead")
@@ -63,7 +62,6 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	description, _ := cmd.Flags().GetString("description")
 	releaseChannel, _ := cmd.Flags().GetString("release-channel")
 	azStrategy, _ := cmd.Flags().GetString("az-strategy")
-	secondarySubnets, _ := cmd.Flags().GetString("secondary-subnets")
 	autoUpgradeStr, _ := cmd.Flags().GetString("auto-upgrade-config")
 	autoHealingStr, _ := cmd.Flags().GetString("auto-healing-config")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -117,9 +115,6 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	if description != "" {
 		body["description"] = description
 	}
-	if secondarySubnets != "" {
-		body["secondarySubnets"] = parseCommaSeparated(secondarySubnets)
-	}
 	if cmd.Flags().Changed("node-netmask-size") {
 		nodeNetmaskSize, _ := cmd.Flags().GetInt("node-netmask-size")
 		body["nodeNetmaskSize"] = nodeNetmaskSize
@@ -148,7 +143,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 
 	// Network-type-specific requirements (enforced client-side so both dry-run
 	// and real creates fail fast with a clear message).
-	netErrs := validateNetworkRequirements(networkType, cidr, cmd.Flags().Changed("node-netmask-size"), secondarySubnets)
+	netErrs := validateNetworkRequirements(networkType, cidr, cmd.Flags().Changed("node-netmask-size"))
 
 	if dryRun {
 		return validateCreateCluster(name, netErrs)
@@ -195,11 +190,10 @@ func resolveSubnetIDs(flags *pflag.FlagSet) ([]string, error) {
 }
 
 // validateNetworkRequirements checks the fields each network type requires.
-// The API mandates --cidr for TIGERA/CILIUM_OVERLAY and both
-// --node-netmask-size and at least one --secondary-subnets for
-// CILIUM_NATIVE_ROUTING; validating here turns opaque server errors into
-// actionable messages.
-func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool, secondarySubnets string) []string {
+// The API mandates --cidr for TIGERA/CILIUM_OVERLAY and
+// --node-netmask-size for CILIUM_NATIVE_ROUTING; validating here turns opaque
+// server errors into actionable messages.
+func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool) []string {
 	var errs []string
 	switch networkType {
 	case "TIGERA", "CILIUM_OVERLAY":
@@ -209,9 +203,6 @@ func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool, 
 	case "CILIUM_NATIVE_ROUTING":
 		if !nodeNetmaskSet {
 			errs = append(errs, "--node-netmask-size is required when --network-type is CILIUM_NATIVE_ROUTING (allowed: 24, 25, 26)")
-		}
-		if secondarySubnets == "" {
-			errs = append(errs, "--secondary-subnets is required when --network-type is CILIUM_NATIVE_ROUTING (at least one subnet)")
 		}
 	}
 	return errs
