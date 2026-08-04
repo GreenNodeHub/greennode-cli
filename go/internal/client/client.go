@@ -12,8 +12,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/greennodehub/greennode-cli/internal/auth"
 )
 
 const (
@@ -45,19 +43,35 @@ var retryableStatusCodes = map[int]bool{
 // keeps identification intact if that override is ever skipped (e.g. in tests).
 var UserAgent = "grn-vks-cli"
 
+// TokenProvider supplies the Bearer credential GreennodeClient attaches to
+// every request. It is the seam that lets a client speak to either auth source:
+// the machine client_credentials flow (*auth.MachineTokenProvider) or the user
+// PKCE refresh-token flow (auth.LoginTokenProvider). Declared in the consumer
+// package per the repo's dependency rule; both implementations satisfy it
+// structurally. GetToken returns a valid access token (fetching one if needed);
+// RefreshToken force-refreshes (used on HTTP 401). Mirrors the
+// *auth.MachineTokenProvider method signatures exactly, so that type satisfies
+// it without change.
+type TokenProvider interface {
+	GetToken() (string, error)
+	RefreshToken() (string, error)
+}
+
 // GreennodeClient is an HTTP client for Greennode APIs with retry and auto token refresh.
 type GreennodeClient struct {
-	baseURL      string
-	tokenManager *auth.TokenManager
-	httpClient   *http.Client
-	debug        bool
+	baseURL       string
+	tokenProvider TokenProvider
+	httpClient    *http.Client
+	debug         bool
 }
 
 // NewGreennodeClient creates a new API client. connectTimeout bounds the TCP
 // connect and TLS handshake (the --cli-connect-timeout flag); readTimeout bounds
 // the overall request (the --cli-read-timeout flag). A zero readTimeout falls
 // back to the default; a zero connectTimeout means no explicit connect bound.
-func NewGreennodeClient(baseURL string, tokenManager *auth.TokenManager, connectTimeout, readTimeout time.Duration, verifySSL bool, debug bool) *GreennodeClient {
+// tokenProvider is the auth source (machine MachineTokenProvider or login
+// LoginTokenProvider); GreennodeClient is agnostic to which.
+func NewGreennodeClient(baseURL string, tokenProvider TokenProvider, connectTimeout, readTimeout time.Duration, verifySSL bool, debug bool) *GreennodeClient {
 	if readTimeout == 0 {
 		readTimeout = defaultTimeout
 	}
@@ -73,8 +87,8 @@ func NewGreennodeClient(baseURL string, tokenManager *auth.TokenManager, connect
 	}
 
 	return &GreennodeClient{
-		baseURL:      baseURL,
-		tokenManager: tokenManager,
+		baseURL:       baseURL,
+		tokenProvider: tokenProvider,
 		httpClient: &http.Client{
 			Timeout:   readTimeout,
 			Transport: transport,
@@ -183,7 +197,7 @@ func (c *GreennodeClient) requestRaw(method, path string, params map[string]stri
 		fullURL = u.String()
 	}
 
-	token, err := c.tokenManager.GetToken()
+	token, err := c.tokenProvider.GetToken()
 	if err != nil {
 		return "", err
 	}
@@ -240,7 +254,7 @@ func (c *GreennodeClient) requestRaw(method, path string, params map[string]stri
 
 		// 401 — refresh token and retry once
 		if resp.StatusCode == http.StatusUnauthorized {
-			token, err = c.tokenManager.RefreshToken()
+			token, err = c.tokenProvider.RefreshToken()
 			if err != nil {
 				return "", err
 			}

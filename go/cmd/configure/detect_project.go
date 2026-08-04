@@ -9,6 +9,7 @@ import (
 
 	"github.com/greennodehub/greennode-cli/internal/auth"
 	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/login"
 )
 
 // vserverEndpointForRegion returns the vServer base URL for a region,
@@ -40,8 +41,15 @@ type projectsResponse struct {
 // Returns the first projectId. Each user is expected to have exactly one
 // project per region; returning the first is safe by that contract.
 func detectProjectID(clientID, clientSecret, vserverEndpoint string) (string, error) {
-	tm := auth.NewTokenManager(clientID, clientSecret)
-	token, err := tm.GetToken()
+	// detect_project runs during `grn configure` before a profile/iam_env exists,
+	// so default to prod v2 (same IAM backend as the former v1 path). The user's
+	// real env is selected later per-profile via iam_env.
+	tokenURL, err := login.TokenURLForEnv(login.DefaultIamEnv)
+	if err != nil {
+		return "", fmt.Errorf("authentication failed: %w", err)
+	}
+	tp := auth.NewMachineTokenProvider(clientID, clientSecret, tokenURL)
+	token, err := tp.GetToken()
 	if err != nil {
 		return "", fmt.Errorf("authentication failed: %w", err)
 	}

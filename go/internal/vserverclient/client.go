@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/greennodehub/greennode-cli/internal/auth"
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
@@ -33,8 +32,13 @@ func BuildClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, e
 		return nil, nil, err
 	}
 
-	if cfg.ClientID == "" || cfg.ClientSecret == "" {
-		return nil, nil, fmt.Errorf("credentials not configured. Run 'grn configure' to set up credentials")
+	// Auth source is profile-driven (one auth type per profile): auth_mode=user
+	// → login refresh-token provider; else → machine client_credentials. Shared
+	// with cli.NewClient so vks and vserver select auth identically. Reads the
+	// RESOLVED profile off cfg (cfg.Profile), not the raw --profile flag.
+	tp, err := cli.NewTokenProvider(cfg)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	if region != "" {
@@ -55,11 +59,10 @@ func BuildClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, e
 		fmt.Fprintln(os.Stderr, "Warning: SSL certificate verification is disabled. This is not recommended for production use.")
 	}
 
-	tokenManager := auth.NewTokenManager(cfg.ClientID, cfg.ClientSecret)
 	connect := time.Duration(connectTimeout) * time.Second
 	read := time.Duration(readTimeout) * time.Second
 
-	return client.NewGreennodeClient(baseURL, tokenManager, connect, read, !noVerifySSL, debug), cfg, nil
+	return client.NewGreennodeClient(baseURL, tp, connect, read, !noVerifySSL, debug), cfg, nil
 }
 
 // ProjectID extracts and validates the project ID from config.

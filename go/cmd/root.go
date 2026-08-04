@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/greennodehub/greennode-cli/cmd/configure"
+	"github.com/greennodehub/greennode-cli/cmd/login"
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
@@ -80,6 +81,8 @@ func init() {
 	client.UserAgent = "grn-vks-cli/" + cliVersion
 
 	rootCmd.AddCommand(configure.ConfigureCmd)
+	rootCmd.AddCommand(login.LoginCmd)
+	rootCmd.AddCommand(login.LogoutCmd)
 	for _, svc := range cli.Services() {
 		rootCmd.AddCommand(svc)
 	}

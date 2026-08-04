@@ -1,0 +1,309 @@
+package login
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+)
+
+// fakeIAM stands up an httptest.Server that speaks the authorize redirect and
+// the token endpoint. On GET to /authorize it 302-redirects to the redirectUri
+// with code+appState; on POST to /token it returns a token JSON body configured
+// by the test.
+type fakeIAM struct {
+	authCode     string
+	tokenBody    string // returned by /token
+	tokenStatus  int
+	omitBasic    bool // when true, test asserts no Basic header here
+	sawBasicAuth bool
+}
+
+func startFakeIAM(t *testing.T, f *fakeIAM) *httptest.Server {
+	t.Helper()
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/authorize":
+			// Redirect back to the listener's callback with code + the state we
+			// were given on the authorize URL.
+			q := r.URL.Query()
+			state := q.Get("appState")
+			ru := q.Get("redirectUri")
+			http.Redirect(w, r, ru+"?code="+f.authCode+"&appState="+state, http.StatusFound)
+		case "/token":
+			f.sawBasicAuth = r.Header.Get("Authorization") != ""
+			w.Header().Set("Content-Type", "application/json")
+			status := f.tokenStatus
+			if status == 0 {
+				status = http.StatusOK
+			}
+			w.WriteHeader(status)
+			_, _ = w.Write([]byte(f.tokenBody))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	return s
+}
+
+func newLoginTestCfg(serverURL string, clientSecret string) Config {
+	return Config{
+		AuthorizeURL: serverURL + "/authorize",
+		TokenURL:     serverURL + "/token",
+		ClientID:     "cid",
+		ClientSecret: clientSecret,
+		Scopes:       []string{"openid"},
+	}
+}
+
+// stubBrowser replaces openBrowser with a fake that simulates the browser
+// following the authorize URL's 302 redirect to the loopback callback. It
+// fetches the authorize URL with http.Get (the default client follows
+// redirects, landing on the listener) in a goroutine so openBrowser returns
+// immediately, mirroring a real async browser launch. No real browser opens.
+func stubBrowser() func() {
+	orig := openBrowser
+	openBrowser = func(u string) error {
+		go func() {
+			resp, err := http.Get(u)
+			if err == nil {
+				resp.Body.Close()
+			}
+		}()
+		return nil
+	}
+	return func() { openBrowser = orig }
+}
+
+// TestLogin_EndToEnd_MintsToken: the library mints and returns a Token; it no
+// longer persists anything (the cmd layer decides where/whether to store the
+// refresh token). Persistence is owned by the config-layer tests.
+func TestLogin_EndToEnd_MintsToken(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	f := &fakeIAM{
+		authCode:  "the-code",
+		tokenBody: `{"access_token":"at-123","token_type":"Bearer","refresh_token":"rt-456","expires_in":3600}`,
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	tok, err := Login(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	if tok.AccessToken != "at-123" {
+		t.Errorf("AccessToken=%q, want at-123", tok.AccessToken)
+	}
+	if tok.RefreshToken != "rt-456" {
+		t.Errorf("RefreshToken=%q, want rt-456", tok.RefreshToken)
+	}
+	if tok.TokenType == "" {
+		t.Error("TokenType should be set")
+	}
+	if tok.ExpiresAt.IsZero() {
+		t.Error("ExpiresAt should be set from expires_in")
+	}
+}
+
+func TestLogin_ConfidentialClient_SendsBasic(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	f := &fakeIAM{
+		authCode:  "c",
+		tokenBody: `{"access_token":"at","token_type":"Bearer","refresh_token":"rt","expires_in":3600}`,
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "the-secret")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := Login(ctx, cfg); err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	if !f.sawBasicAuth {
+		t.Error("expected Basic auth header at /token when ClientSecret is set")
+	}
+}
+
+func TestLogin_PublicClient_SendsBasicWithEmptySecret(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	f := &fakeIAM{
+		authCode:  "c",
+		tokenBody: `{"access_token":"at","token_type":"Bearer","refresh_token":"rt","expires_in":3600}`,
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "") // public client
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := Login(ctx, cfg); err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	// VNG IAM requires client_secret_basic for ALL clients, including public
+	// (no-secret) ones — the client_id travels as the Basic username with an
+	// empty password. So Basic IS sent even with ClientSecret == "".
+	if !f.sawBasicAuth {
+		t.Error("expected Basic auth at /token even for a public client (VNG IAM requires it)")
+	}
+}
+
+func TestLogin_StateMismatchReturnsErrStateMismatch(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	// fakeIAM redirects back with appState=<state received on authorize URL>, so
+	// to force a mismatch we make the listener's held nonce differ from what
+	// comes back. We do that by having the IAM redirect override appState.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/authorize" {
+			ru := r.URL.Query().Get("redirectUri")
+			// Send a DIFFERENT appState than the one Login generated.
+			http.Redirect(w, r, ru+"?code=c&appState=WRONG", http.StatusFound)
+			return
+		}
+		if r.URL.Path == "/token" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"access_token":"at","token_type":"Bearer"}`))
+		}
+	}))
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := Login(ctx, cfg)
+	if !errors.Is(err, ErrStateMismatch) {
+		t.Errorf("err=%v, want ErrStateMismatch", err)
+	}
+}
+
+func TestLogin_PartialSuccessWhenNoRefreshToken(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	// Capture the spec'd no-refresh-token warning so test output stays pristine
+	// AND verify Login actually emits it.
+	origStderr := noisyStderr
+	var warnBuf bytes.Buffer
+	noisyStderr = &warnBuf
+	defer func() { noisyStderr = origStderr }()
+
+	f := &fakeIAM{
+		authCode:  "c",
+		tokenBody: `{"access_token":"at-only","token_type":"Bearer","expires_in":3600}`, // no refresh_token
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	tok, err := Login(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Login (partial): %v", err)
+	}
+	if tok.AccessToken != "at-only" {
+		t.Errorf("AccessToken=%q, want at-only", tok.AccessToken)
+	}
+	if tok.RefreshToken != "" {
+		t.Errorf("RefreshToken=%q, want empty", tok.RefreshToken)
+	}
+	if !strings.Contains(warnBuf.String(), "refresh_token") {
+		t.Errorf("expected a no-refresh-token warning on stderr, got %q", warnBuf.String())
+	}
+}
+
+func TestLogin_TokenExchangeNon2xxFails(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	f := &fakeIAM{
+		authCode:    "c",
+		tokenBody:   `{"error":"invalid_grant"}`,
+		tokenStatus: http.StatusBadRequest,
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := Login(ctx, cfg)
+	if err == nil {
+		t.Fatal("expected error for 400 token response, got nil")
+	}
+	if !strings.Contains(err.Error(), "token exchange") {
+		t.Errorf("err=%v, want a 'token exchange' wrap", err)
+	}
+}
+
+// TestLogin_DebugTrace_RedactsSecretValues proves the --debug trace surfaces
+// non-secret context (client_id, endpoints, lengths) while NEVER leaking the
+// value of any secret-shaped field (access token, refresh token, auth code).
+// Security-critical: a regression here would print bearer grants to stderr.
+func TestLogin_DebugTrace_RedactsSecretValues(t *testing.T) {
+	restore := stubBrowser()
+	defer restore()
+
+	origStderr := noisyStderr
+	var buf bytes.Buffer
+	noisyStderr = &buf
+	defer func() { noisyStderr = origStderr }()
+
+	SetDebug(true)
+	defer SetDebug(false)
+
+	f := &fakeIAM{
+		authCode:  "the-code",
+		tokenBody: `{"access_token":"at-123","token_type":"Bearer","refresh_token":"rt-456","expires_in":3600}`,
+	}
+	srv := startFakeIAM(t, f)
+	defer srv.Close()
+
+	cfg := newLoginTestCfg(srv.URL, "")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := Login(ctx, cfg); err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "login debug:") {
+		t.Fatalf("expected debug trace lines, got: %q", out)
+	}
+	// Non-secret context is shown in full.
+	if !strings.Contains(out, "client_id=cid") {
+		t.Errorf("debug should show client_id=cid; got: %q", out)
+	}
+	// Secret VALUES must never appear — only their lengths/presence.
+	for _, secret := range []string{"at-123", "rt-456", "the-code"} {
+		if strings.Contains(out, secret) {
+			t.Errorf("debug trace LEAKED secret %q in: %q", secret, out)
+		}
+	}
+	// The redacted length form of the access token must be present.
+	if !strings.Contains(out, "access_token_len=6") { // len("at-123")
+		t.Errorf("debug should report access_token_len=6; got: %q", out)
+	}
+}

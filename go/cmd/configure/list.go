@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/spf13/cobra"
@@ -53,6 +54,14 @@ func runList(cmd *cobra.Command, args []string) {
 		resolveConfigEntry("region", cfg.Region, configFile),
 		resolveConfigEntry("output", cfg.Output, configFile),
 		resolveConfigEntry("project_id", cfg.ProjectID, configFile),
+		// Login (user) identity — present on profiles created by `grn login`.
+		// refresh_token is secret-at-rest → masked; the rest is non-secret
+		// refresh context, shown as-is so a user can see which auth mode a
+		// profile is in and which IAM env it targets.
+		resolveCredEntry("refresh_token", cfg.RefreshToken, credsFile),
+		resolveCredEntryPlain("auth_mode", cfg.AuthMode, credsFile),
+		resolveCredEntryPlain("iam_env", cfg.IamEnv, credsFile),
+		resolveCredEntryPlain("token_expires_at", tokenExpiresAtStr(cfg.TokenExpiresAt), credsFile),
 	}
 
 	// Print header
@@ -118,4 +127,26 @@ func resolveConfigEntry(name, value, configFile string) configEntry {
 	home, _ := os.UserHomeDir()
 	loc := "~" + configFile[len(home):]
 	return configEntry{name: name, value: value, typ: "config-file", location: loc}
+}
+
+// resolveCredEntryPlain is resolveCredEntry for non-secret credential-section
+// keys (auth_mode, iam_env, token_expires_at): same location logic, but the
+// value is shown as-is rather than masked (these are non-secret refresh
+// context, not credentials).
+func resolveCredEntryPlain(name, value, credsFile string) configEntry {
+	if value == "" {
+		return configEntry{name: name, value: "<not set>", typ: "None", location: "None"}
+	}
+	home, _ := os.UserHomeDir()
+	loc := "~" + credsFile[len(home):]
+	return configEntry{name: name, value: value, typ: "config-file", location: loc}
+}
+
+// tokenExpiresAtStr renders the access-token expiry as RFC3339, or "" (→
+// "<not set>") when no expiry was recorded.
+func tokenExpiresAtStr(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }

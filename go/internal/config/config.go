@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"gopkg.in/ini.v1"
 )
@@ -30,6 +31,21 @@ type Config struct {
 	Profile      string
 	ProjectID    string
 	Regions      map[string]map[string]string
+
+	// Login (user) identity — present on profiles created by `grn login`. These
+	// live in the per-profile `credentials` INI alongside the machine
+	// client_id/client_secret (auth-only merge: one identity file per profile).
+	// AuthMode is "user" for a PKCE login, "machine" (or empty) for an
+	// access-key pair. RefreshToken is secret-at-rest (0600, masked in
+	// configure list/get); the access token is NEVER persisted — only the
+	// refresh token is. IamEnv is non-secret refresh context the usage slice
+	// needs to resolve the /v2 token URL and the baked-in client_id at refresh
+	// (the client_id itself is NOT persisted — it is a public id already in
+	// source, resolved from iam_env via internal/login.ClientIDForEnv).
+	AuthMode       string
+	RefreshToken   string
+	TokenExpiresAt time.Time
+	IamEnv         string
 }
 
 // DefaultConfigDir returns ~/.greennode. This is where config is written.
@@ -115,6 +131,24 @@ func LoadConfig(profile string) (*Config, error) {
 				}
 				if cfg.ClientSecret == "" {
 					cfg.ClientSecret = section.Key("client_secret").String()
+				}
+				// Login (user) identity keys. A profile created by `grn login`
+				// carries these instead of (or alongside) machine credentials,
+				// so finding the section already marks the profile as existing.
+				// refresh_token is file-only by design (no env override).
+				if v := section.Key("auth_mode").String(); v != "" {
+					cfg.AuthMode = v
+				}
+				if v := section.Key("refresh_token").String(); v != "" {
+					cfg.RefreshToken = v
+				}
+				if v := section.Key("token_expires_at").String(); v != "" {
+					if t, perr := time.Parse(time.RFC3339, v); perr == nil {
+						cfg.TokenExpiresAt = t
+					}
+				}
+				if v := section.Key("iam_env").String(); v != "" {
+					cfg.IamEnv = v
 				}
 			}
 		}

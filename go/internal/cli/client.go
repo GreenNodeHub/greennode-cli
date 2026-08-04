@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/greennodehub/greennode-cli/internal/auth"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/spf13/cobra"
@@ -35,8 +34,15 @@ func NewClient(cmd *cobra.Command, serviceName string) (*client.GreennodeClient,
 		return nil, err
 	}
 
-	if cfg.ClientID == "" || cfg.ClientSecret == "" {
-		return nil, fmt.Errorf("credentials not configured. Run 'grn configure' to set up credentials")
+	// Auth source is profile-driven (one auth type per profile): auth_mode=user
+	// → login refresh-token provider; else → machine client_credentials. The
+	// machine-cred check lives inside the provider picker's default branch, so a
+	// login-only profile (no machine creds) now works and a machine profile is
+	// unchanged. NewTokenProvider reads the RESOLVED profile off cfg (cfg.Profile,
+	// set by LoadConfig) — not the raw --profile flag, which may be "".
+	tp, err := NewTokenProvider(cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	if region != "" {
@@ -57,9 +63,8 @@ func NewClient(cmd *cobra.Command, serviceName string) (*client.GreennodeClient,
 		fmt.Fprintln(os.Stderr, "Warning: SSL certificate verification is disabled. This is not recommended for production use.")
 	}
 
-	tokenManager := auth.NewTokenManager(cfg.ClientID, cfg.ClientSecret)
 	connect := time.Duration(connectTimeout) * time.Second
 	read := time.Duration(readTimeout) * time.Second
 
-	return client.NewGreennodeClient(baseURL, tokenManager, connect, read, !noVerifySSL, debug), nil
+	return client.NewGreennodeClient(baseURL, tp, connect, read, !noVerifySSL, debug), nil
 }

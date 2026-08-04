@@ -29,6 +29,60 @@ can still auto-detect at first call.
 
 Credentials are obtained from the [GreenNode IAM Portal](https://hcm-3.console.vngcloud.vn/iam/) under Service Accounts.
 
+## User login (PKCE)
+
+In addition to the machine (M2M) flow above, `grn` supports interactive user
+login via a browser-based **PKCE** authorization-code flow against VNG IAM. User
+login is recommended for interactive use; machine mode (`grn configure`) is
+recommended for CI.
+
+```bash
+grn login                 # browser PKCE login
+grn logout                # forget the cached login refresh token
+```
+
+The profile's `auth_mode` decides which credential is used at runtime:
+
+| `auth_mode` | Source | Set by |
+|---|---|---|
+| `user` | PKCE refresh token | `grn login` |
+| `machine` (default) | Client ID / secret | `grn configure` |
+
+`grn login` mints a short-lived access token and persists only the **refresh
+token** (plus `auth_mode` and `iam_env`) to the profile's credentials file
+(`0600`). The access token is held in memory for the process only — it is never
+written to disk — and is auto-refreshed before expiry (60 s skew) and again on a
+`401` response. If IAM rotates the refresh token, the new one is persisted so
+later invocations keep working.
+
+### `grn login` options
+
+| Flag | Description |
+|---|---|
+| `--profile <name>` | Target profile (default `default`; env `GRN_PROFILE`) |
+| `--client-id <id>` | Override the baked-in public client id (env `GRN_LOGIN_CLIENT_ID`) |
+| `--client-secret <secret>` | Omit for a PKCE-only public client (env `GRN_LOGIN_CLIENT_SECRET`) |
+| `--scope <list>` | OAuth scopes, space-separated (default `openid`) |
+| `--timeout <dur>` | Max wait for the browser flow (default `5m`) |
+| `--authorize-url <url>` | Override the IAM signin/authorize URL |
+| `--token-url <url>` | Override the IAM `/v2` token URL |
+
+After the browser flow, `grn login` prompts for a default region (the same prompt
+as `grn configure`), so a login-only profile is ready for `vks`/`vserver`
+without a separate `grn configure`.
+
+### Inspecting the login state
+
+```bash
+grn configure list            # shows auth_mode, iam_env, and a masked refresh_token
+grn configure get auth_mode
+grn configure get iam_env
+```
+
+`refresh_token` is masked in `list`/`get` output (secret-at-rest). Use
+`grn logout` to clear it; machine `client_id`/`client_secret`, if present, are
+left intact.
+
 ## Credential resolution order
 
 Credentials are resolved in the following order (highest to lowest priority):
@@ -76,6 +130,21 @@ client_id = xxx
 client_secret = yyy
 ```
 
+A profile created by `grn login` carries **user** identity instead of (or
+alongside) machine credentials. The refresh token is stored at `0600`; the
+access token is never written to disk. The four `grn login` keys land in the
+same profile section and merge with any existing `client_id`/`client_secret`:
+
+```ini
+# ~/.greennode/credentials — a logged-in profile
+[default]
+refresh_token = rtx-xxxxxxxxxxxxxxxxxxxx
+token_expires_at = 2026-08-03T18:00:00Z
+auth_mode = user
+iam_env = prod
+# client_id / client_secret kept from a prior `grn configure` (optional)
+```
+
 ```ini
 # ~/.greennode/config
 [default]
@@ -118,6 +187,9 @@ grn configure set region HAN  # Set a specific value
 ```bash
 # Configure a named profile
 grn configure --profile staging
+
+# Log in to a named profile (user PKCE)
+grn login --profile staging
 
 # Use a named profile
 grn --profile staging vks list-clusters
