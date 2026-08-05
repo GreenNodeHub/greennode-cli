@@ -105,3 +105,21 @@ func toInt(s string) int {
 	fmt.Sscanf(s, "%d", &n)
 	return n
 }
+
+// upgradeConfigWithDefaults returns a copy of in with maxSurge and maxUnavailable
+// filled to their defaults (1 and 0) when missing or nil. The backend applies
+// these same defaults to omitted/null fields; filling client-side keeps the
+// payload explicit and makes --dry-run show effective values. in is not mutated.
+func upgradeConfigWithDefaults(in map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(in)+2)
+	for k, v := range in {
+		out[k] = v
+	}
+	if v, ok := out["maxSurge"]; !ok || v == nil {
+		out["maxSurge"] = 1
+	}
+	if v, ok := out["maxUnavailable"]; !ok || v == nil {
+		out["maxUnavailable"] = 0
+	}
+	return out
+}
