@@ -22,7 +22,7 @@
 //   - Registry credentials (robot account) expose {username, secret}; the secret
 //     is real and used for docker login — mask it in table output, reveal in JSON.
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package cr
 
 import "time"

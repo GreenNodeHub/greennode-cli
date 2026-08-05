@@ -79,11 +79,11 @@ func isConfigureSub(c *cobra.Command) bool {
 	return false
 }
 
-// agentbaseExempt: the `grn agentbase` subtree is a gated, self-contained
-// migrated subsystem (own v2 OAuth2 auth + .greennode.json config, compiled in
-// only with -tags agentbase). It preserves its own command UX verbatim and is
-// exempt from the cross-product verb/flag conventions for now; conformity will
-// be revisited when agentbase flips to default-on.
+// agentbaseExempt: the `grn agentbase` subtree is a self-contained migrated
+// subsystem (own v2 OAuth2 auth + .greennode.json config; now compiled into the
+// default binary — the -tags agentbase gate was dropped at GA). It preserves its
+// own command UX verbatim and is exempt from the cross-product verb/flag
+// conventions for now; conformity will be revisited separately.
 func isAgentbaseSub(c *cobra.Command) bool {
 	for p := c.Parent(); p != nil; p = p.Parent() {
 		if p.Name() == "agentbase" {

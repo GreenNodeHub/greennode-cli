@@ -17,7 +17,7 @@ go/
 ├── cmd/
 │   ├── root.go                      # Root command + global flags + --version
 │   ├── register.go                  # Blank-imports all product packages (triggers init())
-│   ├── agentbase/                   # grn agentbase (gated: -tags agentbase)
+│   ├── agentbase/                   # grn agentbase (default-on; -tags agentbase gate dropped at GA)
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
 │   │   ├── identity.go              # identity group (login/workload/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
@@ -146,8 +146,8 @@ excluded from default and release builds while still in development.
 cd go
 CGO_ENABLED=0 go build -o grn .
 
-# Build WITH the agentbase subcommand (dev/internal only; excluded from release):
-CGO_ENABLED=0 go build -tags agentbase -o grn .
+# Build (agentbase is in the default binary now — no special build tag needed):
+CGO_ENABLED=0 go build -o grn .
 
 # Cross-compile
 GOOS=linux GOARCH=amd64 go build -o grn-linux-amd64 .

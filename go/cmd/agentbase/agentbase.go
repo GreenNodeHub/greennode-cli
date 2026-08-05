@@ -9,9 +9,9 @@
 // (default prod); the current agent identity is persisted per-profile (the
 // agent_identity key). agentbase no longer carries its own .greennode.json.
 //
-// Compiled in ONLY with `-tags agentbase`. The default grn binary and the
-// public release build (`-tags vks_only`) both exclude it while agentbase is
-// still under development.
+// Compiled into the default grn binary and the public release build
+// (`-tags vks_only`); the `-tags agentbase` opt-in gate was dropped when
+// agentbase went generally available.
 package agentbase
 
 import (

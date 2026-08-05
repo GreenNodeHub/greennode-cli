@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
 	coreclient "github.com/greennodehub/greennode-cli/internal/client"
@@ -119,9 +120,12 @@ func (c *Client) ListSessions(ctx context.Context, id, actorID string, page, siz
 }
 
 // ListSessionEvents returns the events for a session. The memory service
-// publishes no response schema for this endpoint, so events are returned as raw
-// JSON messages — use -o json to see the verbatim server response (the table
-// view is a best-effort parse). size is clamped to 100.
+// publishes no response schema for this endpoint: some deployments return a
+// bare JSON array, others a paged object ({events:[...]} / {listData:[...]} /
+// {items:[...]} / {data:[...]}). The body is decoded raw then parsed into
+// either form so a non-array response doesn't fail the whole call. Events are
+// returned as raw JSON messages — use -o json to see the verbatim server
+// response (the table view is a best-effort parse). size is clamped to 100.
 func (c *Client) ListSessionEvents(ctx context.Context, id, actorID, sessionID, from, to string, page, size int) ([]json.RawMessage, error) {
 	if size <= 0 || size > 100 {
 		size = 100
@@ -133,11 +137,43 @@ func (c *Client) ListSessionEvents(ctx context.Context, id, actorID, sessionID, 
 	if to != "" {
 		q.Set("toTimestamp", to)
 	}
-	var out []json.RawMessage
-	if err := c.http.Get(ctx, fmt.Sprintf("/memories/%s/actors/%s/sessions/%s/events", id, actorID, sessionID), q, &out); err != nil {
+	var raw json.RawMessage
+	if err := c.http.Get(ctx, fmt.Sprintf("/memories/%s/actors/%s/sessions/%s/events", id, actorID, sessionID), q, &raw); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return parseSessionEvents(raw)
+}
+
+// parseSessionEvents decodes a session-events response that may be either a
+// bare JSON array or an object wrapping the array under a known key. Empty or
+// null bodies yield an empty slice. Returns the raw event elements.
+func parseSessionEvents(raw json.RawMessage) ([]json.RawMessage, error) {
+	trim := strings.TrimSpace(string(raw))
+	if trim == "" || trim == "null" {
+		return nil, nil
+	}
+	if trim[0] == '[' {
+		var arr []json.RawMessage
+		if err := json.Unmarshal([]byte(trim), &arr); err != nil {
+			return nil, err
+		}
+		return arr, nil
+	}
+	if trim[0] == '{' {
+		var obj map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(trim), &obj); err != nil {
+			return nil, err
+		}
+		for _, key := range []string{"events", "listData", "items", "data", "content"} {
+			if arrRaw, ok := obj[key]; ok {
+				var arr []json.RawMessage
+				if err := json.Unmarshal(arrRaw, &arr); err == nil {
+					return arr, nil
+				}
+			}
+		}
+	}
+	return nil, nil
 }
 
 // CreateSessionEvent appends an event to a session. 200 with no response body.

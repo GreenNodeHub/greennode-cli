@@ -21,7 +21,7 @@
 //   - Delete returns 200 with `{"message": "..."}` (not 204).
 //   - `DecisionRequest.action` is a JSON-RPC 2.0 envelope (MCP-shaped).
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package policy
 
 import "time"

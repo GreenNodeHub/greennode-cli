@@ -10,7 +10,7 @@
 // supportedResourceTypes), which is distinct from the gateway's
 // /api/v1/flavors gateway-flavor list (availability/memoryGi/networkModes).
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package catalog
 
 import "time"

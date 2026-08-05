@@ -11,7 +11,7 @@
 // with ?page=&size= (1-based, defaults 1/10) — same envelope as the runtime
 // service. Resources are synchronous (no async FSM; soft-delete ACTIVE→DELETED).
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package memory
 
 import "time"

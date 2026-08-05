@@ -7,7 +7,7 @@
 // (default prod) exactly like vks/vserver. Callers (cmd/agentbase) map iam_env
 // → Env via envFromIamEnv and resolve endpoints via EndpointsForEnv.
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package config
 
 // Env represents a deployment environment.

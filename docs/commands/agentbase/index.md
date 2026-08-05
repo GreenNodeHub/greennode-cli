@@ -2,13 +2,11 @@
 
 `grn agentbase` is the subcommand tree of the `greennode-cli` for the
 **GreenNode AgentBase** platform — the set of backend services that let you
-create and operate agents on VNG Cloud. It is compiled with the `-tags agentbase`
-build tag.
+create and operate agents on VNG Cloud. It ships in the default `grn` binary
+and the public release build — no special build tag is required.
 
 ```bash
-# Build a binary with agentbase enabled
-cd go && go build -tags agentbase -o grn-ab .
-./grn-ab agentbase --help
+grn agentbase --help
 ```
 
 ## Overview

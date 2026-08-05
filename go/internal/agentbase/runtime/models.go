@@ -8,7 +8,7 @@
 // (camelCase); no /api/v1 version prefix; paging uses {listData, page,
 // pageSize, totalPage, totalItem} with ?page=&size= (1-based, defaults 1/10).
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package runtime
 
 import (

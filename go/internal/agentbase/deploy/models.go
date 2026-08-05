@@ -8,7 +8,7 @@
 // shared bridge), EXCEPT imageAuth, which is a union (`auto` | {username,
 // password}) decoded by a custom UnmarshalJSON.
 //
-// Compiled in ONLY with `-tags agentbase`.
+// Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package deploy
 
 import (

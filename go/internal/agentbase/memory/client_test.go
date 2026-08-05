@@ -281,6 +281,52 @@ func TestListSessionEvents(t *testing.T) {
 	}
 }
 
+func TestListSessionEvents_ObjectWrapped(t *testing.T) {
+	// Some deployments wrap the events array in a paged object instead of
+	// returning a bare array; the client must tolerate both shapes.
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"events": []map[string]string{
+				{"type": "USER", "message": "hi"},
+				{"type": "AGENT", "message": "hello"},
+			},
+			"page":     1,
+			"pageSize": 100,
+		})
+	})
+	out, err := c.ListSessionEvents(context.Background(), "m1", "a1", "s1", "", "", 1, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 2 {
+		t.Fatalf("events: %d, want 2", len(out))
+	}
+}
+
+func TestListSessionEvents_EmptyAndNull(t *testing.T) {
+	cases := map[string]string{
+		"empty body":  "",
+		"null":        "null",
+		"empty array": "[]",
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if body != "" {
+					_, _ = w.Write([]byte(body))
+				}
+			})
+			out, err := c.ListSessionEvents(context.Background(), "m1", "a1", "s1", "", "", 1, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(out) != 0 {
+				t.Fatalf("events: %d, want 0", len(out))
+			}
+		})
+	}
+}
+
 func TestCreateSessionEvent(t *testing.T) {
 	var gotBody []byte
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
