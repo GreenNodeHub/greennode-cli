@@ -1,6 +1,7 @@
 package vks
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -158,6 +159,24 @@ func TestBuildUpdateNodegroupBody(t *testing.T) {
 		want := map[string]interface{}{"autoScaleConfig": nil}
 		if !reflect.DeepEqual(body, want) {
 			t.Errorf("got %v, want %v", body, want)
+		}
+		js, _ := json.Marshal(body)
+		if !strings.Contains(string(js), `"autoScaleConfig":null`) {
+			t.Errorf("json = %s, want \"autoScaleConfig\":null present", js)
+		}
+	})
+
+	t.Run("auto-scale valid object sets autoScaleConfig", func(t *testing.T) {
+		body, err := buildUpdateNodegroupBody(updateFlags("", "", "minSize=2,maxSize=10", "", false))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		asc, ok := body["autoScaleConfig"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("autoScaleConfig missing or wrong type: %v", body["autoScaleConfig"])
+		}
+		if asc["minSize"] != 2 || asc["maxSize"] != 10 {
+			t.Errorf("autoScaleConfig = %v, want minSize=2 maxSize=10", asc)
 		}
 	})
 

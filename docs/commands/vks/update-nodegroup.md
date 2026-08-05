@@ -2,7 +2,7 @@
 
 ## Description
 
-Update a node group's desired node count, security groups, auto-scaling configuration, and upgrade configuration. At least one of `--num-nodes`, `--security-groups`, `--auto-scale`, or `--upgrade-config` must be provided.
+Update a node group's desired node count, security groups, auto-scaling configuration, and upgrade configuration. At least one of `--num-nodes`, `--security-groups`, `--auto-scale`, `--disable-auto-scale`, or `--upgrade-config` must be provided.
 
 To update labels, tags, or taints, use [update-nodegroup-metadata](update-nodegroup-metadata.md) — those fields are deprecated on this command.
 
@@ -40,7 +40,7 @@ ID of the node group to update.
 
 New desired number of nodes. Parsed as an integer by the CLI.
 
-- Required: Conditional — at least one of `--num-nodes`, `--security-groups`, `--auto-scale`, or `--upgrade-config` must be provided.
+- Required: Conditional — at least one of `--num-nodes`, `--security-groups`, `--auto-scale`, `--disable-auto-scale`, or `--upgrade-config` must be provided.
 - Constraints: 0–10. When `--auto-scale` is also set, must be within `[minSize, maxSize]`.
 
 **`--security-groups`** (list&lt;string&gt;)
