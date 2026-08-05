@@ -3,6 +3,8 @@ package vks
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
@@ -29,6 +31,10 @@ func init() {
 
 	updateNodegroupCmd.MarkFlagRequired("cluster-id")
 	updateNodegroupCmd.MarkFlagRequired("nodegroup-id")
+	// Cobra shows the exclusion in --help and rejects the combination itself;
+	// resolveAutoScaleConfig keeps its own check so the body composer stays
+	// correct when called outside the command.
+	updateNodegroupCmd.MarkFlagsMutuallyExclusive("auto-scale", "disable-auto-scale")
 }
 
 func runUpdateNodegroup(cmd *cobra.Command, args []string) error {
@@ -76,20 +82,38 @@ func runUpdateNodegroup(cmd *cobra.Command, args []string) error {
 	return outputResult(cmd, result)
 }
 
-func toInt(s string) int {
-	var n int
-	fmt.Sscanf(s, "%d", &n)
-	return n
+// parseNumNodes parses --num-nodes strictly. UpdateNodeGroupDto.numNodes is an
+// integer with minimum 0, and 0 is a valid request — so a silently swallowed
+// parse error ("abc" -> 0) would scale the node group down to zero instead of
+// failing.
+func parseNumNodes(s string) (int, error) {
+	n, err := strconv.Atoi(strings.TrimSpace(s))
+	if err != nil {
+		return 0, fmt.Errorf("--num-nodes must be an integer, got %q", s)
+	}
+	if n < 0 {
+		return 0, fmt.Errorf("--num-nodes must be 0 or greater, got %d", n)
+	}
+	return n, nil
 }
 
-// upgradeConfigWithDefaults returns a copy of in with maxSurge and maxUnavailable
-// filled to their defaults (1 and 0) when missing or nil. The backend applies
-// these same defaults to omitted/null fields; filling client-side keeps the
-// payload explicit and makes --dry-run show effective values. in is not mutated.
+// defaultUpgradeStrategy is the only strategy the API supports today
+// (NodeGroupUpgradeConfigDto.strategy).
+const defaultUpgradeStrategy = "SURGE"
+
+// upgradeConfigWithDefaults returns a copy of in with the fields the API needs
+// filled in: strategy, which NodeGroupUpgradeConfigDto marks *required* (sending
+// only maxSurge is a 400), plus maxSurge (default 1) and maxUnavailable
+// (default 0). The server applies those two numeric defaults itself, so filling
+// them client-side only makes --dry-run show the effective payload. in is not
+// mutated.
 func upgradeConfigWithDefaults(in map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(in)+2)
+	out := make(map[string]interface{}, len(in)+3)
 	for k, v := range in {
 		out[k] = v
+	}
+	if v, ok := out["strategy"]; !ok || v == nil || v == "" {
+		out["strategy"] = defaultUpgradeStrategy
 	}
 	if v, ok := out["maxSurge"]; !ok || v == nil {
 		out["maxSurge"] = 1
@@ -98,6 +122,60 @@ func upgradeConfigWithDefaults(in map[string]interface{}) map[string]interface{}
 		out["maxUnavailable"] = 0
 	}
 	return out
+}
+
+// validateUpgradeConfigObject checks the bounds NodeGroupUpgradeConfigDto
+// declares: maxSurge 1-100, maxUnavailable 0-100, strategy a non-empty string.
+// Run it after upgradeConfigWithDefaults so the defaults are in place.
+func validateUpgradeConfigObject(m map[string]interface{}) error {
+	bounds := []struct {
+		field    string
+		min, max int
+	}{
+		{"maxSurge", 1, 100},
+		{"maxUnavailable", 0, 100},
+	}
+	for _, b := range bounds {
+		v, ok, err := integralField(m, b.field)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		if v < b.min || v > b.max {
+			return fmt.Errorf("%s must be between %d and %d, got %d", b.field, b.min, b.max, v)
+		}
+	}
+	if s, ok := m["strategy"]; ok {
+		if str, isStr := s.(string); !isStr || str == "" {
+			return fmt.Errorf("strategy must be a non-empty string (the API currently supports only %q)", defaultUpgradeStrategy)
+		}
+	}
+	return nil
+}
+
+// integralField reads m[field] as an int. ok reports whether the key is present.
+// Shorthand parsing yields int; JSON numbers arrive as float64, so an integral
+// float64 (5) is accepted while 2.5 and null are rejected.
+func integralField(m map[string]interface{}, field string) (int, bool, error) {
+	v, present := m[field]
+	if !present {
+		return 0, false, nil
+	}
+	switch n := v.(type) {
+	case nil:
+		return 0, true, fmt.Errorf("%s must be an integer, got null", field)
+	case int:
+		return n, true, nil
+	case float64:
+		if n != float64(int(n)) {
+			return 0, true, fmt.Errorf("%s must be an integer, got %v", field, n)
+		}
+		return int(n), true, nil
+	default:
+		return 0, true, fmt.Errorf("%s must be an integer, got %T", field, v)
+	}
 }
 
 // resolveAutoScaleConfig decides the autoScaleConfig field value for an
@@ -131,29 +209,31 @@ func resolveAutoScaleConfig(flags *pflag.FlagSet) (interface{}, bool, error) {
 	return asc, true, nil
 }
 
-// validateAutoScaleObject requires both minSize and maxSize present, non-nil,
-// and integral. A missing key is "both required"; a present-but-null key is
-// "must be an integer" (JsonNullable null is a wrong-type value, not absence).
-// Shorthand already coerces to int; JSON numbers arrive as float64, so
-// integral float64 (e.g. 5) is accepted and 2.5 rejected.
+// validateAutoScaleObject mirrors NodeGroupAutoScaleConfigDto: minSize and
+// maxSize are both required and integral, minSize has minimum 0, maxSize has
+// minimum 1, and an inverted range is rejected. A missing key is "both
+// required"; a present-but-null key is "must be an integer" (a JsonNullable null
+// is a wrong-type value here, not absence).
 func validateAutoScaleObject(m map[string]interface{}) error {
+	sizes := make(map[string]int, 2)
 	for _, field := range []string{"minSize", "maxSize"} {
-		v, ok := m[field]
+		v, ok, err := integralField(m, field)
+		if err != nil {
+			return err
+		}
 		if !ok {
 			return fmt.Errorf("both minSize and maxSize are required when --auto-scale is an object")
 		}
-		switch n := v.(type) {
-		case nil:
-			return fmt.Errorf("%s must be an integer, got null", field)
-		case int:
-			// shorthand path — fine
-		case float64:
-			if n != float64(int(n)) {
-				return fmt.Errorf("%s must be an integer, got %v", field, n)
-			}
-		default:
-			return fmt.Errorf("%s must be an integer, got %T", field, v)
-		}
+		sizes[field] = v
+	}
+	if sizes["minSize"] < 0 {
+		return fmt.Errorf("minSize must be 0 or greater, got %d", sizes["minSize"])
+	}
+	if sizes["maxSize"] < 1 {
+		return fmt.Errorf("maxSize must be 1 or greater, got %d", sizes["maxSize"])
+	}
+	if sizes["minSize"] > sizes["maxSize"] {
+		return fmt.Errorf("minSize (%d) must not exceed maxSize (%d)", sizes["minSize"], sizes["maxSize"])
 	}
 	return nil
 }
@@ -165,7 +245,11 @@ func buildUpdateNodegroupBody(flags *pflag.FlagSet) (map[string]interface{}, err
 	body := map[string]interface{}{}
 
 	if numNodes, _ := flags.GetString("num-nodes"); numNodes != "" {
-		body["numNodes"] = toInt(numNodes)
+		n, err := parseNumNodes(numNodes)
+		if err != nil {
+			return nil, err
+		}
+		body["numNodes"] = n
 	}
 	if sg, _ := flags.GetString("security-groups"); sg != "" {
 		body["securityGroups"] = parseCommaSeparated(sg)
@@ -184,7 +268,11 @@ func buildUpdateNodegroupBody(flags *pflag.FlagSet) (map[string]interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("--upgrade-config: %w", err)
 		}
-		body["upgradeConfig"] = upgradeConfigWithDefaults(uc)
+		uc = upgradeConfigWithDefaults(uc)
+		if err := validateUpgradeConfigObject(uc); err != nil {
+			return nil, fmt.Errorf("--upgrade-config: %w", err)
+		}
+		body["upgradeConfig"] = uc
 	}
 
 	if len(body) == 0 {

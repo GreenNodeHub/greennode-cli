@@ -38,7 +38,8 @@ ID of the node group to update.
 
 **`--num-nodes`** (string)
 
-New desired number of nodes. Parsed as an integer by the CLI.
+New desired number of nodes. Parsed as an integer by the CLI; a value that is not
+a whole number ≥ 0 is rejected instead of being sent as `0`.
 
 - Required: Conditional — at least one of `--num-nodes`, `--security-groups`, `--auto-scale`, `--disable-auto-scale`, or `--upgrade-config` must be provided.
 - Constraints: 0–10. When `--auto-scale` is also set, must be within `[minSize, maxSize]`.
@@ -75,6 +76,8 @@ JSON syntax:
 - When given as an object, **both** `minSize` and `maxSize` are required and
   must be integers. Missing either (e.g. `{}` or `minSize=2`) or a `null`/
   non-integral value is rejected before the request is sent.
+- Bounds are checked client-side too: `minSize` ≥ 0, `maxSize` ≥ 1, and
+  `minSize` must not exceed `maxSize`.
 - Omit both `--auto-scale` and `--disable-auto-scale` to keep the current
   configuration. `--disable-auto-scale` sends `autoScaleConfig: null` to
   disable it.
@@ -110,9 +113,13 @@ JSON syntax:
 {"maxSurge": 1, "maxUnavailable": 0, "strategy": "SURGE"}
 ```
 
+- `strategy` is **required by the API** inside `upgradeConfig`. When it is
+  omitted, `null`, or empty, the CLI fills in `SURGE` — so a partial config such
+  as `maxSurge=2` is still a valid request.
 - When `maxSurge` is omitted or `null`, it defaults to `1`. When
   `maxUnavailable` is omitted or `null`, it defaults to `0`. The CLI sends
   these defaults explicitly.
+- Bounds are checked client-side: `maxSurge` 1–100, `maxUnavailable` 0–100.
 
 **`--dry-run`** (boolean)
 
