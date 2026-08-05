@@ -7,6 +7,7 @@ import (
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var updateNodegroupCmd = &cobra.Command{
@@ -23,6 +24,7 @@ func init() {
 	f.String("security-groups", "", "Security group IDs (comma-separated)")
 	f.String("auto-scale", "", "Auto-scale config (shorthand minSize=2,maxSize=10 or JSON)")
 	f.String("upgrade-config", "", "Upgrade config (shorthand maxSurge=1,maxUnavailable=0,strategy=SURGE or JSON)")
+	f.Bool("disable-auto-scale", false, "Disable autoscaling (sends autoScaleConfig: null)")
 	f.Bool("dry-run", false, "Preview update without executing")
 
 	updateNodegroupCmd.MarkFlagRequired("cluster-id")
@@ -122,4 +124,62 @@ func upgradeConfigWithDefaults(in map[string]interface{}) map[string]interface{}
 		out["maxUnavailable"] = 0
 	}
 	return out
+}
+
+// resolveAutoScaleConfig decides the autoScaleConfig field value for an
+// update. The backend uses JsonNullable, so three states are meaningful:
+// omit (keep current), null (disable), or object (set). --disable-auto-scale
+// produces null; --auto-scale produces a validated object; both together is
+// rejected. set=false means "do not send the field".
+func resolveAutoScaleConfig(flags *pflag.FlagSet) (interface{}, bool, error) {
+	autoScaleStr, _ := flags.GetString("auto-scale")
+	disable, _ := flags.GetBool("disable-auto-scale")
+
+	if autoScaleStr != "" && disable {
+		return nil, false, fmt.Errorf("cannot use --auto-scale and --disable-auto-scale together")
+	}
+	if disable {
+		// nil in a map[string]interface{} marshals to JSON null.
+		return nil, true, nil
+	}
+	if autoScaleStr == "" {
+		return nil, false, nil
+	}
+
+	asc, err := cli.ParseStructFlagTyped(autoScaleStr, []string{"minSize", "maxSize"}, nil)
+	if err != nil {
+		return nil, false, fmt.Errorf("--auto-scale: %w", err)
+	}
+
+	if err := validateAutoScaleObject(asc); err != nil {
+		return nil, false, fmt.Errorf("--auto-scale: %w", err)
+	}
+	return asc, true, nil
+}
+
+// validateAutoScaleObject requires both minSize and maxSize present, non-nil,
+// and integral. A missing key is "both required"; a present-but-null key is
+// "must be an integer" (JsonNullable null is a wrong-type value, not absence).
+// Shorthand already coerces to int; JSON numbers arrive as float64, so
+// integral float64 (e.g. 5) is accepted and 2.5 rejected.
+func validateAutoScaleObject(m map[string]interface{}) error {
+	for _, field := range []string{"minSize", "maxSize"} {
+		v, ok := m[field]
+		if !ok {
+			return fmt.Errorf("both minSize and maxSize are required when --auto-scale is an object")
+		}
+		switch n := v.(type) {
+		case nil:
+			return fmt.Errorf("%s must be an integer, got null", field)
+		case int:
+			// shorthand path — fine
+		case float64:
+			if n != float64(int(n)) {
+				return fmt.Errorf("%s must be an integer, got %v", field, n)
+			}
+		default:
+			return fmt.Errorf("%s must be an integer, got %T", field, v)
+		}
+	}
+	return nil
 }
