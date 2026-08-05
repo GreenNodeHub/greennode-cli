@@ -17,6 +17,7 @@ grn vks update-nodegroup
     [--num-nodes <value>]
     [--security-groups <value>]
     [--auto-scale <value>]
+    [--disable-auto-scale]
     [--upgrade-config <value>]
     [--dry-run]
 ```
@@ -71,6 +72,22 @@ JSON syntax:
 {"minSize": 2, "maxSize": 10}
 ```
 
+- When given as an object, **both** `minSize` and `maxSize` are required and
+  must be integers. Missing either (e.g. `{}` or `minSize=2`) or a `null`/
+  non-integral value is rejected before the request is sent.
+- Omit both `--auto-scale` and `--disable-auto-scale` to keep the current
+  configuration. `--disable-auto-scale` sends `autoScaleConfig: null` to
+  disable it.
+
+**`--disable-auto-scale`** (boolean)
+
+Disable autoscaling on the node group. Sends `autoScaleConfig: null`, which
+deletes the current auto-scale configuration. Mutually exclusive with
+`--auto-scale`.
+
+- Required: No
+- Default: `false`
+
 **`--upgrade-config`** (structure)
 
 Upgrade strategy configuration for the node group. Accepts shorthand or JSON.
@@ -92,6 +109,10 @@ JSON syntax:
 ```json
 {"maxSurge": 1, "maxUnavailable": 0, "strategy": "SURGE"}
 ```
+
+- When `maxSurge` is omitted or `null`, it defaults to `1`. When
+  `maxUnavailable` is omitted or `null`, it defaults to `0`. The CLI sends
+  these defaults explicitly.
 
 **`--dry-run`** (boolean)
 
