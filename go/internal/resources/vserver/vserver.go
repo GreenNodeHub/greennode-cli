@@ -60,36 +60,16 @@ func simpleList(tmpl string, idFields ...string) func(context.Context, *cobra.Co
 	}
 }
 
-// resolveVPCFromCluster fetches a cluster by ID and returns its VPC ID.
-func resolveVPCFromCluster(cmd *cobra.Command, clusterID string) (string, error) {
-	c, err := cli.NewClient(cmd, "vks")
-	if err != nil {
-		return "", err
-	}
-	resp, err := c.Get(fmt.Sprintf("/v1/clusters/%s", clusterID), nil)
-	if err != nil {
-		return "", err
-	}
-	// Response is map[string]interface{}, extract vpcId.
-	m, ok := resp.(map[string]interface{})
-	if !ok {
-		return "", nil
-	}
-	vpcID, ok := m["vpcId"].(string)
-	if !ok {
-		return "", nil
-	}
-	return vpcID, nil
-}
-
 func fetchSubnets(_ context.Context, cmd *cobra.Command) ([]string, error) {
 	vpcID, _ := cmd.Flags().GetString("vpc-id")
 
-	// If --vpc-id is missing but --cluster-id is present, resolve the VPC from the cluster.
-	// This makes completion work for commands like create-nodegroup that don't take --vpc-id.
+	// Commands like create-nodegroup take --cluster-id but no --vpc-id. The
+	// cluster API belongs to another service, so the lookup goes through the
+	// resolver registered in the cli registry and this file keeps knowing only
+	// vserver paths. Failures fall through to "no suggestions".
 	if vpcID == "" {
 		if clusterID, _ := cmd.Flags().GetString("cluster-id"); clusterID != "" {
-			if resolved, err := resolveVPCFromCluster(cmd, clusterID); err == nil && resolved != "" {
+			if resolved, err := cli.ResolveClusterVPC(cmd, clusterID); err == nil {
 				vpcID = resolved
 			}
 		}
