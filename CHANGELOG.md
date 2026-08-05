@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.11.0...v1.12.0) (2026-08-05)
+
+
+### Features
+
+* **agentbase:** new subcommand for agentbase products ([#14](https://github.com/GreenNodeHub/greennode-cli/issues/14)) ([8505f45](https://github.com/GreenNodeHub/greennode-cli/commit/8505f45f4b0ce41f5e8e206e7d70493340d1ffbf))
+
 ## [1.11.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.10.0...v1.11.0) (2026-08-04)
 
 
