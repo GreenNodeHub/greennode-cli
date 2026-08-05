@@ -34,10 +34,6 @@ func init() {
 func runUpdateNodegroup(cmd *cobra.Command, args []string) error {
 	clusterID, _ := cmd.Flags().GetString("cluster-id")
 	nodegroupID, _ := cmd.Flags().GetString("nodegroup-id")
-	numNodes, _ := cmd.Flags().GetString("num-nodes")
-	securityGroups, _ := cmd.Flags().GetString("security-groups")
-	autoScaleStr, _ := cmd.Flags().GetString("auto-scale")
-	upgradeConfigStr, _ := cmd.Flags().GetString("upgrade-config")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	if err := validator.ValidateID(clusterID, "cluster-id"); err != nil {
@@ -47,31 +43,9 @@ func runUpdateNodegroup(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	body := map[string]interface{}{}
-
-	if numNodes != "" {
-		body["numNodes"] = toInt(numNodes)
-	}
-	if securityGroups != "" {
-		body["securityGroups"] = parseCommaSeparated(securityGroups)
-	}
-	if autoScaleStr != "" {
-		asc, err := cli.ParseStructFlag(autoScaleStr, "minSize", "maxSize")
-		if err != nil {
-			return fmt.Errorf("--auto-scale: %w", err)
-		}
-		body["autoScaleConfig"] = asc
-	}
-	if upgradeConfigStr != "" {
-		uc, err := cli.ParseStructFlag(upgradeConfigStr, "maxSurge", "maxUnavailable")
-		if err != nil {
-			return fmt.Errorf("--upgrade-config: %w", err)
-		}
-		body["upgradeConfig"] = uc
-	}
-
-	if len(body) == 0 {
-		return fmt.Errorf("nothing to update: provide at least one of --num-nodes, --security-groups, --auto-scale, or --upgrade-config (use 'update-nodegroup-metadata' for labels/tags/taints)")
+	body, err := buildUpdateNodegroupBody(cmd.Flags())
+	if err != nil {
+		return err
 	}
 
 	if dryRun {
@@ -182,4 +156,39 @@ func validateAutoScaleObject(m map[string]interface{}) error {
 		}
 	}
 	return nil
+}
+
+// buildUpdateNodegroupBody composes the PUT body from flags. It returns an
+// error if nothing is set, or if any field fails validation. The empty-body
+// guard runs last so validation errors surface first.
+func buildUpdateNodegroupBody(flags *pflag.FlagSet) (map[string]interface{}, error) {
+	body := map[string]interface{}{}
+
+	if numNodes, _ := flags.GetString("num-nodes"); numNodes != "" {
+		body["numNodes"] = toInt(numNodes)
+	}
+	if sg, _ := flags.GetString("security-groups"); sg != "" {
+		body["securityGroups"] = parseCommaSeparated(sg)
+	}
+
+	asc, set, err := resolveAutoScaleConfig(flags)
+	if err != nil {
+		return nil, err
+	}
+	if set {
+		body["autoScaleConfig"] = asc
+	}
+
+	if ucStr, _ := flags.GetString("upgrade-config"); ucStr != "" {
+		uc, err := cli.ParseStructFlag(ucStr, "maxSurge", "maxUnavailable")
+		if err != nil {
+			return nil, fmt.Errorf("--upgrade-config: %w", err)
+		}
+		body["upgradeConfig"] = upgradeConfigWithDefaults(uc)
+	}
+
+	if len(body) == 0 {
+		return nil, fmt.Errorf("nothing to update: provide at least one of --num-nodes, --security-groups, --auto-scale, --disable-auto-scale, or --upgrade-config (use 'update-nodegroup-metadata' for labels/tags/taints)")
+	}
+	return body, nil
 }

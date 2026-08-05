@@ -138,3 +138,65 @@ func TestResolveAutoScaleConfig(t *testing.T) {
 		})
 	}
 }
+
+func updateFlags(numNodes, securityGroups, autoScale, upgradeConfig string, disable bool) *pflag.FlagSet {
+	f := pflag.NewFlagSet("update-nodegroup", pflag.ContinueOnError)
+	f.String("num-nodes", numNodes, "")
+	f.String("security-groups", securityGroups, "")
+	f.String("auto-scale", autoScale, "")
+	f.String("upgrade-config", upgradeConfig, "")
+	f.Bool("disable-auto-scale", disable, "")
+	return f
+}
+
+func TestBuildUpdateNodegroupBody(t *testing.T) {
+	t.Run("disable only sends null", func(t *testing.T) {
+		body, err := buildUpdateNodegroupBody(updateFlags("", "", "", "", true))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := map[string]interface{}{"autoScaleConfig": nil}
+		if !reflect.DeepEqual(body, want) {
+			t.Errorf("got %v, want %v", body, want)
+		}
+	})
+
+	t.Run("upgrade fills defaults", func(t *testing.T) {
+		body, err := buildUpdateNodegroupBody(updateFlags("", "", "", "maxSurge=2", false))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		uc, ok := body["upgradeConfig"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("upgradeConfig missing or wrong type: %v", body["upgradeConfig"])
+		}
+		if uc["maxSurge"] != 2 || uc["maxUnavailable"] != 0 {
+			t.Errorf("got %v, want maxSurge=2 maxUnavailable=0", uc)
+		}
+	})
+
+	t.Run("num-nodes only", func(t *testing.T) {
+		body, err := buildUpdateNodegroupBody(updateFlags("3", "", "", "", false))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := map[string]interface{}{"numNodes": 3}
+		if !reflect.DeepEqual(body, want) {
+			t.Errorf("got %v, want %v", body, want)
+		}
+	})
+
+	t.Run("auto-scale validation surfaces as error", func(t *testing.T) {
+		_, err := buildUpdateNodegroupBody(updateFlags("", "", "minSize=2", "", false))
+		if err == nil || !strings.Contains(err.Error(), "both minSize and maxSize are required") {
+			t.Errorf("err = %v, want to contain validation message", err)
+		}
+	})
+
+	t.Run("nothing to update", func(t *testing.T) {
+		_, err := buildUpdateNodegroupBody(updateFlags("", "", "", "", false))
+		if err == nil || !strings.Contains(err.Error(), "nothing to update") {
+			t.Errorf("err = %v, want nothing-to-update error", err)
+		}
+	})
+}
