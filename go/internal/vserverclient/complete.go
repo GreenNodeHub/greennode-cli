@@ -177,6 +177,113 @@ func CompleteSubnetIDs(cmd *cobra.Command, args []string, toComplete string) ([]
 	return extractCompletions(result, []string{"data", "listData"}, "uuid", "name"), cobra.ShellCompDirectiveNoFileComp
 }
 
+// CompleteFloatingIPIDs completes --floating-ip-id flags.
+var CompleteFloatingIPIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
+	result, err := c.Get(fmt.Sprintf("/v2/%s/wanIps", projectID), map[string]string{"page": "1", "size": "100"})
+	if err != nil {
+		return nil, err
+	}
+	return extractCompletions(result, []string{"listData"}, "uuid", "ip"), nil
+})
+
+// CompleteNetworkInterfaceIDs completes --network-interface-id flags.
+var CompleteNetworkInterfaceIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
+	result, err := c.Get(fmt.Sprintf("/v2/%s/network-interfaces-elastic", projectID), map[string]string{"page": "1", "size": "100"})
+	if err != nil {
+		return nil, err
+	}
+	return extractCompletions(result, []string{"listData"}, "uuid", "name"), nil
+})
+
+// CompletePlacementGroupIDs completes --placement-group-id flags.
+var CompletePlacementGroupIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
+	result, err := c.Get(fmt.Sprintf("/v2/%s/serverGroups", projectID), map[string]string{"page": "1", "size": "100"})
+	if err != nil {
+		return nil, err
+	}
+	return extractCompletions(result, []string{"listData"}, "uuid", "name"), nil
+})
+
+// CompleteSSHKeyIDs completes --sshkey-id flags.
+var CompleteSSHKeyIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
+	result, err := c.Get(fmt.Sprintf("/v2/%s/sshKeys", projectID), map[string]string{"page": "1", "size": "100"})
+	if err != nil {
+		return nil, err
+	}
+	return extractCompletions(result, []string{"listData"}, "id", "name"), nil
+})
+
+// CompleteUserImageIDs completes --user-image-id flags.
+var CompleteUserImageIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
+	result, err := c.Get(fmt.Sprintf("/v2/%s/user-images/", projectID), map[string]string{"page": "1", "size": "100"})
+	if err != nil {
+		return nil, err
+	}
+	return extractCompletions(result, []string{"listData"}, "uuid", "name"), nil
+})
+
+// CompleteDhcpOptionIDs completes --dhcp-option-id flags.
+var CompleteDhcpOptionIDs = buildCompleter(func(c *client.GreennodeClient, projectID string) ([]string, error) {
+	result, err := c.Get(fmt.Sprintf("/v2/%s/dhcp_option", projectID), map[string]string{"page": "1", "size": "100"})
+	if err != nil {
+		return nil, err
+	}
+	return extractCompletions(result, []string{"listData"}, "uuid", "name"), nil
+})
+
+// CompleteTagKeys completes --key flags for the tag-value command.
+func CompleteTagKeys(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	c, cfg, err := BuildClient(cmd)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	projectID, err := ProjectID(cfg)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	result, err := c.Get(fmt.Sprintf("/v2/%s/tag/tag-key", projectID), nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	completions := extractTagKeys(result)
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// extractTagKeys pulls tag key strings from the tag-key API response.
+// The response may be a plain []string, a {"data": [...]}, or a list of objects
+// with a "key" or "name" field.
+func extractTagKeys(result interface{}) []string {
+	var items []interface{}
+	switch v := result.(type) {
+	case []interface{}:
+		items = v
+	case map[string]interface{}:
+		for _, key := range []string{"data", "listData"} {
+			if d, ok := v[key].([]interface{}); ok {
+				items = d
+				break
+			}
+		}
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		switch v := item.(type) {
+		case string:
+			if v != "" {
+				out = append(out, v)
+			}
+		case map[string]interface{}:
+			for _, field := range []string{"key", "name", "tagKey"} {
+				if s, ok := v[field].(string); ok && s != "" {
+					out = append(out, s)
+					break
+				}
+			}
+		}
+	}
+	return out
+}
+
 // CompleteVolumeTypeIDs completes --volume-type-id flags.
 // Reads the zone from --zone-id to perform the two-step lookup.
 func CompleteVolumeTypeIDs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

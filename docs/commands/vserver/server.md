@@ -17,6 +17,17 @@ grn vserver server <command> [options]
 | [stop](#stop) | Stop a running instance |
 | [reboot](#reboot) | Reboot an instance |
 | [resize](#resize) | Change an instance to a different flavor |
+| [update-secgroup](#update-secgroup) | Update the security groups attached to an instance |
+| [create-image](#create-image) | Create a user image from an instance |
+| [attach-floating-ip](#attach-floating-ip) | Attach a floating IP to an instance |
+| [detach-floating-ip](#detach-floating-ip) | Detach a floating IP from an instance |
+| [list-interfaces](#list-interfaces) | List network interfaces attached to an instance |
+| [attach-internal-interface](#attach-internal-interface) | Attach an internal network interface |
+| [detach-internal-interface](#detach-internal-interface) | Detach an internal network interface |
+| [attach-external-interface](#attach-external-interface) | Attach an external network interface |
+| [detach-external-interface](#detach-external-interface) | Detach an external network interface |
+| [tag-key](#tag-key) | List available tag keys |
+| [tag-value](#tag-value) | List possible values for a tag key |
 | [delete](#delete) | Delete an instance |
 
 ---
@@ -387,6 +398,353 @@ grn vserver server resize
 grn vserver server resize \
   --server-id srv-abc12345-0000-0000-0000-000000000001 \
   --flavor-id flv-8c16g
+```
+
+---
+
+## update-secgroup
+
+Replace the security groups attached to a vServer instance.
+
+### Synopsis
+
+```
+grn vserver server update-secgroup
+    --server-id <value>
+    --security-group <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--security-group` (required)
+: Comma-separated list of security group IDs. Replaces the full set of attached security groups.
+
+### Examples
+
+```bash
+grn vserver server update-secgroup \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --security-group sg-aaa111,sg-bbb222
+```
+
+---
+
+## create-image
+
+Create a user image (snapshot) from a vServer instance. The resulting image appears in `grn vserver user-image list`.
+
+### Synopsis
+
+```
+grn vserver server create-image
+    --server-id <value>
+    --name <value>
+    [--tag <value> ...]
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--name` (required)
+: Name for the new user image.
+
+`--tag` (string, repeatable)
+: Tag in `key=value` format. Repeat the flag to add multiple tags.
+
+### Examples
+
+```bash
+grn vserver server create-image \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --name my-golden-image
+
+grn vserver server create-image \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --name prod-snapshot \
+  --tag env=prod \
+  --tag version=v2
+```
+
+---
+
+## attach-floating-ip
+
+Attach a floating IP to a server's network interface.
+
+### Synopsis
+
+```
+grn vserver server attach-floating-ip
+    --server-id <value>
+    --floating-ip-id <value>
+    --network-interface-id <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--floating-ip-id` (required)
+: Floating IP ID. Run `grn vserver floating-ip list` to browse.
+
+`--network-interface-id` (required)
+: Network interface ID to attach the floating IP to. Run `grn vserver server list-interfaces --server-id <id>` to browse.
+
+### Examples
+
+```bash
+grn vserver server attach-floating-ip \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --floating-ip-id fip-abc12345-0000-0000-0000-000000000001 \
+  --network-interface-id eni-abc12345-0000-0000-0000-000000000001
+```
+
+---
+
+## detach-floating-ip
+
+Detach a floating IP from a server's network interface.
+
+### Synopsis
+
+```
+grn vserver server detach-floating-ip
+    --server-id <value>
+    --floating-ip-id <value>
+    --network-interface-id <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--floating-ip-id` (required)
+: Floating IP ID.
+
+`--network-interface-id` (required)
+: Network interface ID.
+
+### Examples
+
+```bash
+grn vserver server detach-floating-ip \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --floating-ip-id fip-abc12345-0000-0000-0000-000000000001 \
+  --network-interface-id eni-abc12345-0000-0000-0000-000000000001
+```
+
+---
+
+## list-interfaces
+
+List the network interfaces attached to a vServer instance. In table output, internal and external interfaces are shown in separate tables.
+
+### Synopsis
+
+```
+grn vserver server list-interfaces --server-id <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+### Examples
+
+```bash
+grn vserver server list-interfaces \
+  --server-id srv-abc12345-0000-0000-0000-000000000001
+
+grn vserver server list-interfaces \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --output table
+```
+
+---
+
+## attach-internal-interface
+
+Attach an internal subnet interface to a vServer instance.
+
+### Synopsis
+
+```
+grn vserver server attach-internal-interface
+    --server-id <value>
+    --subnet-id <value>
+    [--ip <value>]
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--subnet-id` (required)
+: Subnet ID to attach. Run `grn vserver subnet list --vpc-id <vpc-id>` to browse.
+
+`--ip` (string)
+: Fixed IP address within the subnet. If omitted, an IP is assigned automatically.
+
+### Examples
+
+```bash
+# Auto-assigned IP
+grn vserver server attach-internal-interface \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --subnet-id sub-abc12345-0000-0000-0000-000000000001
+
+# Fixed IP
+grn vserver server attach-internal-interface \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --subnet-id sub-abc12345-0000-0000-0000-000000000001 \
+  --ip 10.0.1.50
+```
+
+---
+
+## detach-internal-interface
+
+Detach one or more internal network interfaces from a vServer instance.
+
+### Synopsis
+
+```
+grn vserver server detach-internal-interface
+    --server-id <value>
+    --network-interface-id <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--network-interface-id` (required)
+: Comma-separated list of internal network interface IDs to detach.
+
+### Examples
+
+```bash
+grn vserver server detach-internal-interface \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --network-interface-id eni-abc12345-0000-0000-0000-000000000001
+
+# Detach multiple interfaces at once
+grn vserver server detach-internal-interface \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --network-interface-id eni-aaa111,eni-bbb222
+```
+
+---
+
+## attach-external-interface
+
+Attach an external (elastic) network interface to a vServer instance.
+
+### Synopsis
+
+```
+grn vserver server attach-external-interface
+    --server-id <value>
+    --network-interface-id <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--network-interface-id` (required)
+: External network interface ID. Run `grn vserver network-interface list` to browse.
+
+### Examples
+
+```bash
+grn vserver server attach-external-interface \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --network-interface-id eni-abc12345-0000-0000-0000-000000000001
+```
+
+---
+
+## detach-external-interface
+
+Detach an external network interface from a vServer instance.
+
+### Synopsis
+
+```
+grn vserver server detach-external-interface
+    --server-id <value>
+    --network-interface-id <value>
+```
+
+### Options
+
+`--server-id` (required)
+: Server UUID.
+
+`--network-interface-id` (required)
+: External network interface ID.
+
+### Examples
+
+```bash
+grn vserver server detach-external-interface \
+  --server-id srv-abc12345-0000-0000-0000-000000000001 \
+  --network-interface-id eni-abc12345-0000-0000-0000-000000000001
+```
+
+---
+
+## tag-key
+
+List all tag keys available in the project. Use the returned keys with `tag-value` to discover valid values.
+
+### Synopsis
+
+```
+grn vserver server tag-key
+```
+
+### Examples
+
+```bash
+grn vserver server tag-key
+grn vserver server tag-key --output table
+```
+
+---
+
+## tag-value
+
+List the possible values for a tag key.
+
+### Synopsis
+
+```
+grn vserver server tag-value --key <value>
+```
+
+### Options
+
+`--key` (required)
+: Tag key to look up values for. Run `grn vserver server tag-key` to see available keys.
+
+### Examples
+
+```bash
+grn vserver server tag-value --key env
+grn vserver server tag-value --key team --output table
 ```
 
 ---

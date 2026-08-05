@@ -15,6 +15,12 @@ grn vserver <resource> <command> [options]
 | [vpc](vpc.md) | Manage VPC networks |
 | [subnet](subnet.md) | Manage subnets within a VPC |
 | [secgroup](secgroup.md) | Manage security groups and their rules |
+| [sshkey](sshkey.md) | Manage SSH key pairs |
+| [floating-ip](floating-ip.md) | Manage floating (public) IPs |
+| [network-interface](network-interface.md) | Manage elastic network interfaces |
+| [placement-group](placement-group.md) | Manage server placement groups |
+| [dhcp](dhcp.md) | Manage DHCP option sets |
+| [user-image](user-image.md) | Manage user-created images |
 | [flavor](flavor.md) | Browse available instance flavors |
 | [image](image.md) | Browse available OS/GPU images |
 | [volume-type](volume-type.md) | Browse available volume types for a zone |
