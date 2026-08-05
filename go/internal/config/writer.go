@@ -155,6 +155,64 @@ func (w *ConfigFileWriter) ClearLoginToken(profile string) error {
 	return w.save(cfg, filePath)
 }
 
+// WriteAgentIdentity persists the agentbase "current agent" selection for the
+// given profile into the shared credentials INI (the `agent_identity` key). It
+// replaces agentbase's former .greennode.json SaveAgentIdentity so the current
+// agent is read from the same profile every other service uses. Single-key
+// write: loadOrCreate preserves every other key/section, NewSection is
+// idempotent (returns the existing section without wiping its keys), and save
+// is the same atomic 0600 rename used by WriteLoginToken. An empty name clears
+// the key (explicit unset) rather than being a no-op, so `workload use` can
+// distinguish "select none" from "no change".
+func (w *ConfigFileWriter) WriteAgentIdentity(profile, name string) error {
+	if err := w.ensureDir(); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	filePath := filepath.Join(w.configDir, "credentials")
+	cfg, err := w.loadOrCreate(filePath)
+	if err != nil {
+		return err
+	}
+
+	section, err := cfg.NewSection(profile)
+	if err != nil {
+		return fmt.Errorf("failed to create section '%s': %w", profile, err)
+	}
+	section.Key("agent_identity").SetValue(name)
+
+	return w.save(cfg, filePath)
+}
+
+// WriteIamEnv persists the dev/prod iam_env selector for the given profile into
+// the shared credentials INI. It is the machine-mode counterpart to `grn login
+// --iam-env` (which writes iam_env via WriteLoginToken): `grn agentbase context
+// switch <env>` repoints a machine profile's env here so all three services
+// (vks/vserver/agentbase) resolve the v2 token URL + endpoints from one key.
+// Same single-key + idempotent-section + atomic-0600-save contract as
+// WriteAgentIdentity. Callers validate env BEFORE calling (switch on a user
+// profile is refused at the command layer — iam_env is bound to the login token
+// there).
+func (w *ConfigFileWriter) WriteIamEnv(profile, env string) error {
+	if err := w.ensureDir(); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	filePath := filepath.Join(w.configDir, "credentials")
+	cfg, err := w.loadOrCreate(filePath)
+	if err != nil {
+		return err
+	}
+
+	section, err := cfg.NewSection(profile)
+	if err != nil {
+		return fmt.Errorf("failed to create section '%s': %w", profile, err)
+	}
+	section.Key("iam_env").SetValue(env)
+
+	return w.save(cfg, filePath)
+}
+
 func (w *ConfigFileWriter) loadOrCreate(filePath string) (*ini.File, error) {
 	if _, err := os.Stat(filePath); err == nil {
 		return ini.Load(filePath)

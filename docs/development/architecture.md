@@ -79,6 +79,20 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
 
 `root.go` iterates `cli.Services()` and never needs editing per service.
 
+## Self-contained subcommand: `agentbase`
+
+`cmd/agentbase/` is a self-contained service stack that is compiled into the
+default `grn` binary and the public release build (`-tags vks_only`) — it was
+previously gated behind the `-tags agentbase` opt-in tag while under development
+(see `cmd/register_agentbase.go`). Unlike `vks`/`vserver`, it does not reuse the
+shared `internal/cli` infrastructure: it ships its own v2 OAuth2
+client-credentials auth (`internal/agentbase/auth/`), its own
+`./.greennode.json` config loader (`internal/agentbase/config/`), and its own
+HTTP client + output helpers. `AgentbaseCmd` self-registers via
+`cli.RegisterService(...)` in `init()`, so it appears under `grn` with no
+further wiring. Its public command-reference pages live under
+`docs/commands/agentbase/*` and are published in the `mkdocs.yml` nav.
+
 ## Writing a command
 
 Follow the existing `cmd/vks/*.go` files. Each command:

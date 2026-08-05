@@ -72,6 +72,141 @@ nav:
       - get-quota: commands/vks/get-quota.md
     - Waiter:
       - wait: commands/vks/wait.md
+  - AgentBase Commands:
+    - Overview: commands/agentbase/index.md
+    - Context:
+      - Overview: commands/agentbase/context/index.md
+      - current: commands/agentbase/context/current.md
+      - headers: commands/agentbase/context/headers.md
+      - decorators: commands/agentbase/context/decorators.md
+    - Identity:
+      - Overview: commands/agentbase/identity/index.md
+      - workload create: commands/agentbase/identity/workload-create.md
+      - workload list: commands/agentbase/identity/workload-list.md
+      - workload get: commands/agentbase/identity/workload-get.md
+      - workload update: commands/agentbase/identity/workload-update.md
+      - workload use: commands/agentbase/identity/workload-use.md
+      - workload delete: commands/agentbase/identity/workload-delete.md
+      - outbound-auth static create: commands/agentbase/identity/outbound-auth-static-create.md
+      - outbound-auth static list: commands/agentbase/identity/outbound-auth-static-list.md
+      - outbound-auth static get: commands/agentbase/identity/outbound-auth-static-get.md
+      - outbound-auth static update: commands/agentbase/identity/outbound-auth-static-update.md
+      - outbound-auth static delete: commands/agentbase/identity/outbound-auth-static-delete.md
+      - outbound-auth static get-key: commands/agentbase/identity/outbound-auth-static-get-key.md
+      - outbound-auth delegated create: commands/agentbase/identity/outbound-auth-delegated-create.md
+      - outbound-auth delegated list: commands/agentbase/identity/outbound-auth-delegated-list.md
+      - outbound-auth delegated get: commands/agentbase/identity/outbound-auth-delegated-get.md
+      - outbound-auth delegated delete: commands/agentbase/identity/outbound-auth-delegated-delete.md
+      - outbound-auth delegated get-key: commands/agentbase/identity/outbound-auth-delegated-get-key.md
+      - outbound-auth oauth2 create: commands/agentbase/identity/outbound-auth-oauth2-create.md
+      - outbound-auth oauth2 list: commands/agentbase/identity/outbound-auth-oauth2-list.md
+      - outbound-auth oauth2 get: commands/agentbase/identity/outbound-auth-oauth2-get.md
+      - outbound-auth oauth2 update: commands/agentbase/identity/outbound-auth-oauth2-update.md
+      - outbound-auth oauth2 delete: commands/agentbase/identity/outbound-auth-oauth2-delete.md
+      - outbound-auth oauth2 m2m-token: commands/agentbase/identity/outbound-auth-oauth2-m2m-token.md
+      - outbound-auth oauth2 3lo-token: commands/agentbase/identity/outbound-auth-oauth2-3lo-token.md
+    - Gateway:
+      - Overview: commands/agentbase/gateway/index.md
+      - create: commands/agentbase/gateway/create.md
+      - generate: commands/agentbase/gateway/generate.md
+      - list: commands/agentbase/gateway/list.md
+      - get: commands/agentbase/gateway/get.md
+      - update: commands/agentbase/gateway/update.md
+      - delete: commands/agentbase/gateway/delete.md
+      - wait: commands/agentbase/gateway/wait.md
+      - flavors list: commands/agentbase/gateway/flavors-list.md
+      - access-logs list: commands/agentbase/gateway/access-logs-list.md
+      - access-logs stats: commands/agentbase/gateway/access-logs-stats.md
+      - inbound-auth jwt idp-app set: commands/agentbase/gateway/inbound-auth-jwt-idp-app-set.md
+      - inbound-auth jwt idp-app clear: commands/agentbase/gateway/inbound-auth-jwt-idp-app-clear.md
+      - private-network routes get: commands/agentbase/gateway/private-network-routes-get.md
+      - private-network routes set: commands/agentbase/gateway/private-network-routes-set.md
+      - service-account repair: commands/agentbase/gateway/service-account-repair.md
+    - Runtime:
+      - Overview: commands/agentbase/runtime/index.md
+      - create: commands/agentbase/runtime/create.md
+      - generate: commands/agentbase/runtime/generate.md
+      - list: commands/agentbase/runtime/list.md
+      - get: commands/agentbase/runtime/get.md
+      - update: commands/agentbase/runtime/update.md
+      - delete: commands/agentbase/runtime/delete.md
+      - wait: commands/agentbase/runtime/wait.md
+      - endpoint list: commands/agentbase/runtime/endpoint-list.md
+      - endpoint create: commands/agentbase/runtime/endpoint-create.md
+      - endpoint update: commands/agentbase/runtime/endpoint-update.md
+      - endpoint delete: commands/agentbase/runtime/endpoint-delete.md
+      - endpoint start: commands/agentbase/runtime/endpoint-start.md
+      - endpoint stop: commands/agentbase/runtime/endpoint-stop.md
+      - endpoint logs: commands/agentbase/runtime/endpoint-logs.md
+      - endpoint metrics: commands/agentbase/runtime/endpoint-metrics.md
+      - endpoint events: commands/agentbase/runtime/endpoint-events.md
+      - logs: commands/agentbase/runtime/logs.md
+      - reset-service-account: commands/agentbase/runtime/reset-service-account.md
+      - versions: commands/agentbase/runtime/versions.md
+      - trace get: commands/agentbase/runtime/trace-get.md
+      - trace search: commands/agentbase/runtime/trace-search.md
+      - trace tag-values: commands/agentbase/runtime/trace-tag-values.md
+    - Memory:
+      - Overview: commands/agentbase/memory/index.md
+      - create: commands/agentbase/memory/create.md
+      - generate: commands/agentbase/memory/generate.md
+      - list: commands/agentbase/memory/list.md
+      - get: commands/agentbase/memory/get.md
+      - delete: commands/agentbase/memory/delete.md
+      - search: commands/agentbase/memory/search.md
+      - actor list: commands/agentbase/memory/actor-list.md
+      - session list: commands/agentbase/memory/session-list.md
+      - event list: commands/agentbase/memory/event-list.md
+      - event create: commands/agentbase/memory/event-create.md
+      - event delete: commands/agentbase/memory/event-delete.md
+      - strategy list: commands/agentbase/memory/strategy-list.md
+      - record list: commands/agentbase/memory/record-list.md
+      - record delete: commands/agentbase/memory/record-delete.md
+      - record insert: commands/agentbase/memory/record-insert.md
+      - record generate-from-session: commands/agentbase/memory/record-generate-from-session.md
+      - record generate-from-content: commands/agentbase/memory/record-generate-from-content.md
+    - Catalog:
+      - Overview: commands/agentbase/catalog/index.md
+      - flavors list: commands/agentbase/catalog/flavors-list.md
+      - openclaw-versions list: commands/agentbase/catalog/openclaw-versions-list.md
+      - openclaw list: commands/agentbase/catalog/openclaw-list.md
+      - openclaw create: commands/agentbase/catalog/openclaw-create.md
+      - openclaw get: commands/agentbase/catalog/openclaw-get.md
+      - openclaw delete: commands/agentbase/catalog/openclaw-delete.md
+      - openclaw start: commands/agentbase/catalog/openclaw-start.md
+      - openclaw stop: commands/agentbase/catalog/openclaw-stop.md
+      - openclaw update-version: commands/agentbase/catalog/openclaw-update-version.md
+    - Policy:
+      - Overview: commands/agentbase/policy/index.md
+      - group create: commands/agentbase/policy/group-create.md
+      - group generate: commands/agentbase/policy/group-generate.md
+      - group list: commands/agentbase/policy/group-list.md
+      - group get: commands/agentbase/policy/group-get.md
+      - group update: commands/agentbase/policy/group-update.md
+      - group delete: commands/agentbase/policy/group-delete.md
+      - group policy create: commands/agentbase/policy/group-policy-create.md
+      - group policy generate: commands/agentbase/policy/group-policy-generate.md
+      - group policy list: commands/agentbase/policy/group-policy-list.md
+      - group policy get: commands/agentbase/policy/group-policy-get.md
+      - group policy update: commands/agentbase/policy/group-policy-update.md
+      - group policy delete: commands/agentbase/policy/group-policy-delete.md
+      - condition-operators: commands/agentbase/policy/condition-operators.md
+      - decide: commands/agentbase/policy/decide.md
+    - CR:
+      - Overview: commands/agentbase/cr/index.md
+      - repository get: commands/agentbase/cr/repository-get.md
+      - repository image list: commands/agentbase/cr/repository-image-list.md
+      - repository image delete: commands/agentbase/cr/repository-image-delete.md
+      - repository artifact list: commands/agentbase/cr/repository-artifact-list.md
+      - repository artifact delete: commands/agentbase/cr/repository-artifact-delete.md
+      - registry-credential get: commands/agentbase/cr/registry-credential-get.md
+      - registry-credential reset-secret: commands/agentbase/cr/registry-credential-reset-secret.md
+    - Deploy:
+      - Overview: commands/agentbase/deploy/index.md
+      - generate: commands/agentbase/deploy/generate.md
+      - up: commands/agentbase/deploy/up.md
+      - status: commands/agentbase/deploy/status.md
+      - destroy: commands/agentbase/deploy/destroy.md
   - vServer Commands:
     - Overview: commands/vserver/index.md
     - Instances:

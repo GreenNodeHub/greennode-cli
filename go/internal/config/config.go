@@ -46,6 +46,14 @@ type Config struct {
 	RefreshToken   string
 	TokenExpiresAt time.Time
 	IamEnv         string
+
+	// AgentIdentity is the agentbase "current agent" the user selected with
+	// `grn agentbase identity workload use <name>` (or `create --set-current`).
+	// Non-secret (a user-chosen agent name), persisted per-profile in the shared
+	// credentials INI so agentbase reads it from the same profile every other
+	// service uses — agentbase no longer keeps its own .greennode.json. Written
+	// by config.WriteAgentIdentity; empty means no current agent is selected.
+	AgentIdentity string
 }
 
 // DefaultConfigDir returns ~/.greennode. This is where config is written.
@@ -149,6 +157,12 @@ func LoadConfig(profile string) (*Config, error) {
 				}
 				if v := section.Key("iam_env").String(); v != "" {
 					cfg.IamEnv = v
+				}
+				// agentbase current-agent selection (non-secret). Read from the
+				// shared credentials INI so agentbase resolves it from the same
+				// profile as the rest of the CLI (no separate .greennode.json).
+				if v := section.Key("agent_identity").String(); v != "" {
+					cfg.AgentIdentity = v
 				}
 			}
 		}

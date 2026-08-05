@@ -1,0 +1,414 @@
+package identity
+
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/greennodehub/greennode-cli/internal/agentbase/jsonslice"
+)
+
+// fakeTokenProvider satisfies coreclient.TokenProvider so identity tests no
+// longer spin up a real IAM token server (the v2 MachineTokenProvider in
+// internal/auth is the production provider now; agentbaseClient.Do tests cover
+// the Bearer seam in internal/agentbase/client).
+type fakeTokenProvider struct{ token string }
+
+func (f *fakeTokenProvider) GetToken() (string, error)     { return f.token, nil }
+func (f *fakeTokenProvider) RefreshToken() (string, error) { return f.token, nil }
+
+func newTestClient(t *testing.T, handler http.HandlerFunc) (*Client, *httptest.Server) {
+	t.Helper()
+	apiSrv := httptest.NewServer(handler)
+	t.Cleanup(apiSrv.Close)
+	return NewClient(apiSrv.URL, &fakeTokenProvider{token: "test"}), apiSrv
+}
+
+func sp(s string) *string { return &s }
+
+func TestListAgentIdentities(t *testing.T) {
+	resp := PagedResponseAgentIdentityResponse{
+		Content: jsonslice.Array[AgentIdentityResponse]{{ID: sp("1"), Name: sp("agent-one")}},
+	}
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	out, err := c.ListAgentIdentities(context.Background(), 0, 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out.Content) != 1 || out.Content[0].Name == nil || *out.Content[0].Name != "agent-one" {
+		t.Errorf("unexpected content: %+v", out.Content)
+	}
+}
+
+func TestCreateAgentIdentity(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AgentIdentityResponse{ID: sp("x"), Name: sp("new-agent")})
+	})
+	out, err := c.CreateAgentIdentity(context.Background(), &CreateAgentIdentityRequest{Name: "new-agent"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "new-agent" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestGetAgentIdentity(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AgentIdentityResponse{ID: sp("1"), Name: sp("my-agent")})
+	})
+	out, err := c.GetAgentIdentity(context.Background(), "my-agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "my-agent" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestDeleteAgentIdentity(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.DeleteAgentIdentity(context.Background(), "my-agent"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateApikeyProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ApikeyProviderResponse{ID: sp("1"), Name: sp("prov")})
+	})
+	out, err := c.CreateApikeyProvider(context.Background(), &CreateApikeyProviderRequest{Name: "prov", Apikey: "key"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "prov" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestListApikeyProviders(t *testing.T) {
+	resp := PagedResponseApikeyProviderResponse{
+		Content: jsonslice.Array[ApikeyProviderResponse]{{ID: sp("1"), Name: sp("static-key")}},
+	}
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	out, err := c.ListApikeyProviders(context.Background(), 0, 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out.Content) != 1 {
+		t.Errorf("expected 1 result, got %v", out.Content)
+	}
+}
+
+func TestUpdateApikeyProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.UpdateApikeyProvider(context.Background(), "prov", &UpdateApikeyProviderRequest{Apikey: "newkey"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDeleteApikeyProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.DeleteApikeyProvider(context.Background(), "prov"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateOauth2Provider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(Oauth2ProviderResponse{ID: sp("1"), Name: sp("google")})
+	})
+	req := &CreateOauth2ProviderRequest{Name: "google", ClientID: "cid", ClientSecret: "cs",
+		AuthorizationURL: "https://auth", TokenURL: "https://token"}
+	out, err := c.CreateOauth2Provider(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "google" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestListOauth2Providers(t *testing.T) {
+	resp := PagedResponseOauth2ProviderResponse{
+		Content: jsonslice.Array[Oauth2ProviderResponse]{{ID: sp("1"), Name: sp("google")}},
+	}
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	out, err := c.ListOauth2Providers(context.Background(), 0, 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out.Content) != 1 {
+		t.Errorf("expected 1 result, got %v", out.Content)
+	}
+}
+
+func TestGetOauth2Provider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(Oauth2ProviderResponse{ID: sp("1"), Name: sp("google")})
+	})
+	out, err := c.GetOauth2Provider(context.Background(), "google")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "google" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestDeleteOauth2Provider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.DeleteOauth2Provider(context.Background(), "google"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateDelegatedProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(DelegatedApiKeyProviderResponse{ID: sp("1"), Name: sp("del-prov")})
+	})
+	out, err := c.CreateDelegatedProvider(context.Background(), &CreateDelegatedApiKeyProviderRequest{Name: "del-prov"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "del-prov" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestListDelegatedProviders(t *testing.T) {
+	resp := PagedResponseDelegatedApiKeyProviderResponse{
+		Content: jsonslice.Array[DelegatedApiKeyProviderResponse]{{ID: sp("1"), Name: sp("dp")}},
+	}
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	out, err := c.ListDelegatedProviders(context.Background(), 0, 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out.Content) != 1 {
+		t.Errorf("expected 1 result, got %v", out.Content)
+	}
+}
+
+func TestGetApikeyForAgentIdentity(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ApikeyResponse{Apikey: sp("secret-key")})
+	})
+	out, err := c.GetApikeyForAgentIdentity(context.Background(), "prov", "agent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Apikey == nil || *out.Apikey != "secret-key" {
+		t.Errorf("unexpected apikey: %v", out.Apikey)
+	}
+}
+
+func TestGetM2MToken(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(TokenResponse{AccessToken: sp("m2m-token")})
+	})
+	out, err := c.GetM2MToken(context.Background(), "prov", "agent", &GetM2mTokenRequest{Scopes: jsonslice.Array[string]{"read"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.AccessToken == nil || *out.AccessToken != "m2m-token" {
+		t.Errorf("unexpected token: %v", out.AccessToken)
+	}
+}
+
+func TestClientError_Returns404(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+	})
+	_, err := c.GetAgentIdentity(context.Background(), "missing")
+	if err == nil {
+		t.Fatal("expected error for 404 response")
+	}
+}
+
+func TestUpdateAgentIdentity(t *testing.T) {
+	var gotBody []byte
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AgentIdentityResponse{ID: sp("1"), Name: sp("updated")})
+	})
+	desc := "desc"
+	out, err := c.UpdateAgentIdentity(context.Background(), "updated", &UpdateAgentIdentityRequest{Description: &desc})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "updated" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+	// An update that omits --allowed-return-url must NOT send allowedReturnUrls
+	// at all (omitempty), so the server's unconditional $set does not wipe the
+	// identity's existing URLs with []. The field is left nil by the command
+	// when the flag is not passed.
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(gotBody, &body); err != nil {
+		t.Fatalf("unmarshal body: %v\n%s", err, gotBody)
+	}
+	if _, ok := body["allowedReturnUrls"]; ok {
+		t.Errorf("allowedReturnUrls must be omitted when not set; body: %s", gotBody)
+	}
+	if _, ok := body["description"]; !ok {
+		t.Errorf("description must be present; body: %s", gotBody)
+	}
+}
+
+func TestUpdateAgentIdentity_AllowedReturnURLsPresent(t *testing.T) {
+	var gotBody []byte
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AgentIdentityResponse{ID: sp("1"), Name: sp("u")})
+	})
+	urls := jsonslice.Array[string]{"https://example.com/cb"}
+	if _, err := c.UpdateAgentIdentity(context.Background(), "u", &UpdateAgentIdentityRequest{AllowedReturnURLs: urls}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(gotBody, &body); err != nil {
+		t.Fatalf("unmarshal body: %v", err)
+	}
+	raw, ok := body["allowedReturnUrls"]
+	if !ok {
+		t.Fatalf("allowedReturnUrls must be present when set; body: %s", gotBody)
+	}
+	var got []string
+	if err := json.Unmarshal(raw, &got); err != nil || len(got) != 1 || got[0] != "https://example.com/cb" {
+		t.Errorf("allowedReturnUrls payload wrong: %s", raw)
+	}
+}
+
+func TestGetApikeyProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ApikeyProviderResponse{ID: sp("1"), Name: sp("prov")})
+	})
+	out, err := c.GetApikeyProvider(context.Background(), "prov")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "prov" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestGetDelegatedProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(DelegatedApiKeyProviderResponse{ID: sp("1"), Name: sp("dp")})
+	})
+	out, err := c.GetDelegatedProvider(context.Background(), "dp")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name == nil || *out.Name != "dp" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestDeleteDelegatedProvider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	if err := c.DeleteDelegatedProvider(context.Background(), "dp"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGetDelegatedApiKey(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(GetDelegatedApiKeyResponse{Apikey: sp("delegated-key")})
+	})
+	req := &GetDelegatedApiKeyRequest{AgentUserID: "u1", ReturnURL: "https://ret"}
+	out, err := c.GetDelegatedApiKey(context.Background(), "prov", "agent", req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Apikey == nil || *out.Apikey != "delegated-key" {
+		t.Errorf("unexpected apikey: %v", out.Apikey)
+	}
+}
+
+func TestUpdateOauth2Provider(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	req := &UpdateOauth2ProviderRequest{ClientID: "cid", ClientSecret: "cs",
+		AuthorizationURL: "https://auth", TokenURL: "https://token"}
+	if err := c.UpdateOauth2Provider(context.Background(), "google", req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGet3LOToken(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ThreeLoTokenResponse{AccessToken: sp("3lo-token")})
+	})
+	req := &ThreeLoTokenRequest{AgentUserID: "u1", ReturnURL: "https://ret", Scopes: jsonslice.Array[string]{"read"}}
+	out, err := c.Get3LOToken(context.Background(), "prov", "agent", req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.AccessToken == nil || *out.AccessToken != "3lo-token" {
+		t.Errorf("unexpected token: %v", out.AccessToken)
+	}
+}
+
+func TestNewClient(t *testing.T) {
+	c := NewClient("https://example.com", nil)
+	if c == nil {
+		t.Fatal("expected non-nil client")
+	}
+}
