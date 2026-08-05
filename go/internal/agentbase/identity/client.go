@@ -3,7 +3,6 @@ package identity
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strconv"
 
@@ -225,23 +224,6 @@ func (c *Client) GetDelegatedApiKey(ctx context.Context, providerName, agentIden
 	var out GetDelegatedApiKeyResponse
 	path := fmt.Sprintf("/api/v1/outbound-auth/delegated-api-key-providers/%s/agent-identities/%s/api-key", providerName, agentIdentityName)
 	if err := c.http.Post(ctx, path, req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// DelegateApiKey authorizes a delegated API key against a provider
-// (POST /api-key/delegate/{providerId}, operation authorizeApiKey). Note this
-// path is on the identity root (no /api/v1 prefix), since it is a user-agent
-// redirect surface. state is a required query param; apiKey is the required
-// request body. Uses Do directly because Post has no query seam.
-func (c *Client) DelegateApiKey(ctx context.Context, providerID, state, apiKey string) (*AuthorizeDelegatedApiKeyResponse, error) {
-	q := url.Values{}
-	q.Set("state", state)
-	req := &AuthorizeDelegatedApiKeyRequest{APIKey: apiKey}
-	var out AuthorizeDelegatedApiKeyResponse
-	path := fmt.Sprintf("/api-key/delegate/%s", providerID)
-	if err := c.http.Do(ctx, http.MethodPost, path, q, req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

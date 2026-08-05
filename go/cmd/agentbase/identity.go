@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1036,64 +1035,6 @@ Optional flags: --session-id, --custom-parameters, --custom-state, --force-authe
 	},
 }
 
-// --- api-key delegate ---
-
-var apiKeyCmd = &cobra.Command{
-	Use:   "api-key",
-	Short: "Delegate API key authorization",
-}
-
-var apiKeyDelegateCmd = &cobra.Command{
-	Use:   "delegate <provider-id>",
-	Short: "Authorize a delegated API key against a provider",
-	Long: `Authorize a delegated API key against a delegated API key provider
-(POST /api-key/delegate/{providerId}, operation authorizeApiKey). The provider
-returns a redirectUrl (the caller's user-agent continues delegation there) plus a
-success/message outcome.
-
---state is the required OAuth-style state query param (correlates the callback);
---api-key is the apikey to authorize.`,
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
-		state, _ := cmd.Flags().GetString("state")
-		state, err := cliinput.RequireOrPromptString(state, "--state", "State parameter")
-		if err != nil {
-			return err
-		}
-		apiKey, _ := cmd.Flags().GetString("api-key")
-		apiKey, err = cliinput.RequireOrPromptString(apiKey, "--api-key", "API key to authorize")
-		if err != nil {
-			return err
-		}
-		client, err := newIdentityClient(ctx, cmd)
-		if err != nil {
-			return err
-		}
-		resp, err := client.DelegateApiKey(ctx, args[0], state, apiKey)
-		if err != nil {
-			return err
-		}
-		switch output.GetFormat() {
-		case output.FormatJSON:
-			return output.JSON(resp)
-		case output.FormatID:
-			output.PrintID(output.StrOrDash(str(resp.RedirectURL)))
-			return nil
-		}
-		successStr := "-"
-		if resp.Success != nil {
-			successStr = strconv.FormatBool(*resp.Success)
-		}
-		output.Table([]string{"Field", "Value"}, [][]string{
-			{"Success", successStr},
-			{"Redirect URL", output.StrOrDash(str(resp.RedirectURL))},
-			{"Message", output.StrOrDash(str(resp.Message))},
-		})
-		return nil
-	},
-}
-
 func init() {
 	AgentbaseCmd.AddCommand(identityCmd)
 
@@ -1196,12 +1137,6 @@ func init() {
 	oauth23LOTokenCmd.Flags().String("custom-state", "", "Custom state parameter")
 	oauth23LOTokenCmd.Flags().Bool("force-authentication", false, "Force re-authentication")
 	oauth2Cmd.AddCommand(oauth23LOTokenCmd)
-
-	// api-key delegate
-	apiKeyDelegateCmd.Flags().String("state", "", "State query parameter (required)")
-	apiKeyDelegateCmd.Flags().String("api-key", "", "API key to authorize (required)")
-	apiKeyCmd.AddCommand(apiKeyDelegateCmd)
-	identityCmd.AddCommand(apiKeyCmd)
 }
 
 // str safely dereferences a string pointer, returning an empty string if nil.

@@ -18,10 +18,15 @@ type CreateAgentIdentityRequest struct {
 }
 
 // UpdateAgentIdentityRequest is the request body for updating an agent identity.
-// All fields are optional.
+// All fields are optional. AllowedReturnURLs is omitempty so an update that
+// omits --allowed-return-url leaves the field out of the body entirely instead
+// of sending [] (which the server's unconditional $set would use to wipe the
+// existing URLs). The workload-update command only populates this field when
+// --allowed-return-url is passed (cmd.Flags().Changed), so omitting the flag
+// preserves the identity's current allowedReturnUrls.
 type UpdateAgentIdentityRequest struct {
 	Description       *string                 `json:"description"`
-	AllowedReturnURLs jsonslice.Array[string] `json:"allowedReturnUrls"`
+	AllowedReturnURLs jsonslice.Array[string] `json:"allowedReturnUrls,omitempty"`
 }
 
 // AgentIdentityResponse is the response model for an agent identity.
@@ -227,19 +232,4 @@ type GetDelegatedApiKeyResponse struct {
 	AuthorizationURL *string `json:"authorizationUrl"`
 	SessionID        *string `json:"sessionId"`
 	Status           *string `json:"status"`
-}
-
-// AuthorizeDelegatedApiKeyRequest is the body for POST /api-key/delegate/{providerId}
-// (operation authorizeApiKey). apikey is required.
-type AuthorizeDelegatedApiKeyRequest struct {
-	APIKey string `json:"apikey"`
-}
-
-// AuthorizeDelegatedApiKeyResponse is the response of the delegate-authorize
-// call. All fields are optional per the OpenAPI schema. redirectUrl is where the
-// caller's user-agent is sent next; success/message describe the outcome.
-type AuthorizeDelegatedApiKeyResponse struct {
-	Message     *string `json:"message"`
-	RedirectURL *string `json:"redirectUrl"`
-	Success     *bool   `json:"success"`
 }

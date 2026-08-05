@@ -105,7 +105,6 @@ nav:
       - outbound-auth oauth2 delete: commands/agentbase/identity/outbound-auth-oauth2-delete.md
       - outbound-auth oauth2 m2m-token: commands/agentbase/identity/outbound-auth-oauth2-m2m-token.md
       - outbound-auth oauth2 3lo-token: commands/agentbase/identity/outbound-auth-oauth2-3lo-token.md
-      - api-key delegate: commands/agentbase/identity/api-key-delegate.md
     - Gateway:
       - Overview: commands/agentbase/gateway/index.md
       - create: commands/agentbase/gateway/create.md

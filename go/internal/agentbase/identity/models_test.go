@@ -29,13 +29,11 @@ func TestUpdateAgentIdentityRequestAllOptional(t *testing.T) {
 	} else if m["description"] != nil {
 		t.Errorf("expected description null, got %v", m["description"])
 	}
-	if _, ok := m["allowedReturnUrls"]; !ok {
-		t.Error("expected key \"allowedReturnUrls\" to be present")
-	} else {
-		ar, ok := m["allowedReturnUrls"].([]interface{})
-		if !ok || len(ar) != 0 {
-			t.Errorf("expected allowedReturnUrls empty array, got %v", m["allowedReturnUrls"])
-		}
+	// allowedReturnUrls is omitempty: an update that does not set it must omit
+	// the field entirely (not send []), so the server's $set does not wipe the
+	// identity's existing allowedReturnUrls.
+	if _, ok := m["allowedReturnUrls"]; ok {
+		t.Errorf("expected allowedReturnUrls to be omitted when unset; body: %s", b)
 	}
 }
 

@@ -91,7 +91,7 @@ All commands accept the common flags `-o json|table|id` (output format) and
 | Command group | Description |
 |---|---|
 | [context](context/index.md) | Show the active environment + standard headers/decorators |
-| [identity](identity/index.md) | Workload identities + outbound auth (OAuth2 / static API key / delegated) + api-key delegate |
+| [identity](identity/index.md) | Workload identities + outbound auth (OAuth2 / static API key / delegated) |
 | [gateway](gateway/index.md) | Create/manage MCP gateways (async FSM; use `wait` to converge) |
 | [runtime](runtime/index.md) | Deploy the agent container (image/command/args/env/autoscaling) |
 | [memory](memory/index.md) | Long-term memory container (Mem0 vector store, semantic search) |

@@ -267,10 +267,12 @@ func TestClientError_Returns404(t *testing.T) {
 }
 
 func TestUpdateAgentIdentity(t *testing.T) {
+	var gotBody []byte
 	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("expected PUT, got %s", r.Method)
 		}
+		gotBody, _ = io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(AgentIdentityResponse{ID: sp("1"), Name: sp("updated")})
 	})
@@ -281,6 +283,45 @@ func TestUpdateAgentIdentity(t *testing.T) {
 	}
 	if out.Name == nil || *out.Name != "updated" {
 		t.Errorf("unexpected name: %v", out.Name)
+	}
+	// An update that omits --allowed-return-url must NOT send allowedReturnUrls
+	// at all (omitempty), so the server's unconditional $set does not wipe the
+	// identity's existing URLs with []. The field is left nil by the command
+	// when the flag is not passed.
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(gotBody, &body); err != nil {
+		t.Fatalf("unmarshal body: %v\n%s", err, gotBody)
+	}
+	if _, ok := body["allowedReturnUrls"]; ok {
+		t.Errorf("allowedReturnUrls must be omitted when not set; body: %s", gotBody)
+	}
+	if _, ok := body["description"]; !ok {
+		t.Errorf("description must be present; body: %s", gotBody)
+	}
+}
+
+func TestUpdateAgentIdentity_AllowedReturnURLsPresent(t *testing.T) {
+	var gotBody []byte
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AgentIdentityResponse{ID: sp("1"), Name: sp("u")})
+	})
+	urls := jsonslice.Array[string]{"https://example.com/cb"}
+	if _, err := c.UpdateAgentIdentity(context.Background(), "u", &UpdateAgentIdentityRequest{AllowedReturnURLs: urls}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(gotBody, &body); err != nil {
+		t.Fatalf("unmarshal body: %v", err)
+	}
+	raw, ok := body["allowedReturnUrls"]
+	if !ok {
+		t.Fatalf("allowedReturnUrls must be present when set; body: %s", gotBody)
+	}
+	var got []string
+	if err := json.Unmarshal(raw, &got); err != nil || len(got) != 1 || got[0] != "https://example.com/cb" {
+		t.Errorf("allowedReturnUrls payload wrong: %s", raw)
 	}
 }
 
@@ -369,46 +410,5 @@ func TestNewClient(t *testing.T) {
 	c := NewClient("https://example.com", nil)
 	if c == nil {
 		t.Fatal("expected non-nil client")
-	}
-}
-
-func TestDelegateApiKey(t *testing.T) {
-	var gotMethod, gotPath, gotState string
-	var gotBody []byte
-	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		gotState = r.URL.Query().Get("state")
-		gotBody, _ = io.ReadAll(r.Body)
-		w.Header().Set("Content-Type", "application/json")
-		ok := true
-		_ = json.NewEncoder(w).Encode(AuthorizeDelegatedApiKeyResponse{
-			Success:     &ok,
-			RedirectURL: sp("https://idp/authorize"),
-			Message:     sp("ok"),
-		})
-	})
-	out, err := c.DelegateApiKey(context.Background(), "prov-1", "abc-state", "ak-secret")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if gotMethod != http.MethodPost {
-		t.Errorf("method: %s", gotMethod)
-	}
-	if gotPath != "/api-key/delegate/prov-1" {
-		t.Errorf("path: %s", gotPath)
-	}
-	if gotState != "abc-state" {
-		t.Errorf("state: %q", gotState)
-	}
-	var got AuthorizeDelegatedApiKeyRequest
-	if err := json.Unmarshal(gotBody, &got); err != nil {
-		t.Fatal(err)
-	}
-	if got.APIKey != "ak-secret" {
-		t.Errorf("apikey body: %+v", got)
-	}
-	if out.RedirectURL == nil || *out.RedirectURL != "https://idp/authorize" {
-		t.Errorf("decode: %+v", out)
 	}
 }
