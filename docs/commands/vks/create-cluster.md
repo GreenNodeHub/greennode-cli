@@ -4,7 +4,7 @@
 
 Create a new VKS cluster. By default only the control plane is provisioned; add worker nodes afterwards with [create-nodegroup](create-nodegroup.md).
 
-When `--network-type` is `TIGERA` or `CILIUM_OVERLAY`, `--cidr` is required. When it is `CILIUM_NATIVE_ROUTING`, both `--node-netmask-size` and at least one `--secondary-subnets` value are required. The load balancer and block store CSI plugins are enabled by default.
+When `--network-type` is `TIGERA` or `CILIUM_OVERLAY`, `--cidr` is required. When it is `CILIUM_NATIVE_ROUTING`, `--node-netmask-size` is required. The load balancer and block store CSI plugins are enabled by default.
 
 Use `--dry-run` to validate parameters without sending a create request. Dry-run performs local checks only — whether the `--k8s-version` is available on the selected `--release-channel`, that the VPC and subnets exist, and quota availability are validated by the server on the actual create.
 
@@ -24,8 +24,7 @@ grn vks create-cluster
     [--load-balancer-plugin <enabled|disabled>]
     [--block-store-csi-plugin <enabled|disabled>]
     [--service-endpoint <enabled|disabled>]
-    [--az-strategy <value>]
-    [--secondary-subnets <value>]
+    [--az-strategy <SINGLE|MULTI>]
     [--node-netmask-size <value>]
     [--auto-upgrade-config <value>]
     [--auto-healing-config <value>]
@@ -68,11 +67,13 @@ cluster and several for a multi-subnet one — both go through the same field.
 
 - Required: Yes
 - Syntax: `sub-aaa` or `sub-aaa,sub-bbb`
+- Constraints: with `--az-strategy SINGLE` (the default) pass exactly one ID; pass several only with `--az-strategy MULTI`.
 
 !!! warning "Replaces `--subnet-id`"
 
-    `--subnet-id` was removed: the API no longer has a single-subnet `subnetId`
-    field. Pass the same ID to `--subnet-ids` instead.
+    `--subnet-id` was removed. The API deprecated its single-subnet `subnetId`
+    field in favour of `listSubnetIds`, and the CLI stops sending it ahead of its
+    removal. Pass the same ID to `--subnet-ids` instead.
 
     `--list-subnet-ids` still works as a deprecated alias for `--subnet-ids` and
     prints a warning. Setting both is an error.
@@ -131,25 +132,26 @@ Service endpoint state.
 
 **`--az-strategy`** (string)
 
-Availability-zone strategy for the cluster.
+Availability-zone strategy for the cluster. `SINGLE` keeps the cluster in one
+availability zone and takes exactly one `--subnet-ids` value; `MULTI` spans
+several zones and is what a multi-subnet cluster needs.
 
 - Required: No
 - Default: `SINGLE`
+- Possible values: `SINGLE`, `MULTI`
 
-**`--secondary-subnets`** (list&lt;string&gt;)
+!!! note "Secondary subnets moved to `create-nodegroup`"
 
-Secondary subnet **CIDRs**, comma-separated — the address ranges themselves, **not** subnet IDs (`sec-sub-…`). Used by `CILIUM_NATIVE_ROUTING`.
-
-- Required: Conditional — at least one value is required when `--network-type` is `CILIUM_NATIVE_ROUTING`.
-- Constraints: up to 10 entries.
-- Syntax: `10.5.60.0/22,10.5.71.0/26`
+    `create-cluster` no longer takes `--secondary-subnets`: the cluster create API
+    has no `secondarySubnets` field. Set them per node group with
+    [create-nodegroup](create-nodegroup.md) `--secondary-subnets` instead.
 
 **`--node-netmask-size`** (integer)
 
 Node CIDR mask size used in `CILIUM_NATIVE_ROUTING` mode. Only sent when explicitly provided.
 
 - Required: Conditional — required when `--network-type` is `CILIUM_NATIVE_ROUTING`.
-- Possible values: `24`, `25`, `26` (default `25`).
+- Constraints: `24`, `25`, or `26`; rejected by the CLI outside that range (server default `25`).
 
 **`--auto-upgrade-config`** (structure)
 
@@ -217,11 +219,11 @@ grn vks create-cluster \
   --network-type CILIUM_NATIVE_ROUTING \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
   --subnet-ids sub-abc12345-0000-0000-0000-000000000001 \
-  --node-netmask-size 25 \
-  --secondary-subnets 10.5.60.0/22,10.5.71.0/26
+  --node-netmask-size 25
 ```
 
-Create a cluster spanning several subnets — same flag, more IDs:
+Create a cluster spanning several subnets — same flag, more IDs, plus
+`--az-strategy MULTI` (the default `SINGLE` takes exactly one subnet):
 
 ```bash
 grn vks create-cluster \
@@ -230,6 +232,7 @@ grn vks create-cluster \
   --network-type CILIUM_OVERLAY \
   --cidr 10.96.0.0/12 \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
+  --az-strategy MULTI \
   --subnet-ids sub-abc12345-0000-0000-0000-000000000001,sub-abc12345-0000-0000-0000-000000000002
 ```
 
@@ -256,6 +259,5 @@ grn vks create-cluster \
   --vpc-id net-abc12345-0000-0000-0000-000000000001 \
   --subnet-ids sub-abc12345-0000-0000-0000-000000000001 \
   --node-netmask-size 25 \
-  --secondary-subnets 10.5.60.0/22,10.5.71.0/26 \
   --dry-run
 ```
