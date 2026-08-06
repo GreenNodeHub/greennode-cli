@@ -116,6 +116,9 @@ func runCreateNodegroup(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("--auto-scale: %w", err)
 		}
+		if err := validateAutoScaleObject(asc); err != nil {
+			return fmt.Errorf("--auto-scale: %w", err)
+		}
 		body["autoScaleConfig"] = asc
 	}
 	if placementGroupStr != "" {
@@ -128,6 +131,13 @@ func runCreateNodegroup(cmd *cobra.Command, args []string) error {
 	if upgradeConfigStr != "" {
 		uc, err := cli.ParseStructFlag(upgradeConfigStr, "maxSurge", "maxUnavailable")
 		if err != nil {
+			return fmt.Errorf("--upgrade-config: %w", err)
+		}
+		// upgradeConfig is required by CreateNodeGroupDto and strategy is
+		// required inside it, so a partial --upgrade-config must not wipe the
+		// pre-seeded defaults above.
+		uc = upgradeConfigWithDefaults(uc)
+		if err := validateUpgradeConfigObject(uc); err != nil {
 			return fmt.Errorf("--upgrade-config: %w", err)
 		}
 		body["upgradeConfig"] = uc

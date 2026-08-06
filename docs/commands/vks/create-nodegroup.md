@@ -161,6 +161,10 @@ JSON syntax:
 {"minSize": 2, "maxSize": 10}
 ```
 
+- When given, **both** `minSize` and `maxSize` are required and must be integers,
+  with `minSize` ≥ 0, `maxSize` ≥ 1, and `minSize` not exceeding `maxSize`.
+  Checked before the request is sent.
+
 **`--placement-group`** (structure)
 
 Placement group configuration for the node group. Accepts shorthand or JSON.
@@ -205,6 +209,12 @@ JSON syntax:
 ```json
 {"maxSurge": 1, "maxUnavailable": 0, "strategy": "SURGE"}
 ```
+
+- A partial value is completed rather than replacing the whole object: omitted or
+  `null` members fall back to `strategy=SURGE`, `maxSurge=1`, `maxUnavailable=0`.
+  `strategy` is required by the API, so this is what keeps `--upgrade-config
+  maxSurge=2` a valid request.
+- Bounds are checked client-side: `maxSurge` 1–100, `maxUnavailable` 0–100.
 
 **`--enable-encryption-volume`** (boolean)
 
