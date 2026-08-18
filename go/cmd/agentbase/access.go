@@ -17,10 +17,10 @@ import (
 	coreconfig "github.com/greennodehub/greennode-cli/internal/config"
 )
 
-// --- root identity command ---
+// --- root access command (was identity; renamed to match the portal) ---
 
 var identityCmd = &cobra.Command{
-	Use:   "identity",
+	Use:   "access",
 	Short: "Manage authentication and agent identities",
 	Long: `Manage agent identities and configure outbound authentication providers.
 
@@ -36,10 +36,10 @@ token source agentbase uses, exactly like vks/vserver.`,
 // auth_mode, iam_env, client_id, refresh_token and — now — agent_identity. The
 // current environment + resolved endpoints live at 'grn agentbase context current'.
 
-// --- identity workload ---
+// --- access agent-id (was workload; renamed to match the portal) ---
 
 var workloadCmd = &cobra.Command{
-	Use:   "workload",
+	Use:   "agent-id",
 	Short: "Manage agent workload identities",
 	Long:  `Create, list, get, update, and delete agent workload identities used to represent digital identities for agents accessing external services.`,
 }

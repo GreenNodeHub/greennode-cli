@@ -48,7 +48,7 @@ agentbase shares the ~/.greennode profile with the rest of the CLI. Configure
 machine credentials with 'grn configure' (or log in as a user with 'grn login');
 select dev/prod with 'grn configure set iam_env <dev|prod>' (machine) or
 'grn login --iam-env <env>' (user); set the current agent with 'grn agentbase
-identity workload use <name>'. Run 'grn agentbase context current' to see the
+access agent-id use <name>'. Run 'grn agentbase context current' to see the
 active environment and endpoints.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		output.SetFormat(output.ParseFormat(outputFormat))
