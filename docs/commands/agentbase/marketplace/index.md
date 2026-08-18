@@ -1,6 +1,6 @@
 # marketplace
 
-Browse the GreenNode catalog served by the agent-core-runtime service.
+Browse the GreenNode catalog, which shares the runtime service's backend.
 
 ## Description
 
