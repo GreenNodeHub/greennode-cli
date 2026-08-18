@@ -63,7 +63,7 @@ func runList(cmd *cobra.Command, args []string) {
 		resolveCredEntryPlain("iam_env", cfg.IamEnv, credsFile),
 		resolveCredEntryPlain("token_expires_at", tokenExpiresAtStr(cfg.TokenExpiresAt), credsFile),
 		// agent_identity: the agentbase current-agent selection, persisted by
-		// 'grn agentbase identity workload use|create --set-current'. Non-secret.
+		// 'grn agentbase access agent-id use|create --set-current'. Non-secret.
 		resolveCredEntryPlain("agent_identity", cfg.AgentIdentity, credsFile),
 	}
 

@@ -20,15 +20,15 @@ import (
 var policyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "Manage authorization policy groups, policies, and decisions",
-	Long: `Manage Cedar authorization policies (the agent-core-policy service).
+	Long: `Manage Cedar authorization policies (the policy service).
 
 A "policy group" is a container of policies owned by a user (max 20/user). Each
 group holds "policies" — individual permit/forbid rules (max 10/group) compiled
 to Cedar. A gateway binds a group via its policyGroupId; the gateway's policy
-enforcement then asks agent-core-policy for an allow/denied decision per inbound
+enforcement then asks the policy service for an allow/denied decision per inbound
 request.
 
-The decision route is internal (called by agent-core-gateway), but is exposed
+The decision route is internal (called by the gateway service), but is exposed
 here as a probe:
 
     grn agentbase policy group create --name my-group
@@ -603,7 +603,7 @@ var policyDecideFile string
 var policyDecideCmd = &cobra.Command{
 	Use:   "decide <gateway> <target>",
 	Short: "Probe an authorization decision for a gateway target",
-	Long: `Probe an authorization decision (the internal route agent-core-gateway calls
+	Long: `Probe an authorization decision (the internal route the gateway service calls
 per inbound request). Always returns a decision: allow, or deny with a reason.
 
 The minimal flag path covers the common probe (policy group + user + action
