@@ -1,14 +1,14 @@
-# catalog
+# marketplace
 
 Browse the GreenNode catalog served by the agent-core-runtime service.
 
 ## Description
 
-The `catalog` group fronts the catalog endpoints under `/v1/` (flavors,
+The `marketplace` group fronts the catalog endpoints under `/v1/` (flavors,
 openclaw versions, and the openclaw workspace registry). It uses the same
 base URL as the runtime service. These operators are part of the agentbase
 surface but were previously unwired in the CLI; they are now available under
-`grn agentbase catalog`.
+`grn agentbase marketplace`.
 
 ## Subcommands
 

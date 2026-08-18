@@ -1,4 +1,4 @@
-# catalog flavors list
+# marketplace flavors list
 
 List runtime placement flavors.
 
@@ -11,7 +11,7 @@ runtime. Filters are optional; omit them to list every flavor.
 ## Synopsis
 
 ```text
-grn agentbase catalog flavors list
+grn agentbase marketplace flavors list
     [--resource-type <value>]
 ```
 
@@ -28,7 +28,7 @@ Filter by supported resource type.
 List every flavor:
 
 ```bash
-grn agentbase catalog flavors list
+grn agentbase marketplace flavors list
 ```
 
 ## Global options

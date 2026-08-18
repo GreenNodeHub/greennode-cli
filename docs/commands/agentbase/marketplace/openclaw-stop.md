@@ -1,23 +1,23 @@
-# catalog openclaw start
+# marketplace openclaw stop
 
-Start an OpenClaw workspace.
+Stop an OpenClaw workspace.
 
 ## Description
 
-Start an OpenClaw workspace by id (POST `/v1/openclaws/{id}/start`). No body;
+Stop an OpenClaw workspace by id (POST `/v1/openclaws/{id}/stop`). No body;
 200 OK on success.
 
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw start <id>
+grn agentbase marketplace openclaw stop <id>
 ```
 
 ## Arguments
 
 **`<id>`** (string)
 
-Id of the OpenClaw workspace to start.
+Id of the OpenClaw workspace to stop.
 
 - Required: Yes (exactly one positional argument)
 
@@ -28,7 +28,7 @@ This command takes no command-specific options.
 ## Examples
 
 ```bash
-grn agentbase catalog openclaw start oc-123
+grn agentbase marketplace openclaw stop oc-123
 ```
 
 ## Global options

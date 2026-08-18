@@ -1,4 +1,4 @@
-# catalog openclaw list
+# marketplace openclaw list
 
 List OpenClaw workspaces.
 
@@ -10,7 +10,7 @@ view shows the workspace id, name, version, status, and timestamps.
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw list
+grn agentbase marketplace openclaw list
     [--page <value>]
     [--size <value>]
 ```
@@ -34,7 +34,7 @@ Page size.
 ## Examples
 
 ```bash
-grn agentbase catalog openclaw list -o json
+grn agentbase marketplace openclaw list -o json
 ```
 
 ## Global options

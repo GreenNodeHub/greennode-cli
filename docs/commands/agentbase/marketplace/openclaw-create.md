@@ -1,4 +1,4 @@
-# catalog openclaw create
+# marketplace openclaw create
 
 Create an OpenClaw workspace.
 
@@ -13,7 +13,7 @@ simple `--name/--version-id/--flavor-id` path, author a spec file with
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw create
+grn agentbase marketplace openclaw create
     [--name <value>]
     [--version-id <value>]
     [--flavor-id <value>]
@@ -59,13 +59,13 @@ Apply a spec file (authoritative when set).
 Create from flags:
 
 ```bash
-grn agentbase catalog openclaw create --name my-claw --version-id v1 --flavor-id f1
+grn agentbase marketplace openclaw create --name my-claw --version-id v1 --flavor-id f1
 ```
 
 Create from a spec file:
 
 ```bash
-grn agentbase catalog openclaw create --file openclaw.yaml
+grn agentbase marketplace openclaw create --file openclaw.yaml
 ```
 
 ## Global options

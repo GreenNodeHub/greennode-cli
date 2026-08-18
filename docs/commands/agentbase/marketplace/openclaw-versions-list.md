@@ -1,25 +1,18 @@
-# catalog openclaw stop
+# marketplace openclaw-versions list
 
-Stop an OpenClaw workspace.
+List OpenClaw versions.
 
 ## Description
 
-Stop an OpenClaw workspace by id (POST `/v1/openclaws/{id}/stop`). No body;
-200 OK on success.
+List the OpenClaw versions served by the runtime service catalog
+(GET `/v1/openclaw-versions`). Each version carries an id, name, and whether
+it is the default deployment.
 
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw stop <id>
+grn agentbase marketplace openclaw-versions list
 ```
-
-## Arguments
-
-**`<id>`** (string)
-
-Id of the OpenClaw workspace to stop.
-
-- Required: Yes (exactly one positional argument)
 
 ## Options
 
@@ -28,7 +21,7 @@ This command takes no command-specific options.
 ## Examples
 
 ```bash
-grn agentbase catalog openclaw stop oc-123
+grn agentbase marketplace openclaw-versions list
 ```
 
 ## Global options

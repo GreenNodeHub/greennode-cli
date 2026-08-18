@@ -1,4 +1,4 @@
-# catalog openclaw delete
+# marketplace openclaw delete
 
 Delete an OpenClaw workspace.
 
@@ -10,7 +10,7 @@ returns 200 with no body; the command prints the deleted id.
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw delete <id>
+grn agentbase marketplace openclaw delete <id>
 ```
 
 ## Arguments
@@ -28,7 +28,7 @@ This command takes no command-specific options.
 ## Examples
 
 ```bash
-grn agentbase catalog openclaw delete oc-123
+grn agentbase marketplace openclaw delete oc-123
 ```
 
 ## Global options

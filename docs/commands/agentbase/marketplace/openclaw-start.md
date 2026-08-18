@@ -1,18 +1,25 @@
-# catalog openclaw-versions list
+# marketplace openclaw start
 
-List OpenClaw versions.
+Start an OpenClaw workspace.
 
 ## Description
 
-List the OpenClaw versions served by the runtime service catalog
-(GET `/v1/openclaw-versions`). Each version carries an id, name, and whether
-it is the default deployment.
+Start an OpenClaw workspace by id (POST `/v1/openclaws/{id}/start`). No body;
+200 OK on success.
 
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw-versions list
+grn agentbase marketplace openclaw start <id>
 ```
+
+## Arguments
+
+**`<id>`** (string)
+
+Id of the OpenClaw workspace to start.
+
+- Required: Yes (exactly one positional argument)
 
 ## Options
 
@@ -21,7 +28,7 @@ This command takes no command-specific options.
 ## Examples
 
 ```bash
-grn agentbase catalog openclaw-versions list
+grn agentbase marketplace openclaw start oc-123
 ```
 
 ## Global options

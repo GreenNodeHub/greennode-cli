@@ -1,4 +1,4 @@
-# catalog openclaw update-version
+# marketplace openclaw update-version
 
 Roll an OpenClaw workspace to a version.
 
@@ -11,7 +11,7 @@ variant; this PUT is canonical and the PATCH QC row maps to it.
 ## Synopsis
 
 ```text
-grn agentbase catalog openclaw update-version <id> --version-id <value>
+grn agentbase marketplace openclaw update-version <id> --version-id <value>
 ```
 
 ## Arguments
@@ -33,7 +33,7 @@ Target version id (required).
 ## Examples
 
 ```bash
-grn agentbase catalog openclaw update-version oc-123 --version-id v2
+grn agentbase marketplace openclaw update-version oc-123 --version-id v2
 ```
 
 ## Global options
