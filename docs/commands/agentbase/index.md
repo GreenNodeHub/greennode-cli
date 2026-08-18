@@ -11,24 +11,28 @@ grn agentbase --help
 
 ## Overview
 
-The AgentBase platform consists of **6 backend services** behind
-`agentbase.api.vngcloud.vn` (prod) / `agentbase.api-dev.vngcloud.tech` (dev),
-plus a client-side orchestrator, `deploy`:
+> **Breaking change:** `grn agentbase identity` → `grn agentbase access`;
+> `identity workload` → `access agent-id`; `grn agentbase catalog` → `grn agentbase
+> marketplace`. Old names are removed (no aliases). Update any scripts.
 
-| Command group | Backend service | Role |
-|---|---|---|
-| `identity` | agent-core-identity | Manage agent digital identities + outbound auth (OAuth2/API key) |
-| `gateway` | agent-core-gateway | Create/manage MCP gateways (provision VKS runtime, DNS, load balancer, quota) |
-| `runtime` | agent-core-runtime | Deploy the container that runs the agent code (image/command/args/env/autoscaling) |
-| `catalog` | agent-core-runtime | Browse the catalog: runtime flavors, OpenClaw versions + workspaces |
-| `memory` | agent-core-memory | Long-term memory for agents (Mem0 vector store, semantic search) |
-| `policy` | agent-core-policy | Cedar policy engine (policy-groups + policies + decision) |
-| `cr` | agent-core-container-registry | Wrapper for VNG Cloud Container Registry (vCR): auto-provisioned repo + robot account |
-| `deploy` | *(no backend)* | Orchestrator composing identity + memory + runtime (+ cr) |
-| `context` | — | Show the active environment + endpoints |
+The AgentBase platform is served behind `agentbase.api.vngcloud.vn` (prod) /
+`agentbase.api-dev.vngcloud.tech` (dev), plus a client-side orchestrator,
+`deploy`:
+
+| Command group | Role |
+|---|---|
+| `access` | Manage agent digital identities + outbound auth (OAuth2/API key) |
+| `gateway` | Create/manage MCP gateways (provision VKS runtime, DNS, load balancer, quota) |
+| `runtime` | Deploy the container that runs the agent code (image/command/args/env/autoscaling) |
+| `marketplace` | Browse the marketplace: runtime flavors, OpenClaw versions + workspaces |
+| `memory` | Long-term memory for agents (Mem0 vector store, semantic search) |
+| `policy` | Cedar policy engine (policy-groups + policies + decision) |
+| `cr` | Wrapper for VNG Cloud Container Registry (vCR): auto-provisioned repo + robot account |
+| `deploy` | Orchestrator composing access + memory + runtime (+ cr) |
+| `context` | Show the active environment + endpoints |
 
 An **agent** is the set of resources that share a **name** (the join key): an
-identity (always present), an optional memory container (omit for a stateless
+access identity (always present), an optional memory container (omit for a stateless
 agent), and a runtime (the container that runs the agent code). There is no
 cross-service foreign key; `deploy` uses the name as the join.
 
@@ -91,14 +95,14 @@ All commands accept the common flags `-o json|table|id` (output format) and
 | Command group | Description |
 |---|---|
 | [context](context/index.md) | Show the active environment + standard headers/decorators |
-| [identity](identity/index.md) | Workload identities + outbound auth (OAuth2 / static API key / delegated) |
+| [access](access/index.md) | Agent identities + outbound auth (OAuth2 / static API key / delegated) |
 | [gateway](gateway/index.md) | Create/manage MCP gateways (async FSM; use `wait` to converge) |
 | [runtime](runtime/index.md) | Deploy the agent container (image/command/args/env/autoscaling) |
 | [memory](memory/index.md) | Long-term memory container (Mem0 vector store, semantic search) |
-| [catalog](catalog/index.md) | Runtime placement flavors + OpenClaw versions/workspaces |
+| [marketplace](marketplace/index.md) | Runtime placement flavors + OpenClaw versions/workspaces |
 | [policy](policy/index.md) | Cedar policy engine (policy-groups + policies + decision) |
 | [cr](cr/index.md) | VNG Cloud Container Registry wrapper (auto-provisioned repo + robot account) |
-| [deploy](deploy/index.md) | Client-side orchestrator (identity + memory + runtime + cr) |
+| [deploy](deploy/index.md) | Client-side orchestrator (access + memory + runtime + cr) |
 
 ---
 
@@ -125,7 +129,7 @@ Each service uses a different pagination shape — a common source of confusion:
 | memory | `{listData, page, pageSize, totalPage, totalItem}` | `size` |
 | policy | `{content, page, pageSize, totalPage, totalItem}` | `page_size` (snake) |
 | cr | `{data, page, pageSize, totalItem, totalPage}` | `size` |
-| identity | `{content, page, size, totalElements, totalPages, ...}` | `size` |
+| access | `{content, page, size, totalElements, totalPages, ...}` | `size` |
 
 ---
 
