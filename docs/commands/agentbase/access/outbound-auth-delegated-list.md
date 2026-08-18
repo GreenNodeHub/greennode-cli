@@ -1,4 +1,4 @@
-# identity outbound-auth delegated list
+# access outbound-auth delegated list
 
 List delegated API key providers.
 
@@ -9,7 +9,7 @@ Retrieve a paginated list of delegated API key providers.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth delegated list
+grn agentbase access outbound-auth delegated list
     [--page <value>]
     [--size <value>]
 ```
@@ -43,11 +43,11 @@ All `grn agentbase` commands accept:
 List delegated API key providers:
 
 ```bash
-grn agentbase identity outbound-auth delegated list
+grn agentbase access outbound-auth delegated list
 ```
 
 List the second page with 50 per page:
 
 ```bash
-grn agentbase identity outbound-auth delegated list --page 2 --size 50
+grn agentbase access outbound-auth delegated list --page 2 --size 50
 ```

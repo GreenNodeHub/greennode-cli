@@ -1,15 +1,15 @@
-# identity outbound-auth oauth2 get
+# access agent-id use
 
-Get an OAuth2 provider.
+Set the current agent identity.
 
 ## Description
 
-Retrieve an OAuth2 provider by name.
+Set the given agent identity name as the current identity in the shared `~/.greennode` profile (per-profile).
 
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 get <name>
+grn agentbase access agent-id use <name>
 ```
 
 ## Options
@@ -26,14 +26,8 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Get an OAuth2 provider:
+Set the current agent identity:
 
 ```bash
-grn agentbase identity outbound-auth oauth2 get my-oauth2-provider
-```
-
-View the full record as JSON:
-
-```bash
-grn agentbase identity outbound-auth oauth2 get my-oauth2-provider -o json
+grn agentbase access agent-id use my-agent
 ```

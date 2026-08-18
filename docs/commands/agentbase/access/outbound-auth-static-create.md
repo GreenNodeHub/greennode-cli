@@ -1,4 +1,4 @@
-# identity outbound-auth static create
+# access outbound-auth static create
 
 Create a static API key provider.
 
@@ -10,7 +10,7 @@ the pattern `^[a-zA-Z0-9_-]+$`. Both name and API key are required.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth static create
+grn agentbase access outbound-auth static create
     --name <value>
     --apikey <value>
 ```
@@ -44,7 +44,7 @@ All `grn agentbase` commands accept:
 Create a static API key provider:
 
 ```bash
-grn agentbase identity outbound-auth static create \
+grn agentbase access outbound-auth static create \
   --name my-apikey-provider \
   --apikey sk-xxxxxxxxxxxx
 ```
@@ -52,5 +52,5 @@ grn agentbase identity outbound-auth static create \
 Create interactively (the API key is read without echoing):
 
 ```bash
-grn agentbase identity outbound-auth static create --name my-apikey-provider --interactive
+grn agentbase access outbound-auth static create --name my-apikey-provider --interactive
 ```

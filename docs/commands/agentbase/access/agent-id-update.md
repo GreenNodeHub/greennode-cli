@@ -1,4 +1,4 @@
-# identity workload update
+# access agent-id update
 
 Update an agent identity.
 
@@ -9,7 +9,7 @@ Update an existing agent identity. Only description and allowed return URLs can 
 ## Synopsis
 
 ```text
-grn agentbase identity workload update <name>
+grn agentbase access agent-id update <name>
     [--description <value>]
     [--allowed-return-url <value>]
 ```
@@ -44,13 +44,13 @@ All `grn agentbase` commands accept:
 Update the description:
 
 ```bash
-grn agentbase identity workload update my-agent --description "Updated description"
+grn agentbase access agent-id update my-agent --description "Updated description"
 ```
 
 Replace the allowed return URLs:
 
 ```bash
-grn agentbase identity workload update my-agent \
+grn agentbase access agent-id update my-agent \
   --allowed-return-url https://app.example.com/callback \
   --allowed-return-url https://app.example.com/alt
 ```

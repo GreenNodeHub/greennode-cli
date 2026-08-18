@@ -1,15 +1,15 @@
-# identity outbound-auth delegated delete
+# access agent-id delete
 
-Delete a delegated API key provider.
+Delete an agent identity.
 
 ## Description
 
-Delete a delegated API key provider by name.
+Delete an agent identity by name. The identity will be soft-deleted.
 
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth delegated delete <name>
+grn agentbase access agent-id delete <name>
 ```
 
 ## Options
@@ -26,8 +26,8 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Delete a delegated API key provider:
+Delete an identity:
 
 ```bash
-grn agentbase identity outbound-auth delegated delete my-delegated-provider
+grn agentbase access agent-id delete my-agent
 ```

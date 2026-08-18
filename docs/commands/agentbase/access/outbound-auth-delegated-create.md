@@ -1,4 +1,4 @@
-# identity outbound-auth delegated create
+# access outbound-auth delegated create
 
 Create a delegated API key provider.
 
@@ -10,7 +10,7 @@ the pattern `^[a-zA-Z0-9_-]+$`.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth delegated create
+grn agentbase access outbound-auth delegated create
     --name <value>
 ```
 
@@ -37,5 +37,5 @@ All `grn agentbase` commands accept:
 Create a delegated API key provider:
 
 ```bash
-grn agentbase identity outbound-auth delegated create --name my-delegated-provider
+grn agentbase access outbound-auth delegated create --name my-delegated-provider
 ```

@@ -1,4 +1,4 @@
-# identity outbound-auth oauth2 3lo-token
+# access outbound-auth oauth2 3lo-token
 
 Get a 3-legged OAuth2 token.
 
@@ -15,7 +15,7 @@ The response may include the access token and an authorization URL. Use `-o json
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 3lo-token <provider-name> <identity-name>
+grn agentbase access outbound-auth oauth2 3lo-token <provider-name> <identity-name>
     --agent-user-id <value>
     --return-url <value>
     --scope <value>
@@ -93,7 +93,7 @@ All `grn agentbase` commands accept:
 Get a 3-legged token with scopes (table view):
 
 ```bash
-grn agentbase identity outbound-auth oauth2 3lo-token \
+grn agentbase access outbound-auth oauth2 3lo-token \
   my-oauth2-provider my-agent \
   --agent-user-id user-123 \
   --return-url https://app.example.com/callback \
@@ -103,7 +103,7 @@ grn agentbase identity outbound-auth oauth2 3lo-token \
 Pass custom parameters as JSON and reveal the full response (prints secret values):
 
 ```bash
-grn agentbase identity outbound-auth oauth2 3lo-token \
+grn agentbase access outbound-auth oauth2 3lo-token \
   my-oauth2-provider my-agent \
   --agent-user-id user-123 \
   --return-url https://app.example.com/callback \

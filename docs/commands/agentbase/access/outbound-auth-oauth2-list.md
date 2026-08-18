@@ -1,4 +1,4 @@
-# identity outbound-auth oauth2 list
+# access outbound-auth oauth2 list
 
 List OAuth2 providers.
 
@@ -9,7 +9,7 @@ Retrieve a paginated list of OAuth2 providers.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 list
+grn agentbase access outbound-auth oauth2 list
     [--page <value>]
     [--size <value>]
 ```
@@ -43,11 +43,11 @@ All `grn agentbase` commands accept:
 List OAuth2 providers:
 
 ```bash
-grn agentbase identity outbound-auth oauth2 list
+grn agentbase access outbound-auth oauth2 list
 ```
 
 List the second page with 50 per page:
 
 ```bash
-grn agentbase identity outbound-auth oauth2 list --page 2 --size 50
+grn agentbase access outbound-auth oauth2 list --page 2 --size 50
 ```

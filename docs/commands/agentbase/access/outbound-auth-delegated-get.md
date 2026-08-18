@@ -1,15 +1,15 @@
-# identity outbound-auth oauth2 delete
+# access outbound-auth delegated get
 
-Delete an OAuth2 provider.
+Get a delegated API key provider.
 
 ## Description
 
-Delete an OAuth2 provider by name.
+Retrieve a delegated API key provider by name.
 
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 delete <name>
+grn agentbase access outbound-auth delegated get <name>
 ```
 
 ## Options
@@ -26,8 +26,14 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Delete an OAuth2 provider:
+Get a delegated API key provider:
 
 ```bash
-grn agentbase identity outbound-auth oauth2 delete my-oauth2-provider
+grn agentbase access outbound-auth delegated get my-delegated-provider
+```
+
+View the full record as JSON:
+
+```bash
+grn agentbase access outbound-auth delegated get my-delegated-provider -o json
 ```

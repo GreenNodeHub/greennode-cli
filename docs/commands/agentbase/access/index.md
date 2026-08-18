@@ -1,23 +1,23 @@
-# identity
+# access
 
 Manage authentication and agent identities.
 
 ```bash
-grn agentbase identity <command> [options]
+grn agentbase access <command> [options]
 ```
 
 ## Available commands
 
-### Workload
+### Agent ID
 
 | Command | Description |
 |---------|-------------|
-| [workload-create](workload-create.md) | Create a new agent identity |
-| [workload-list](workload-list.md) | List agent identities |
-| [workload-get](workload-get.md) | Get an agent identity by name |
-| [workload-update](workload-update.md) | Update an agent identity |
-| [workload-use](workload-use.md) | Set the current agent identity |
-| [workload-delete](workload-delete.md) | Delete an agent identity |
+| [agent-id-create](agent-id-create.md) | Create a new agent identity |
+| [agent-id-list](agent-id-list.md) | List agent identities |
+| [agent-id-get](agent-id-get.md) | Get an agent identity by name |
+| [agent-id-update](agent-id-update.md) | Update an agent identity |
+| [agent-id-use](agent-id-use.md) | Set the current agent identity |
+| [agent-id-delete](agent-id-delete.md) | Delete an agent identity |
 
 ### Outbound Auth — Static / API key
 

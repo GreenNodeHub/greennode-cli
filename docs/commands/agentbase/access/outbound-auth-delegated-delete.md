@@ -1,15 +1,15 @@
-# identity workload use
+# access outbound-auth delegated delete
 
-Set the current agent identity.
+Delete a delegated API key provider.
 
 ## Description
 
-Set the given agent identity name as the current identity in the shared `~/.greennode` profile (per-profile).
+Delete a delegated API key provider by name.
 
 ## Synopsis
 
 ```text
-grn agentbase identity workload use <name>
+grn agentbase access outbound-auth delegated delete <name>
 ```
 
 ## Options
@@ -26,8 +26,8 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Set the current agent identity:
+Delete a delegated API key provider:
 
 ```bash
-grn agentbase identity workload use my-agent
+grn agentbase access outbound-auth delegated delete my-delegated-provider
 ```

@@ -1,4 +1,4 @@
-# identity outbound-auth delegated get-key
+# access outbound-auth delegated get-key
 
 Obtain a delegated API key for an agent identity.
 
@@ -15,7 +15,7 @@ The response may include the API key value and an authorization URL. Use `-o jso
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth delegated get-key <provider-name> <identity-name>
+grn agentbase access outbound-auth delegated get-key <provider-name> <identity-name>
     --agent-user-id <value>
     --return-url <value>
     [--custom-state <value>]
@@ -76,7 +76,7 @@ All `grn agentbase` commands accept:
 Obtain a delegated API key:
 
 ```bash
-grn agentbase identity outbound-auth delegated get-key \
+grn agentbase access outbound-auth delegated get-key \
   my-delegated-provider my-agent \
   --agent-user-id user-123 \
   --return-url https://app.example.com/callback
@@ -85,7 +85,7 @@ grn agentbase identity outbound-auth delegated get-key \
 Force a fresh delegation and reveal the full response as JSON (prints secret values):
 
 ```bash
-grn agentbase identity outbound-auth delegated get-key \
+grn agentbase access outbound-auth delegated get-key \
   my-delegated-provider my-agent \
   --agent-user-id user-123 \
   --return-url https://app.example.com/callback \

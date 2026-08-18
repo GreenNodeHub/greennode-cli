@@ -1,4 +1,4 @@
-# identity outbound-auth static update
+# access outbound-auth static update
 
 Update a static API key provider.
 
@@ -9,7 +9,7 @@ Update the API key value of an existing static API key provider.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth static update <name>
+grn agentbase access outbound-auth static update <name>
     --apikey <value>
 ```
 
@@ -34,6 +34,6 @@ All `grn agentbase` commands accept:
 Rotate the API key on an existing provider:
 
 ```bash
-grn agentbase identity outbound-auth static update my-apikey-provider \
+grn agentbase access outbound-auth static update my-apikey-provider \
   --apikey sk-newvalue
 ```

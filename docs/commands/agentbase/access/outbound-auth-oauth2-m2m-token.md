@@ -1,4 +1,4 @@
-# identity outbound-auth oauth2 m2m-token
+# access outbound-auth oauth2 m2m-token
 
 Get an M2M OAuth2 token.
 
@@ -12,7 +12,7 @@ value; the default `table` output is for human inspection.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 m2m-token <provider-name> <identity-name>
+grn agentbase access outbound-auth oauth2 m2m-token <provider-name> <identity-name>
     --scope <value>
 ```
 
@@ -43,7 +43,7 @@ All `grn agentbase` commands accept:
 Get an M2M token with scopes (table view):
 
 ```bash
-grn agentbase identity outbound-auth oauth2 m2m-token \
+grn agentbase access outbound-auth oauth2 m2m-token \
   my-oauth2-provider my-agent \
   --scope read --scope write
 ```
@@ -51,7 +51,7 @@ grn agentbase identity outbound-auth oauth2 m2m-token \
 Reveal the full access token value (use with care — this prints the secret):
 
 ```bash
-grn agentbase identity outbound-auth oauth2 m2m-token \
+grn agentbase access outbound-auth oauth2 m2m-token \
   my-oauth2-provider my-agent \
   --scope read \
   -o json

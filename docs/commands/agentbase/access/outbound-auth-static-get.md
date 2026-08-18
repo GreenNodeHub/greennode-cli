@@ -1,15 +1,15 @@
-# identity workload get
+# access outbound-auth static get
 
-Get an agent identity by name.
+Get a static API key provider.
 
 ## Description
 
-Retrieve a specific agent identity by its name.
+Retrieve a static API key provider by name.
 
 ## Synopsis
 
 ```text
-grn agentbase identity workload get <name>
+grn agentbase access outbound-auth static get <name>
 ```
 
 ## Options
@@ -26,14 +26,14 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Get an identity:
+Get a static API key provider:
 
 ```bash
-grn agentbase identity workload get my-agent
+grn agentbase access outbound-auth static get my-apikey-provider
 ```
 
 View the full record as JSON:
 
 ```bash
-grn agentbase identity workload get my-agent -o json
+grn agentbase access outbound-auth static get my-apikey-provider -o json
 ```

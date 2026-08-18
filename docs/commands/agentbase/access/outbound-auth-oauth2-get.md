@@ -1,15 +1,15 @@
-# identity outbound-auth static delete
+# access outbound-auth oauth2 get
 
-Delete a static API key provider.
+Get an OAuth2 provider.
 
 ## Description
 
-Delete a static API key provider by name.
+Retrieve an OAuth2 provider by name.
 
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth static delete <name>
+grn agentbase access outbound-auth oauth2 get <name>
 ```
 
 ## Options
@@ -26,8 +26,14 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Delete a static API key provider:
+Get an OAuth2 provider:
 
 ```bash
-grn agentbase identity outbound-auth static delete my-apikey-provider
+grn agentbase access outbound-auth oauth2 get my-oauth2-provider
+```
+
+View the full record as JSON:
+
+```bash
+grn agentbase access outbound-auth oauth2 get my-oauth2-provider -o json
 ```

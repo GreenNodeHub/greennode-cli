@@ -1,15 +1,15 @@
-# identity workload list
+# access outbound-auth static list
 
-List agent identities.
+List static API key providers.
 
 ## Description
 
-Retrieve a paginated list of all agent identities owned by the authenticated user.
+Retrieve a paginated list of static API key providers.
 
 ## Synopsis
 
 ```text
-grn agentbase identity workload list
+grn agentbase access outbound-auth static list
     [--page <value>]
     [--size <value>]
 ```
@@ -40,20 +40,14 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-List identities (default page/size):
+List static API key providers:
 
 ```bash
-grn agentbase identity workload list
+grn agentbase access outbound-auth static list
 ```
 
 List the second page with 50 per page:
 
 ```bash
-grn agentbase identity workload list --page 2 --size 50
-```
-
-Emit IDs only (scripting):
-
-```bash
-grn agentbase identity workload list -o id
+grn agentbase access outbound-auth static list --page 2 --size 50
 ```

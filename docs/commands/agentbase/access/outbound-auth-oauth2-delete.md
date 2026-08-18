@@ -1,15 +1,15 @@
-# identity workload delete
+# access outbound-auth oauth2 delete
 
-Delete an agent identity.
+Delete an OAuth2 provider.
 
 ## Description
 
-Delete an agent identity by name. The identity will be soft-deleted.
+Delete an OAuth2 provider by name.
 
 ## Synopsis
 
 ```text
-grn agentbase identity workload delete <name>
+grn agentbase access outbound-auth oauth2 delete <name>
 ```
 
 ## Options
@@ -26,8 +26,8 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Delete an identity:
+Delete an OAuth2 provider:
 
 ```bash
-grn agentbase identity workload delete my-agent
+grn agentbase access outbound-auth oauth2 delete my-oauth2-provider
 ```

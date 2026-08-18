@@ -1,4 +1,4 @@
-# identity outbound-auth static get-key
+# access outbound-auth static get-key
 
 Get the API key for an agent identity.
 
@@ -12,7 +12,7 @@ value; the default `table` output is for human inspection.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth static get-key <provider-name> <identity-name>
+grn agentbase access outbound-auth static get-key <provider-name> <identity-name>
 ```
 
 ## Arguments
@@ -37,11 +37,11 @@ All `grn agentbase` commands accept:
 Get the API key assigned to an identity (table view):
 
 ```bash
-grn agentbase identity outbound-auth static get-key my-apikey-provider my-agent
+grn agentbase access outbound-auth static get-key my-apikey-provider my-agent
 ```
 
 Reveal the full API key value (use with care — this prints the secret):
 
 ```bash
-grn agentbase identity outbound-auth static get-key my-apikey-provider my-agent -o json
+grn agentbase access outbound-auth static get-key my-apikey-provider my-agent -o json
 ```

@@ -1,4 +1,4 @@
-# identity outbound-auth oauth2 create
+# access outbound-auth oauth2 create
 
 Create an OAuth2 provider.
 
@@ -11,7 +11,7 @@ authorization-url, and token-url are required.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 create
+grn agentbase access outbound-auth oauth2 create
     --name <value>
     --client-id <value>
     --client-secret <value>
@@ -66,7 +66,7 @@ All `grn agentbase` commands accept:
 Create an OAuth2 provider:
 
 ```bash
-grn agentbase identity outbound-auth oauth2 create \
+grn agentbase access outbound-auth oauth2 create \
   --name my-oauth2-provider \
   --client-id abc123 \
   --client-secret s3cr3t \

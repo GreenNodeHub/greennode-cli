@@ -1,4 +1,4 @@
-# identity outbound-auth oauth2 update
+# access outbound-auth oauth2 update
 
 Update an OAuth2 provider.
 
@@ -10,7 +10,7 @@ authorization-url, and token-url are required.
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth oauth2 update <name>
+grn agentbase access outbound-auth oauth2 update <name>
     --client-id <value>
     --client-secret <value>
     --authorization-url <value>
@@ -56,7 +56,7 @@ All `grn agentbase` commands accept:
 Rotate all four endpoints/credentials on an existing provider:
 
 ```bash
-grn agentbase identity outbound-auth oauth2 update my-oauth2-provider \
+grn agentbase access outbound-auth oauth2 update my-oauth2-provider \
   --client-id abc123 \
   --client-secret new-s3cr3t \
   --authorization-url https://idp.example.com/oauth2/authorize \

@@ -1,15 +1,15 @@
-# identity outbound-auth delegated get
+# access agent-id get
 
-Get a delegated API key provider.
+Get an agent identity by name.
 
 ## Description
 
-Retrieve a delegated API key provider by name.
+Retrieve a specific agent identity by its name.
 
 ## Synopsis
 
 ```text
-grn agentbase identity outbound-auth delegated get <name>
+grn agentbase access agent-id get <name>
 ```
 
 ## Options
@@ -26,14 +26,14 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Get a delegated API key provider:
+Get an identity:
 
 ```bash
-grn agentbase identity outbound-auth delegated get my-delegated-provider
+grn agentbase access agent-id get my-agent
 ```
 
 View the full record as JSON:
 
 ```bash
-grn agentbase identity outbound-auth delegated get my-delegated-provider -o json
+grn agentbase access agent-id get my-agent -o json
 ```

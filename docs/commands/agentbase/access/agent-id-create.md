@@ -1,4 +1,4 @@
-# identity workload create
+# access agent-id create
 
 Create a new agent identity.
 
@@ -13,7 +13,7 @@ external services. The name must be 3-50 characters and match the pattern
 ## Synopsis
 
 ```text
-grn agentbase identity workload create
+grn agentbase access agent-id create
     --name <value>
     [--set-current]
     [--description <value>]
@@ -65,13 +65,13 @@ All `grn agentbase` commands accept:
 Create an agent identity:
 
 ```bash
-grn agentbase identity workload create --name my-agent
+grn agentbase access agent-id create --name my-agent
 ```
 
 Create one with a description, allowed return URLs, and set it as current:
 
 ```bash
-grn agentbase identity workload create \
+grn agentbase access agent-id create \
   --name my-agent \
   --description "Production agent" \
   --allowed-return-url https://app.example.com/callback \
@@ -81,5 +81,5 @@ grn agentbase identity workload create \
 Create interactively (prompts for the name):
 
 ```bash
-grn agentbase identity workload create --interactive
+grn agentbase access agent-id create --interactive
 ```
