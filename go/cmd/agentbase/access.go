@@ -40,8 +40,8 @@ token source agentbase uses, exactly like vks/vserver.`,
 
 var workloadCmd = &cobra.Command{
 	Use:   "agent-id",
-	Short: "Manage agent workload identities",
-	Long:  `Create, list, get, update, and delete agent workload identities used to represent digital identities for agents accessing external services.`,
+	Short: "Manage agent identities",
+	Long:  `Create, list, get, update, and delete agent identities used to represent digital identities for agents accessing external services.`,
 }
 
 var (

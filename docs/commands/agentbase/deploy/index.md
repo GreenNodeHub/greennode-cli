@@ -30,13 +30,13 @@ grn agentbase deploy generate > agent.yaml
 Manifest shape (save it, fill it in, apply with `grn agentbase deploy up --file agent.yaml`):
 
 ```yaml
-# name is the shared join key across access + memory + runtime (3-50 chars,
-# ^[a-zA-Z0-9_-]+$). access is always created. memory is OPTIONAL — delete the
+# name is the shared join key across identity + memory + runtime (3-50 chars,
+# ^[a-zA-Z0-9_-]+$). identity is always created. memory is OPTIONAL — delete the
 # whole block for a stateless agent. runtime runs the agent code as a container.
 name: my-agent
 description: "A customer-support agent"
 
-access:
+identity:
   allowedReturnUrls:
     - https://app.example.com/callback
 

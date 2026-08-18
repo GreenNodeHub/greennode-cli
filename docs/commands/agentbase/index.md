@@ -32,7 +32,7 @@ The AgentBase platform is served behind `agentbase.api.vngcloud.vn` (prod) /
 | `context` | Show the active environment + endpoints |
 
 An **agent** is the set of resources that share a **name** (the join key): an
-access identity (always present), an optional memory container (omit for a stateless
+agent identity (always present), an optional memory container (omit for a stateless
 agent), and a runtime (the container that runs the agent code). There is no
 cross-service foreign key; `deploy` uses the name as the join.
 

@@ -143,6 +143,27 @@ func TestAgentbaseCmd_HasMarketplaceSubtree(t *testing.T) {
 	}
 }
 
+// TestOldCommandNamesAbsent locks in the hard cut of the agentbase rename:
+// identity→access, catalog→marketplace, workload→agent-id. Old names must be
+// absent (no aliases were kept). Uses subCmdExists (Commands() iteration)
+// because cobra's Find treats unknown trailing args as positionals and does not
+// reliably signal absence (see the subCmdExists comment above).
+func TestOldCommandNamesAbsent(t *testing.T) {
+	if subCmdExists(AgentbaseCmd, "identity") {
+		t.Error("agentbase should not have 'identity' (renamed to 'access')")
+	}
+	if subCmdExists(AgentbaseCmd, "catalog") {
+		t.Error("agentbase should not have 'catalog' (renamed to 'marketplace')")
+	}
+	accessCmd, _, err := AgentbaseCmd.Find([]string{"access"})
+	if err != nil {
+		t.Fatalf("agentbase has no 'access' subcommand: %v", err)
+	}
+	if subCmdExists(accessCmd, "workload") {
+		t.Error("access should not have 'workload' (renamed to 'agent-id')")
+	}
+}
+
 // TestJoinStrings_jsonsliceArray ports the agentbase helper test for joinStrings
 // (defined in access.go).
 func TestJoinStrings_jsonsliceArray(t *testing.T) {
