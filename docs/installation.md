@@ -1,55 +1,33 @@
 # Installation
 
-## Download binary
+The GreenNode CLI (`grn`) is a single binary with zero dependencies. Install it with the one-liner for your platform below.
 
-Download the latest binary for your platform from [GitHub Releases](https://github.com/GreenNodeHub/greennode-cli/releases):
-
-### macOS
-
+**macOS / Linux:**
 ```bash
-# Apple Silicon (M1/M2/M3)
-curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-darwin-arm64
-
-# Intel
-curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-darwin-amd64
-
-chmod +x grn
-sudo mv grn /usr/local/bin/
+curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.sh | bash
 ```
 
-### Linux
-
-```bash
-# x86_64
-curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-linux-amd64
-
-# ARM64
-curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-linux-arm64
-
-chmod +x grn
-sudo mv grn /usr/local/bin/
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.ps1 | iex
 ```
 
-### Windows
+**Windows (CMD — for environments without PowerShell):**
+```cmd
+curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
 
-Download `grn-windows-amd64.exe` from [GitHub Releases](https://github.com/GreenNodeHub/greennode-cli/releases) and add to your PATH.
-
-## Build from source
-
-Requires [Go 1.22+](https://go.dev/dl/):
-
+**Build from source** (fallback):
 ```bash
 git clone https://github.com/GreenNodeHub/greennode-cli.git
 cd greennode-cli/go
 go build -o grn .
-sudo mv grn /usr/local/bin/
+# place grn on your PATH
 ```
 
-## Verify installation
-
+Verify:
 ```bash
 grn --version
-# grn-cli/1.5.1 Go/1.22.12 darwin/arm64
 ```
 
 ## Next steps
