@@ -86,7 +86,6 @@ scripts/
 ├── install.sh           # one-liner installer (macOS / Linux)
 ├── install.ps1          # one-liner installer (Windows PowerShell)
 ├── install.cmd          # one-liner installer (Windows pure-CMD, PowerShell-less)
-├── make-bundle          # release bundling helper
 └── new-product          # scaffold a new product command
 ```
 
