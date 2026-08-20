@@ -1,5 +1,5 @@
 // Package catalog is the typed client for the catalog surface of the
-// agent-core-runtime service (`grn agentbase catalog`). The catalog group lives
+// agent-core-runtime service (`grn agentbase marketplace`). The catalog group lives
 // under the runtime service's /v1 prefix (/v1/flavors, /v1/openclaw-versions,
 // /v1/openclaws) and shares the runtime base URL + paging envelope
 // ({listData, page, pageSize, totalPage, totalItem}), so the client is built

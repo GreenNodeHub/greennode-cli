@@ -100,7 +100,7 @@ func TestSetIamEnv_MachineProfileWrites(t *testing.T) {
 }
 
 // `configure set agent_identity <name>` persists the agentbase current-agent
-// selection (the same key `agentbase identity workload use` writes) and is
+// selection (the same key `agentbase access agent-id use` writes) and is
 // readable back through `configure get` — proving the deferral is non-lossy.
 func TestSetAgentIdentity_WritesAndReadsBack(t *testing.T) {
 	home := t.TempDir()

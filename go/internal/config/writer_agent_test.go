@@ -57,7 +57,7 @@ func TestWriteAgentIdentity_PerProfileIsolation(t *testing.T) {
 	}
 }
 
-// An empty name CLEARS the key (explicit unset), not a no-op — so `workload use`
+// An empty name CLEARS the key (explicit unset), not a no-op — so `agent-id use`
 // can distinguish "select none" from "no change".
 func TestWriteAgentIdentity_EmptyClearsKey(t *testing.T) {
 	w := newHomeWriter(t)

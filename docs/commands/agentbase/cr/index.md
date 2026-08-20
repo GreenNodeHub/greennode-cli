@@ -1,6 +1,6 @@
 # cr
 
-Manage the agentbase container registry (agent-core-container-registry).
+Manage the agentbase container registry.
 
 ```bash
 grn agentbase cr <command> [options]

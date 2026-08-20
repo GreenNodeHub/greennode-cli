@@ -162,7 +162,7 @@ func (w *ConfigFileWriter) ClearLoginToken(profile string) error {
 // write: loadOrCreate preserves every other key/section, NewSection is
 // idempotent (returns the existing section without wiping its keys), and save
 // is the same atomic 0600 rename used by WriteLoginToken. An empty name clears
-// the key (explicit unset) rather than being a no-op, so `workload use` can
+// the key (explicit unset) rather than being a no-op, so `agent-id use` can
 // distinguish "select none" from "no change".
 func (w *ConfigFileWriter) WriteAgentIdentity(profile, name string) error {
 	if err := w.ensureDir(); err != nil {

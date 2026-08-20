@@ -19,7 +19,7 @@ go/
 │   ├── register.go                  # Blank-imports all product packages (triggers init())
 │   ├── agentbase/                   # grn agentbase (default-on; -tags agentbase gate dropped at GA)
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
-│   │   ├── identity.go              # identity group (login/workload/outbound-auth)
+│   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
 │   │   └── helpers.go               # mustLoadConfig / newAuthProvider
 │   ├── configure/
@@ -75,7 +75,7 @@ go/
 │   │   ├── auth/                    # OAuth2 v2 clientcredentials
 │   │   ├── client/                  # bearer-token HTTP client
 │   │   ├── config/                  # ./.greennode.json loader
-│   │   ├── identity/                # identity API client + models
+│   │   ├── identity/                # access (agent identities) API client + models
 │   │   ├── cliinput/                # interactive prompts
 │   │   ├── jsonslice/               # typed JSON slice helper
 │   │   └── output/                  # table/json/id + color + banner
@@ -135,10 +135,6 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 4. Build clients with `cli.NewClient(cmd, "<service>")`; print with `cli.Output(cmd, data)`
 5. Add `<service>_endpoint` for each region in `internal/config/config.go` REGIONS
 6. root.go needs no change — it mounts everything in the registry
-
-Note: `cmd/agentbase` is gated behind the opt-in `agentbase` build tag
-(`cmd/register_agentbase.go`), the inverse of the `!vks_only` pattern — it is
-excluded from default and release builds while still in development.
 
 ## Security rules
 

@@ -22,7 +22,7 @@ import (
 var memoryCmd = &cobra.Command{
 	Use:   "memory",
 	Short: "Manage agent memories",
-	Long: `Create and manage agent memories (the agent-core-memory service).
+	Long: `Create and manage agent memories (the memory service).
 
 A memory is a container holding an agent's long-term facts (memory records,
 backed by an external Mem0 vector store) and short-term conversation events.
