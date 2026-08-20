@@ -186,6 +186,7 @@ Each release (tag `vX.Y.Z`) attaches:
   so the title becomes the release commit release-please reads
 - **Release**: merge the `chore: release main` PR → tags `vX.Y.Z` + GitHub Release + binaries
 - **Release binaries are version-named** (`grn-<plat>-vX.Y.Z[.exe]`) and accompanied by a `SHA256SUMS` file (GNU format) — the `scripts/install.*` installers resolve the latest tag, download the versioned binary + checksums, and verify SHA-256 before installing.
+- **Pre-release smoke checklist:** see `RELEASING.md` (run the one-liners against the real tagged release before announcing).
 
 ## Documentation update rule
 
