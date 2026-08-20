@@ -77,10 +77,14 @@ jobs:
         run: brew install shellcheck
       - name: shellcheck install.sh
         run: shellcheck scripts/install.sh
+      - name: shellcheck uninstall.sh
+        run: shellcheck scripts/uninstall.sh
       - name: Release-contract test (SHA256SUMS shape)
         run: bash tests/release.test.sh
       - name: install.sh hermetic test
         run: bash tests/install.test.sh
+      - name: uninstall.sh hermetic test
+        run: bash tests/uninstall.test.sh
 
   installer-tests-windows:
     runs-on: windows-latest
@@ -96,3 +100,9 @@ jobs:
       - name: install.cmd smoke test
         shell: cmd
         run: tests\install.test.cmd
+      - name: uninstall.ps1 smoke test
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File tests\uninstall.test.ps1
+      - name: uninstall.cmd smoke test
+        shell: cmd
+        run: tests\uninstall.test.cmd

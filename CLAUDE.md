@@ -86,6 +86,9 @@ scripts/
 ├── install.sh           # one-liner installer (macOS / Linux)
 ├── install.ps1          # one-liner installer (Windows PowerShell)
 ├── install.cmd          # one-liner installer (Windows pure-CMD, PowerShell-less)
+├── uninstall.sh         # one-liner uninstaller (macOS / Linux)
+├── uninstall.ps1        # one-liner uninstaller (Windows PowerShell)
+├── uninstall.cmd        # one-liner uninstaller (Windows pure-CMD)
 └── new-product          # scaffold a new product command
 ```
 
@@ -169,6 +172,14 @@ GOOS=windows GOARCH=amd64 go build -o grn-windows-amd64.exe .
 
 Installers resolve the latest release tag via GitHub's `/releases/latest` 302, download the versioned binary (`grn-<plat>-v<ver>`) + a GNU-format `SHA256SUMS`, verify SHA-256, and install user-locally (`~/.local/bin/grn` / `%LOCALAPPDATA%\greennode\bin\grn.exe`, no sudo). Honors `GRN_INSTALL_BASE_URL` (self-host/mirror) and `GRN_INSTALL_TAG` (pin a version; used by tests).
 
+### Uninstall one-liners
+
+- **macOS / Linux:** `curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.sh | bash`
+- **Windows (PowerShell):** `irm https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.ps1 | iex`
+- **Windows (CMD, no PowerShell):** `curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.cmd -o uninstall.cmd && uninstall.cmd && del uninstall.cmd`
+
+Removes the binary + PATH entry the installer added. Pass `--purge` (`-Purge` in PowerShell) to also remove config + credentials (`~/.greennode/` / `%USERPROFILE%\.greennode\`).
+
 ## Release artifacts
 
 Each release (tag `vX.Y.Z`) attaches:
@@ -230,3 +241,6 @@ Code without docs is not done.
 | `scripts/install.sh` | One-liner installer: macOS/Linux (`curl \| bash`) |
 | `scripts/install.ps1` | One-liner installer: Windows PowerShell (`irm \| iex`) |
 | `scripts/install.cmd` | One-liner installer: Windows pure-CMD fallback |
+| `scripts/uninstall.sh` | One-liner uninstaller: macOS/Linux |
+| `scripts/uninstall.ps1` | One-liner uninstaller: Windows PowerShell |
+| `scripts/uninstall.cmd` | One-liner uninstaller: Windows pure-CMD fallback |

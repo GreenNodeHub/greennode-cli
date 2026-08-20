@@ -42,6 +42,12 @@ Verify:
 grn --version
 ```
 
+**Uninstall (macOS / Linux):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.sh | bash
+```
+Windows + the `--purge` option (also removes `~/.greennode` config + credentials) are documented at https://greennodehub.github.io/greennode-cli/installation/#uninstall.
+
 ### Configuration
 
 Before using the GreenNode CLI, you need to configure your credentials. There are three ways:
