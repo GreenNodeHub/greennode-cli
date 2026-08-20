@@ -60,3 +60,39 @@ jobs:
         # aborts such binaries ("missing LC_UUID load command"). CGO is enabled
         # so the system cc (present on both ubuntu and macos runners) links.
         run: CGO_ENABLED=1 go test -ldflags='-linkmode=external' ./... -v
+
+  installer-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install shellcheck (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install shellcheck
+      - name: shellcheck install.sh
+        run: shellcheck scripts/install.sh
+      - name: Release-contract test (SHA256SUMS shape)
+        run: bash tests/release.test.sh
+      - name: install.sh hermetic test
+        run: bash tests/install.test.sh
+
+  installer-tests-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python (for http.server test fixtures)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: install.ps1 smoke test
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File tests\install.test.ps1
+      - name: install.cmd smoke test
+        shell: cmd
+        run: tests\install.test.cmd
