@@ -55,8 +55,8 @@ Before using the GreenNode CLI, you need to configure your credentials. There ar
 **Method 1: Environment variables**
 
 ```bash
-export GRN_ACCESS_KEY_ID=your-client-id
-export GRN_SECRET_ACCESS_KEY=your-client-secret
+export GRN_CLIENT_ID=your-client-id
+export GRN_CLIENT_SECRET=your-client-secret
 export GRN_DEFAULT_REGION=HCM-3
 export GRN_DEFAULT_PROJECT_ID=pro-xxxxxxxx   # optional
 ```

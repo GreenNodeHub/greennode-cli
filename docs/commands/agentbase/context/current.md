@@ -8,6 +8,8 @@ Display the currently active environment (resolved from the profile's `iam_env`)
 
 The environment selects the agentbase API endpoints AND the IAM v2 token URL; it is stored as `iam_env` in the shared `~/.greennode` profile (default `prod`), the same selector vks/vserver use. Switch it with `grn configure set iam_env <dev|prod>` (machine) or `grn login --iam-env <env>` (user).
 
+When `--endpoint-url` is set, the six service endpoints (Identity/Runtime/Memory/Gateway/Policy/CR) reflect the override — host swapped, each service's path kept. The `OAuth2 Token` URL is shown unchanged: it is resolved from `iam_env` by the auth provider, not overridden by `--endpoint-url`.
+
 ## Synopsis
 
 ```text

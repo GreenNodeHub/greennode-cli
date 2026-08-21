@@ -73,7 +73,7 @@ go/
 │   │       └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type)
 │   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
 │   │   ├── auth/                    # OAuth2 v2 clientcredentials
-│   │   ├── client/                  # bearer-token HTTP client
+│   │   ├── client/                  # bearer-token HTTP client (401 refresh + retry-once, mirrors internal/client)
 │   │   ├── config/                  # ./.greennode.json loader
 │   │   ├── identity/                # access (agent identities) API client + models
 │   │   ├── cliinput/                # interactive prompts
@@ -139,7 +139,7 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 ## Security rules
 
 - **Credential masking**: `configure list` and `configure get` mask client_id/client_secret (last 4 chars only)
-- **Credential env vars supported**: `GRN_ACCESS_KEY_ID`/`GRN_SECRET_ACCESS_KEY` override credentials file (highest priority)
+- **Credential env vars supported**: `GRN_CLIENT_ID`/`GRN_CLIENT_SECRET` override credentials file (highest priority)
 - **Input validation**: All cluster-id/nodegroup-id validated via `validator.ValidateID()` before URLs
 - **SSL default on**: `--no-verify-ssl` prints warning to stderr
 - **Tokens in memory only**: Never written to disk or logged

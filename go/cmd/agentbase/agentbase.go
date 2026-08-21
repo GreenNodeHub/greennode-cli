@@ -51,7 +51,12 @@ select dev/prod with 'grn configure set iam_env <dev|prod>' (machine) or
 access agent-id use <name>'. Run 'grn agentbase context current' to see the
 active environment and endpoints.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		output.SetFormat(output.ParseFormat(outputFormat))
+		// Honor ~/.greennode/config's output key as the default format when
+		// --output/-o is not passed explicitly, matching cli.Output's fallback
+		// for vks/vserver. agentbase keeps its own --output/-o flag (shorthand
+		// + table default), so effectiveOutputFormat is the bridge that makes
+		// the shared config govern agentbase like the rest of the CLI.
+		output.SetFormat(output.ParseFormat(effectiveOutputFormat(cmd, outputFormat)))
 		cliinput.SetInteractive(interactiveMode)
 	},
 }

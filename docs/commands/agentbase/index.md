@@ -48,7 +48,7 @@ modes:
 
 ```bash
 grn configure --profile default
-# Enter client_id (GRN_ACCESS_KEY_ID) and client_secret (GRN_SECRET_ACCESS_KEY)
+# Enter client_id (GRN_CLIENT_ID) and client_secret (GRN_CLIENT_SECRET)
 ```
 
 The CLI uses `clientcredentials` to mint an IAM v2 token. The `client_secret` is
@@ -85,6 +85,21 @@ grn agentbase context current
 > environments, you must `grn login --iam-env <env>` again. In machine mode,
 > `iam_env` can be switched freely.
 
+### Overriding endpoints (`--endpoint-url`)
+
+The global `--endpoint-url` flag repoints every agentbase service endpoint
+(identity/runtime/memory/gateway/policy/cr) at a different host, preserving
+each service's path segment so routing still works — e.g.
+`--endpoint-url https://agentbase-staging.example.com` sends identity calls to
+`…/identity`, runtime to `…/runtime`, and so on. The IAM token URL
+(`OAuth2 Token` in `context current`) is **not** overridden; it stays on
+`iam_env`. The same endpoint-safety policy as vks applies (trusted-domain / TLS
+check, `--allow-untrusted-endpoint` to force).
+
+```bash
+grn --endpoint-url https://agentbase-staging.example.com agentbase access agent-id list
+```
+
 ---
 
 ## Command reference
@@ -115,6 +130,11 @@ Every command takes `-o` (`--output`):
 | `table` (default) | Human-readable table; secrets masked |
 | `json` | Raw JSON — secrets revealed (e.g. to pipe into `docker login`) |
 | `id` | Print only the ID (for scripting) |
+
+When `-o`/`--output` is not passed, the format falls back to the `output` key
+in `~/.greennode/config` (the same fallback vks/vserver use), then to `table`.
+So `grn configure set output json` governs `grn agentbase` too. (`context current`
+uses a fixed table layout and is not affected by the output format.)
 
 ---
 

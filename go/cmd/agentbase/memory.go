@@ -26,8 +26,7 @@ var memoryCmd = &cobra.Command{
 
 A memory is a container holding an agent's long-term facts (memory records,
 backed by an external Mem0 vector store) and short-term conversation events.
-Memories are created synchronously (no WAITING_* state) and soft-deleted
-(ACTIVE → DELETED).
+Memories are created synchronously (no WAITING_* state) (ACTIVE → DELETED).
 
 The signature command is 'search' — semantic search over a memory's long-term
 facts:

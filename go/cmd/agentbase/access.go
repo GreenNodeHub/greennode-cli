@@ -256,7 +256,7 @@ var workloadUseCmd = &cobra.Command{
 var workloadDeleteCmd = &cobra.Command{
 	Use:   "delete <name>",
 	Short: "Delete an agent identity",
-	Long:  `Delete an agent identity by name. The identity will be soft-deleted.`,
+	Long:  `Delete an agent identity by name.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()

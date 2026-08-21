@@ -4,7 +4,7 @@ Delete an agent identity.
 
 ## Description
 
-Delete an agent identity by name. The identity will be soft-deleted.
+Delete an agent identity by name.
 
 ## Synopsis
 

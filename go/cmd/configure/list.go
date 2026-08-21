@@ -96,8 +96,8 @@ func resolveCredEntry(name, value, credsFile string) configEntry {
 
 	// Check if value came from env var
 	envMap := map[string]string{
-		"client_id":     "GRN_ACCESS_KEY_ID",
-		"client_secret": "GRN_SECRET_ACCESS_KEY",
+		"client_id":     "GRN_CLIENT_ID",
+		"client_secret": "GRN_CLIENT_SECRET",
 	}
 	if envVar, ok := envMap[name]; ok {
 		if os.Getenv(envVar) != "" {
