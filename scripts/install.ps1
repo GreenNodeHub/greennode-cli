@@ -69,7 +69,7 @@ if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L62 after SHA256SU
 # StopUpstreamCommandsException in PS 5.1. Index the array instead.
 $line = @(Get-Content $sums | Select-String -Pattern "grn-$platform-$vtag.exe`$")[0]
 if (-not $line) {
-  [Console]::Error.WriteLine("install.ps1: No checksum line for $platform in SHA256SUMS — the release may not ship this platform."); exit 1
+  [Console]::Error.WriteLine("install.ps1: No checksum line for $platform in SHA256SUMS; the release may not ship this platform."); exit 1
 }
 $expected = ($line.ToString() -split '\s+')[0].ToLower()
 
@@ -83,7 +83,7 @@ $actual = (Get-FileHash -Path $bin -Algorithm SHA256).Hash.ToLower()
 if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L76 after hash: bin=[$bin] actual=[$actual] expected=[$expected]") }
 if ($actual -ne $expected) {
   Remove-Item -Force $bin -ErrorAction SilentlyContinue
-  [Console]::Error.WriteLine("install.ps1: Checksum mismatch (expected $expected, got $actual) — the download may be corrupt or tampered."); exit 1
+  [Console]::Error.WriteLine("install.ps1: Checksum mismatch (expected $expected, got $actual); the download may be corrupt or tampered."); exit 1
 }
 
 # --- Step 7: install + PATH ---
