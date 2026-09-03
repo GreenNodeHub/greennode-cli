@@ -68,12 +68,14 @@ $expected = ($line.ToString() -split '\s+')[0].ToLower()
 
 # --- Step 5: download binary ---
 $bin = Join-Path $dl "grn.exe"
+if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L70 after set: bin=[$bin] dl=[$dl]") }
 try {
   Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/grn-$platform-$vtag.exe" -UseBasicParsing -OutFile $bin -TimeoutSec 60
 } catch { Write-Error "Failed to download binary: $_"; exit 1 }
 
 # --- Step 6: verify ---
 $actual = (Get-FileHash -Path $bin -Algorithm SHA256).Hash.ToLower()
+if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L76 after hash: bin=[$bin] actual=[$actual] expected=[$expected]") }
 if ($actual -ne $expected) {
   Remove-Item -Force $bin -ErrorAction SilentlyContinue
   Write-Error "Checksum mismatch (expected $expected, got $actual) — the download may be corrupt or tampered."; exit 1
@@ -83,6 +85,19 @@ if ($actual -ne $expected) {
 $installDir = Join-Path $env:LOCALAPPDATA "greennode\bin"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 $dest = Join-Path $installDir "grn.exe"
+if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L86 before move: bin=[$bin] dl=[$dl] dest=[$dest] installDir=[$installDir] expected=[$expected] actual=[$actual]") }
+# Defensive: on Windows PowerShell 5.1 (Server 2025 CI), $bin has been observed
+# $null here despite being set at line 70 and consumed by Get-FileHash at line
+# 76, with no statement between modifying it. Re-derive from $dl (unchanged
+# since line 57) so a transient null doesn't break the install.
+if (-not $bin) {
+  [Console]::Error.WriteLine("install.ps1: WARNING: `$bin was null at Move-Item; re-deriving from dl=[$dl]")
+  $bin = Join-Path $dl "grn.exe"
+}
+if (-not (Test-Path -LiteralPath $bin)) {
+  [Console]::Error.WriteLine("install.ps1: ERROR: binary not found at [$bin] (dl=[$dl])")
+  exit 1
+}
 Move-Item -Path $bin -Destination $dest -Force
 
 # Add to User PATH (idempotent).

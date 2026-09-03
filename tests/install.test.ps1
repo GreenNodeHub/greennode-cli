@@ -31,6 +31,7 @@ $origLocalAppData = $env:LOCALAPPDATA
 $origTemp         = $env:TEMP
 $origBaseUrl      = $env:GRN_INSTALL_BASE_URL
 $origTag          = $env:GRN_INSTALL_TAG
+$origDebug        = $env:GRN_INSTALL_DEBUG
 $origUserPath     = [Environment]::GetEnvironmentVariable("PATH", "User")
 
 $Tmp = Join-Path $env:TEMP ("grn-install-test-" + [guid]::NewGuid().ToString("N"))
@@ -109,6 +110,7 @@ if ($Port -eq 0 -or -not $Job) { Write-Error "FAIL: test HTTP server did not sta
 # --- Point the installer at the fake release + isolate LOCALAPPDATA/TEMP -----
 $env:GRN_INSTALL_BASE_URL = "http://127.0.0.1:$Port"
 $env:GRN_INSTALL_TAG      = "v9.9.9"   # skip tag-resolve (/releases/latest is not served)
+$env:GRN_INSTALL_DEBUG    = "1"        # enable install.ps1 debug traces on stderr
 $env:LOCALAPPDATA         = Join-Path $Tmp "localappdata"
 $env:TEMP                 = $Tmp        # so the installer's download temp lands under $Tmp
 New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
@@ -153,6 +155,7 @@ finally {
     $env:TEMP                 = $origTemp
     $env:GRN_INSTALL_BASE_URL = $origBaseUrl
     $env:GRN_INSTALL_TAG      = $origTag
+    $env:GRN_INSTALL_DEBUG    = $origDebug
     if ($Job) {
         Stop-Job  $Job -ErrorAction SilentlyContinue
         Remove-Job $Job -ErrorAction SilentlyContinue
