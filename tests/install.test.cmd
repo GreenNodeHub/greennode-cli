@@ -57,4 +57,8 @@ for /f "tokens=5" %%P in ('netstat -ano ^| findstr :!PORT! ^| findstr LISTENING'
 if not "%EXIT%"=="0" ( echo FAIL: install.cmd exited %EXIT% & exit /b 1 )
 if not exist "%LOCALAPPDATA%\greennode\bin\grn.exe" ( echo FAIL: grn.exe not installed & exit /b 1 )
 echo PASS: install.cmd installed grn.exe to %LOCALAPPDATA%\greennode\bin\grn.exe
-endlocal
+REM Explicit exit 0: the server-kill taskkill above can leave errorlevel 128
+REM (python -m http.server binds dual-stack, so netstat matches two LISTENING
+REM entries; the second taskkill returns "process not found"). echo/endlocal
+REM don't reset errorlevel, so override it here for a deterministic green exit.
+endlocal & exit /b 0
