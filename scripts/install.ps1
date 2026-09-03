@@ -22,7 +22,7 @@ if (-not $Tag) { $Tag = $env:GRN_INSTALL_TAG }
 
 # --- Step 1: 64-bit guard ---
 if (-not [Environment]::Is64BitProcess) {
-  Write-Error "GreenNode CLI requires 64-bit Windows."; exit 1
+  [Console]::Error.WriteLine("install.ps1: GreenNode CLI requires 64-bit Windows."); exit 1
 }
 
 # --- Step 2: arch detect ---
@@ -49,7 +49,7 @@ if ($Tag) {
   }
 }
 if ($vtag -notmatch '^v\d+\.\d+\.\d+') {
-  Write-Error "Could not resolve a version tag from $BASE/releases/latest (got '$vtag'). Set -Tag or GRN_INSTALL_TAG."; exit 1
+  [Console]::Error.WriteLine("install.ps1: Could not resolve a version tag from $BASE/releases/latest (got '$vtag'). Set -Tag or GRN_INSTALL_TAG."); exit 1
 }
 $tag = $vtag.TrimStart('v')
 
@@ -57,28 +57,33 @@ $tag = $vtag.TrimStart('v')
 $dl = Join-Path $env:TEMP ("grn-install-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Force -Path $dl | Out-Null
 $sums = Join-Path $dl "SHA256SUMS"
-try {
-  Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/SHA256SUMS" -UseBasicParsing -OutFile $sums -TimeoutSec 60
-} catch { Write-Error "Failed to download SHA256SUMS: $_"; exit 1 }
-$line = Get-Content $sums | Select-String -Pattern "grn-$platform-$vtag.exe`$" | Select-Object -First 1
+# NOTE: no try/catch here. Under $ErrorActionPreference = "Stop", a try/catch
+# around Invoke-WebRequest -OutFile caused Windows PowerShell 5.1 to skip every
+# subsequent statement through the next block boundary (observed on Server 2025
+# CI, PR #17): $expected/$bin/$actual were never assigned, no catch fired, no
+# error printed. -ErrorAction Stop makes IWR throw a terminating error on
+# failure (clean exit with its native message) without the skip side effect.
+Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/SHA256SUMS" -UseBasicParsing -OutFile $sums -TimeoutSec 60 -ErrorAction Stop
+if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L62 after SHA256SUMS dl: sums=[$sums]") }
+# Avoid `Select-Object -First 1` under Stop: it throws a terminating
+# StopUpstreamCommandsException in PS 5.1. Index the array instead.
+$line = @(Get-Content $sums | Select-String -Pattern "grn-$platform-$vtag.exe`$")[0]
 if (-not $line) {
-  Write-Error "No checksum line for $platform in SHA256SUMS — the release may not ship this platform."; exit 1
+  [Console]::Error.WriteLine("install.ps1: No checksum line for $platform in SHA256SUMS — the release may not ship this platform."); exit 1
 }
 $expected = ($line.ToString() -split '\s+')[0].ToLower()
 
 # --- Step 5: download binary ---
 $bin = Join-Path $dl "grn.exe"
 if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L70 after set: bin=[$bin] dl=[$dl]") }
-try {
-  Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/grn-$platform-$vtag.exe" -UseBasicParsing -OutFile $bin -TimeoutSec 60
-} catch { Write-Error "Failed to download binary: $_"; exit 1 }
+Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/grn-$platform-$vtag.exe" -UseBasicParsing -OutFile $bin -TimeoutSec 60 -ErrorAction Stop
 
 # --- Step 6: verify ---
 $actual = (Get-FileHash -Path $bin -Algorithm SHA256).Hash.ToLower()
 if ($env:GRN_INSTALL_DEBUG) { [Console]::Error.WriteLine("DBG L76 after hash: bin=[$bin] actual=[$actual] expected=[$expected]") }
 if ($actual -ne $expected) {
   Remove-Item -Force $bin -ErrorAction SilentlyContinue
-  Write-Error "Checksum mismatch (expected $expected, got $actual) — the download may be corrupt or tampered."; exit 1
+  [Console]::Error.WriteLine("install.ps1: Checksum mismatch (expected $expected, got $actual) — the download may be corrupt or tampered."); exit 1
 }
 
 # --- Step 7: install + PATH ---
