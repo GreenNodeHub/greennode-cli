@@ -4,7 +4,15 @@ param(
   # Allow pinning a version instead of resolving latest (also used by tests).
   [string]$Tag
 )
-Set-StrictMode -Version Latest
+# Strict mode OFF by intent. Under Set-StrictMode -Version Latest, Windows
+# PowerShell 5.1 (the irm|iex target) false-positives on $bin at Move-Item
+# (Step 7): $bin is assigned at Step 5 and already consumed by Get-FileHash at
+# Step 6 with no error, yet Move-Item -Path $bin throws "VariableIsUndefined",
+# after which Move-Item prompts for the now-"missing" mandatory -Path and hangs
+# ~2 min on a TTY-less CI stdin. Observed on Windows Server 2025 CI (PR #17).
+# $ErrorActionPreference = "Stop" below still turns cmdlet errors into
+# terminating errors, so fail-fast behavior is preserved without the quirk.
+Set-StrictMode -Off
 $ErrorActionPreference = "Stop"
 $ProgressPreference = 'SilentlyContinue'
 
@@ -50,7 +58,7 @@ $dl = Join-Path $env:TEMP ("grn-install-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Force -Path $dl | Out-Null
 $sums = Join-Path $dl "SHA256SUMS"
 try {
-  Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/SHA256SUMS" -UseBasicParsing -OutFile $sums
+  Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/SHA256SUMS" -UseBasicParsing -OutFile $sums -TimeoutSec 60
 } catch { Write-Error "Failed to download SHA256SUMS: $_"; exit 1 }
 $line = Get-Content $sums | Select-String -Pattern "grn-$platform-$vtag.exe`$" | Select-Object -First 1
 if (-not $line) {
@@ -61,7 +69,7 @@ $expected = ($line.ToString() -split '\s+')[0].ToLower()
 # --- Step 5: download binary ---
 $bin = Join-Path $dl "grn.exe"
 try {
-  Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/grn-$platform-$vtag.exe" -UseBasicParsing -OutFile $bin
+  Invoke-WebRequest -Uri "$BASE/releases/download/$vtag/grn-$platform-$vtag.exe" -UseBasicParsing -OutFile $bin -TimeoutSec 60
 } catch { Write-Error "Failed to download binary: $_"; exit 1 }
 
 # --- Step 6: verify ---
