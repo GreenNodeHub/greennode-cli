@@ -24,11 +24,24 @@ for /f "delims=" %%L in (%TMP%\hashout.txt) do (
 >"%TMP%\srv\releases\download\v9.9.9\SHA256SUMS" echo !HASH!  grn-windows-amd64-v9.9.9.exe
 
 REM Start a static HTTP server (no 302 needed; GRN_INSTALL_TAG skips resolve).
+REM Use a port outside the ps1 test's 18081-18085 range to avoid any lingering
+REM bind from the prior step. Poll for readiness with curl instead of `timeout /t`,
+REM which fails in non-interactive CI ("ERROR: Input redirection is not supported").
+where python >nul 2>&1
+if errorlevel 1 ( echo FAIL: python not on PATH & exit /b 1 )
+set "PORT=18091"
 pushd "%TMP%\srv"
-start /b "" python -m http.server 18082
+start /b "" python -m http.server !PORT!
 popd
-set "PORT=18082"
-timeout /t 1 /nobreak >nul
+set /a _tries=0
+:wait_server
+curl.exe -fsS -o NUL "http://127.0.0.1:!PORT!/releases/download/v9.9.9/SHA256SUMS" >nul 2>&1
+if not errorlevel 1 goto :server_ready
+set /a _tries+=1
+if !_tries! lss 50 goto :wait_server
+echo FAIL: test HTTP server did not start on port !PORT!
+exit /b 1
+:server_ready
 
 set "GRN_INSTALL_BASE_URL=http://127.0.0.1:!PORT!"
 set "GRN_INSTALL_TAG=v9.9.9"
