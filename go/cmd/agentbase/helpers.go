@@ -2,6 +2,7 @@ package agentbase
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -61,6 +62,12 @@ func envFromIamEnv(iamEnv string) agentbaseconfig.Env {
 // mustLoadConfig behavior for display commands); credential/token errors are
 // NOT fatal here — they surface from newAuthProvider/newIdentityClient so RunE
 // can return them.
+//
+// The root --endpoint-url override is honored here, the same flag vks/vserver
+// consume via cli.NewClient: when set, cli.CheckEndpoint enforces the endpoint
+// safety policy (trusted-host/TLS/allow-untrusted) and overrideEndpointHosts
+// repoints the agentbase service endpoints at it. Without this, agentbase alone
+// ignored --endpoint-url and always used the iam_env-derived endpoints.
 func mustLoadAgentbaseCtx(cmd *cobra.Command) *agentbaseCtx {
 	shared, err := coreconfig.LoadConfig(resolveProfile(cmd))
 	if err != nil {
@@ -68,11 +75,105 @@ func mustLoadAgentbaseCtx(cmd *cobra.Command) *agentbaseCtx {
 		os.Exit(1)
 	}
 	env := envFromIamEnv(shared.IamEnv)
+	endpoints := agentbaseconfig.EndpointsForEnv(env)
+
+	if endpointURL := flagString(cmd, "endpoint-url"); endpointURL != "" {
+		if err := cli.CheckEndpoint(endpointURL, flagBool(cmd, "no-verify-ssl"), flagBool(cmd, "allow-untrusted-endpoint")); err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		if err := overrideEndpointHosts(&endpoints, endpointURL); err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+	}
+
 	return &agentbaseCtx{
 		shared:    shared,
 		env:       env,
-		endpoints: agentbaseconfig.EndpointsForEnv(env),
+		endpoints: endpoints,
 	}
+}
+
+// flagString/flagBool are nil-safe persistent-flag readers. agentbase's helpers
+// accept a zero *cobra.Command from white-box tests (see resolveProfile's nil
+// guard); these keep that contract for the endpoint-url/no-verify-ssl flags.
+func flagString(cmd *cobra.Command, name string) string {
+	if cmd != nil {
+		if v, err := cmd.Flags().GetString(name); err == nil {
+			return v
+		}
+	}
+	return ""
+}
+
+func flagBool(cmd *cobra.Command, name string) bool {
+	if cmd != nil {
+		if v, err := cmd.Flags().GetBool(name); err == nil {
+			return v
+		}
+	}
+	return false
+}
+
+// resolveOutputFormat picks the effective agentbase output format: an explicit
+// --output/-o wins; otherwise the profile's config-file output key; otherwise
+// flagValue (the flag's own default, "table"). This is the pure core of
+// effectiveOutputFormat — kept IO-free so it is unit-testable without a
+// ~/.greennode on disk. agentbase keeps its own --output/-o flag (shorthand +
+// table default) rather than inheriting the root --output, so this fallback is
+// what makes ~/.greennode/config's output key govern agentbase like the rest of
+// the CLI (cli.Output applies the same fallback for vks/vserver).
+func resolveOutputFormat(cmd *cobra.Command, flagValue, cfgOutput string) string {
+	if cmd != nil && cmd.Flags().Changed("output") {
+		return flagValue
+	}
+	if cfgOutput != "" {
+		return cfgOutput
+	}
+	return flagValue
+}
+
+// effectiveOutputFormat is the PersistentPreRun wiring for resolveOutputFormat:
+// it loads the resolved profile's config-file output key (missing config is
+// non-fatal here — the command's RunE will surface a real LoadConfig error via
+// mustLoadAgentbaseCtx) and delegates to resolveOutputFormat.
+func effectiveOutputFormat(cmd *cobra.Command, flagValue string) string {
+	cfgOutput := ""
+	if cfg, err := coreconfig.LoadConfig(resolveProfile(cmd)); err == nil {
+		cfgOutput = cfg.Output
+	}
+	return resolveOutputFormat(cmd, flagValue, cfgOutput)
+}
+
+// overrideEndpointHosts repoints every agentbase service endpoint at
+// endpointURL by swapping its scheme+host[:port], preserving the per-service
+// path (e.g. /identity, /runtime, /agent-core-runtime). This lets
+// --endpoint-url point agentbase at a different deployment while keeping
+// service routing intact — a bare host ("https://staging.example.com") reaches
+// every service at its real path, and even a full service URL pasted from
+// `agentbase context current` works (its path is ignored, only the host is
+// swapped in). OAuth2Token is untouched: it is the IAM token URL the auth
+// provider resolves from iam_env, not a service call, so overriding it would
+// lie in `agentbase context current` about where tokens are minted.
+func overrideEndpointHosts(eps *agentbaseconfig.Endpoints, endpointURL string) error {
+	override, err := url.Parse(endpointURL)
+	if err != nil {
+		return fmt.Errorf("invalid --endpoint-url %q: %w", endpointURL, err)
+	}
+	if override.Scheme == "" || override.Host == "" {
+		return fmt.Errorf("invalid --endpoint-url %q: want scheme://host[:port]", endpointURL)
+	}
+	for _, p := range []*string{&eps.Identity, &eps.Runtime, &eps.Memory, &eps.Gateway, &eps.Policy, &eps.Cr} {
+		u, err := url.Parse(*p)
+		if err != nil {
+			return fmt.Errorf("invalid agentbase endpoint %q: %w", *p, err)
+		}
+		u.Scheme = override.Scheme
+		u.Host = override.Host
+		*p = u.String()
+	}
+	return nil
 }
 
 // newAuthProvider is the single shared auth selector for agentbase — identical

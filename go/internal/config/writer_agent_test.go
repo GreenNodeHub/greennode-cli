@@ -57,7 +57,7 @@ func TestWriteAgentIdentity_PerProfileIsolation(t *testing.T) {
 	}
 }
 
-// An empty name CLEARS the key (explicit unset), not a no-op — so `workload use`
+// An empty name CLEARS the key (explicit unset), not a no-op — so `agent-id use`
 // can distinguish "select none" from "no change".
 func TestWriteAgentIdentity_EmptyClearsKey(t *testing.T) {
 	w := newHomeWriter(t)
@@ -120,7 +120,7 @@ func TestWriteIamEnv_OnMachineProfile(t *testing.T) {
 func TestLoadConfig_ReadsAgentIdentity(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	for _, k := range []string{"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY", "GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID"} {
+	for _, k := range []string{"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET", "GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID"} {
 		t.Setenv(k, "")
 	}
 	dir := filepath.Join(home, ".greennode")
@@ -148,7 +148,7 @@ func TestLoadConfig_ReadsAgentIdentity(t *testing.T) {
 func TestLoadConfig_MissingAgentIdentityIsEmpty(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	for _, k := range []string{"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY", "GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID"} {
+	for _, k := range []string{"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET", "GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID"} {
 		t.Setenv(k, "")
 	}
 	dir := filepath.Join(home, ".greennode")

@@ -26,7 +26,7 @@ import (
 var gatewayCmd = &cobra.Command{
 	Use:   "gateway",
 	Short: "Manage MCP gateways",
-	Long: `Create and manage MCP gateways (the agent-core-gateway service).
+	Long: `Create and manage MCP gateways (the gateway service).
 
 A gateway is created asynchronously: create/update/delete return the resource
 in a WAITING_* state and converge to ACTIVE (or DELETED). Use 'wait' to block

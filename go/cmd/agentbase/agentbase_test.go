@@ -77,39 +77,40 @@ func TestAgentbaseCmd_PersistentFlags(t *testing.T) {
 	}
 }
 
-// TestAgentbaseCmd_HasIdentitySubtree verifies the identity group and its
-// workload CRUD subtree mounted under `grn agentbase`. identity login/logout
+// TestAgentbaseCmd_HasAccessSubtree verifies the access group and its
+// agent-id CRUD subtree mounted under `grn agentbase`. access login/logout
 // were removed when agentbase unified onto `grn configure`/`grn login`/`grn logout`;
-// identity whoami/config were removed to defer config display to 'grn configure'.
-func TestAgentbaseCmd_HasIdentitySubtree(t *testing.T) {
-	identityCmd, _, err := AgentbaseCmd.Find([]string{"identity"})
+// access whoami/config were removed to defer config display to 'grn configure'.
+// (Renamed from `identity`/`workload` to match the portal.)
+func TestAgentbaseCmd_HasAccessSubtree(t *testing.T) {
+	accessCmd, _, err := AgentbaseCmd.Find([]string{"access"})
 	if err != nil {
-		t.Fatalf("agentbase has no 'identity' subcommand: %v", err)
+		t.Fatalf("agentbase has no 'access' subcommand: %v", err)
 	}
-	for _, want := range []string{"workload", "outbound-auth"} {
-		if _, _, err := identityCmd.Find([]string{want}); err != nil {
-			t.Errorf("identity missing subcommand %q: %v", want, err)
+	for _, want := range []string{"agent-id", "outbound-auth"} {
+		if _, _, err := accessCmd.Find([]string{want}); err != nil {
+			t.Errorf("access missing subcommand %q: %v", want, err)
 		}
 	}
 	for _, gone := range []string{"login", "logout", "whoami", "config"} {
 		found := false
-		for _, c := range identityCmd.Commands() {
+		for _, c := range accessCmd.Commands() {
 			if c.Name() == gone {
 				found = true
 				break
 			}
 		}
 		if found {
-			t.Errorf("identity should no longer have %q (defer to grn configure/grn login/grn logout)", gone)
+			t.Errorf("access should no longer have %q (defer to grn configure/grn login/grn logout)", gone)
 		}
 	}
-	workloadCmd, _, err := identityCmd.Find([]string{"workload"})
+	agentIDCmd, _, err := accessCmd.Find([]string{"agent-id"})
 	if err != nil {
-		t.Fatalf("identity has no 'workload' subcommand: %v", err)
+		t.Fatalf("access has no 'agent-id' subcommand: %v", err)
 	}
 	for _, want := range []string{"create", "list", "get", "update", "use", "delete"} {
-		if _, _, err := workloadCmd.Find([]string{want}); err != nil {
-			t.Errorf("workload missing subcommand %q: %v", want, err)
+		if _, _, err := agentIDCmd.Find([]string{want}); err != nil {
+			t.Errorf("agent-id missing subcommand %q: %v", want, err)
 		}
 	}
 }
@@ -128,8 +129,43 @@ func TestAgentbaseCmd_HasGatewaySubtree(t *testing.T) {
 	}
 }
 
+// TestAgentbaseCmd_HasMarketplaceSubtree verifies the marketplace group
+// (renamed from `catalog`) and its children are mounted under `grn agentbase`.
+func TestAgentbaseCmd_HasMarketplaceSubtree(t *testing.T) {
+	mktCmd, _, err := AgentbaseCmd.Find([]string{"marketplace"})
+	if err != nil {
+		t.Fatalf("agentbase has no 'marketplace' subcommand: %v", err)
+	}
+	for _, want := range []string{"flavors", "openclaw-versions", "openclaw"} {
+		if _, _, err := mktCmd.Find([]string{want}); err != nil {
+			t.Errorf("marketplace missing subcommand %q: %v", want, err)
+		}
+	}
+}
+
+// TestOldCommandNamesAbsent locks in the hard cut of the agentbase rename:
+// identity→access, catalog→marketplace, workload→agent-id. Old names must be
+// absent (no aliases were kept). Uses subCmdExists (Commands() iteration)
+// because cobra's Find treats unknown trailing args as positionals and does not
+// reliably signal absence (see the subCmdExists comment above).
+func TestOldCommandNamesAbsent(t *testing.T) {
+	if subCmdExists(AgentbaseCmd, "identity") {
+		t.Error("agentbase should not have 'identity' (renamed to 'access')")
+	}
+	if subCmdExists(AgentbaseCmd, "catalog") {
+		t.Error("agentbase should not have 'catalog' (renamed to 'marketplace')")
+	}
+	accessCmd, _, err := AgentbaseCmd.Find([]string{"access"})
+	if err != nil {
+		t.Fatalf("agentbase has no 'access' subcommand: %v", err)
+	}
+	if subCmdExists(accessCmd, "workload") {
+		t.Error("access should not have 'workload' (renamed to 'agent-id')")
+	}
+}
+
 // TestJoinStrings_jsonsliceArray ports the agentbase helper test for joinStrings
-// (defined in identity.go).
+// (defined in access.go).
 func TestJoinStrings_jsonsliceArray(t *testing.T) {
 	if got := joinStrings(jsonslice.Array[string]{"a", "b"}, ", "); got != "a, b" {
 		t.Errorf("got %q", got)

@@ -28,7 +28,7 @@ go/
     └── validator/       # ID validation
 ```
 
-**Rule of thumb:** product-specific code lives in `cmd/<service>/`; anything shared
+**Rule of thumb:** product-specific code lives in a per-service command package; anything shared
 goes in `internal/cli` (or another `internal/*` package). A product package must
 not import another product package.
 
@@ -36,13 +36,13 @@ not import another product package.
 
 A new product (e.g. `vserver`) is mounted without touching `root.go`:
 
-1. **Create `cmd/<service>/`** with a parent `cobra.Command`:
+1. **Create the service's command package** with a parent `cobra.Command`:
 
    ```go
    package vserver
 
    import (
-       "github.com/greennodehub/greennode-cli/internal/cli"
+       "…/internal/cli"  // shared CLI infra (NewClient, Output, RegisterService)
        "github.com/spf13/cobra"
    )
 
@@ -62,9 +62,9 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
 
    ```go
    import (
-       _ "github.com/greennodehub/greennode-cli/cmd/vks"
-       _ "github.com/greennodehub/greennode-cli/internal/resources/vserver"
-       _ "github.com/greennodehub/greennode-cli/cmd/vserver" // add this line
+       _ "…/cmd/vks"
+       _ "…/resources/vserver"  // cross-service completion providers
+       _ "…/cmd/vserver"        // add this line
    )
    ```
 
@@ -81,14 +81,12 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
 
 ## Self-contained subcommand: `agentbase`
 
-`cmd/agentbase/` is a self-contained service stack that is compiled into the
-default `grn` binary and the public release build (`-tags vks_only`) — it was
-previously gated behind the `-tags agentbase` opt-in tag while under development
-(see `cmd/register_agentbase.go`). Unlike `vks`/`vserver`, it does not reuse the
-shared `internal/cli` infrastructure: it ships its own v2 OAuth2
-client-credentials auth (`internal/agentbase/auth/`), its own
-`./.greennode.json` config loader (`internal/agentbase/config/`), and its own
-HTTP client + output helpers. `AgentbaseCmd` self-registers via
+The agentbase subcommand package is a self-contained service stack that is
+compiled into the default `grn` binary and all release builds. Unlike
+`vks`/`vserver`, it does not reuse the shared `internal/cli` infrastructure: it
+ships its own v2 OAuth2 client-credentials auth, its own `./.greennode.json`
+config loader, and its own HTTP client + output helpers. `AgentbaseCmd`
+self-registers via
 `cli.RegisterService(...)` in `init()`, so it appears under `grn` with no
 further wiring. Its public command-reference pages live under
 `docs/commands/agentbase/*` and are published in the `mkdocs.yml` nav.
@@ -135,13 +133,13 @@ Static command/flag completion is automatic (`grn completion <shell>`). For flag
 - Cross-service resource: a consumer uses `cli.ResourceCompletion("<svc>:<resource>")`;
   the owning service registers the provider with
   `cli.RegisterResourceCompleter("<svc>:<resource>", ...)`. See
-  `internal/resources/vserver/` for the pattern.
+  the vserver resource-completer package for the pattern.
 
 ## Ownership
 
-`.github/CODEOWNERS` routes review by path: `internal/`, `cmd/root.go`,
-`cmd/register.go` and `cmd/configure/` are platform-owned; `cmd/<service>/` is owned
-by its product team. Add a CODEOWNERS line for a new service directory.
+Review ownership is routed by path: platform-owned code (shared infrastructure,
+the root command, and `configure`) is distinguished from product-team-owned code
+(a service's command package). Add an ownership entry for a new service directory.
 
 ## Running tests
 

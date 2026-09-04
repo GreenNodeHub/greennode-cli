@@ -19,7 +19,7 @@ go/
 │   ├── register.go                  # Blank-imports all product packages (triggers init())
 │   ├── agentbase/                   # grn agentbase (default-on; -tags agentbase gate dropped at GA)
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
-│   │   ├── identity.go              # identity group (login/workload/outbound-auth)
+│   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
 │   │   └── helpers.go               # mustLoadConfig / newAuthProvider
 │   ├── configure/
@@ -73,14 +73,23 @@ go/
 │   │       └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type)
 │   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
 │   │   ├── auth/                    # OAuth2 v2 clientcredentials
-│   │   ├── client/                  # bearer-token HTTP client
+│   │   ├── client/                  # bearer-token HTTP client (401 refresh + retry-once, mirrors internal/client)
 │   │   ├── config/                  # ./.greennode.json loader
-│   │   ├── identity/                # identity API client + models
+│   │   ├── identity/                # access (agent identities) API client + models
 │   │   ├── cliinput/                # interactive prompts
 │   │   ├── jsonslice/               # typed JSON slice helper
 │   │   └── output/                  # table/json/id + color + banner
 │   └── validator/validator.go       # ID format validation
 ├── go.mod, go.sum
+
+scripts/
+├── install.sh           # one-liner installer (macOS / Linux)
+├── install.ps1          # one-liner installer (Windows PowerShell)
+├── install.cmd          # one-liner installer (Windows pure-CMD, PowerShell-less)
+├── uninstall.sh         # one-liner uninstaller (macOS / Linux)
+├── uninstall.ps1        # one-liner uninstaller (Windows PowerShell)
+├── uninstall.cmd        # one-liner uninstaller (Windows pure-CMD)
+└── new-product          # scaffold a new product command
 ```
 
 ## Code conventions
@@ -127,14 +136,10 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 5. Add `<service>_endpoint` for each region in `internal/config/config.go` REGIONS
 6. root.go needs no change — it mounts everything in the registry
 
-Note: `cmd/agentbase` is gated behind the opt-in `agentbase` build tag
-(`cmd/register_agentbase.go`), the inverse of the `!vks_only` pattern — it is
-excluded from default and release builds while still in development.
-
 ## Security rules
 
 - **Credential masking**: `configure list` and `configure get` mask client_id/client_secret (last 4 chars only)
-- **Credential env vars supported**: `GRN_ACCESS_KEY_ID`/`GRN_SECRET_ACCESS_KEY` override credentials file (highest priority)
+- **Credential env vars supported**: `GRN_CLIENT_ID`/`GRN_CLIENT_SECRET` override credentials file (highest priority)
 - **Input validation**: All cluster-id/nodegroup-id validated via `validator.ValidateID()` before URLs
 - **SSL default on**: `--no-verify-ssl` prints warning to stderr
 - **Tokens in memory only**: Never written to disk or logged
@@ -155,6 +160,28 @@ GOOS=darwin GOARCH=arm64 go build -o grn-darwin-arm64 .
 GOOS=windows GOARCH=amd64 go build -o grn-windows-amd64.exe .
 ```
 
+## Installation one-liners
+
+- **macOS / Linux:** `curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.sh | bash`
+- **Windows (PowerShell):** `irm https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.ps1 | iex`
+- **Windows (CMD, no PowerShell):** `curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.cmd -o install.cmd && install.cmd && del install.cmd`
+
+Installers resolve the latest release tag via GitHub's `/releases/latest` 302, download the versioned binary (`grn-<plat>-v<ver>`) + a GNU-format `SHA256SUMS`, verify SHA-256, and install user-locally (`~/.local/bin/grn` / `%LOCALAPPDATA%\greennode\bin\grn.exe`, no sudo). Honors `GRN_INSTALL_BASE_URL` (self-host/mirror) and `GRN_INSTALL_TAG` (pin a version; used by tests).
+
+### Uninstall one-liners
+
+- **macOS / Linux:** `curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.sh | bash`
+- **Windows (PowerShell):** `irm https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.ps1 | iex`
+- **Windows (CMD, no PowerShell):** `curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/uninstall.cmd -o uninstall.cmd && uninstall.cmd && del uninstall.cmd`
+
+Removes the binary + PATH entry the installer added. Pass `--purge` (`-Purge` in PowerShell) to also remove config + credentials (`~/.greennode/` / `%USERPROFILE%\.greennode\`).
+
+## Release artifacts
+
+Each release (tag `vX.Y.Z`) attaches:
+- 6 platform binaries: `grn-{linux,linux,darwin,darwin,windows,windows}-{amd64,arm64,amd64,arm64,amd64,arm64}-v<ver>[.exe]`
+- `SHA256SUMS`: GNU `sha256sum` format (one line per binary), generated by `release.yml`'s `Generate SHA256SUMS` step.
+
 ## Git workflow
 
 - **Do not auto commit/push** — only change source code, user will ask for commit/push
@@ -164,6 +191,8 @@ GOOS=windows GOARCH=amd64 go build -o grn-windows-amd64.exe .
 - **PR titles are Conventional Commits** (`feat:`/`fix:`/`feat!:`) — PRs are squash-merged,
   so the title becomes the release commit release-please reads
 - **Release**: merge the `chore: release main` PR → tags `vX.Y.Z` + GitHub Release + binaries
+- **Release binaries are version-named** (`grn-<plat>-vX.Y.Z[.exe]`) and accompanied by a `SHA256SUMS` file (GNU format) — the `scripts/install.*` installers resolve the latest tag, download the versioned binary + checksums, and verify SHA-256 before installing.
+- **Pre-release smoke checklist:** see `RELEASING.md` (run the one-liners against the real tagged release before announcing).
 
 ## Documentation update rule
 
@@ -205,3 +234,9 @@ Code without docs is not done.
 | `internal/client/client.go` | HTTP client with retry (3x backoff) + 401 refresh |
 | `internal/formatter/formatter.go` | JSON/Table/Text + JMESPath |
 | `internal/validator/validator.go` | ID format validation |
+| `scripts/install.sh` | One-liner installer: macOS/Linux (`curl \| bash`) |
+| `scripts/install.ps1` | One-liner installer: Windows PowerShell (`irm \| iex`) |
+| `scripts/install.cmd` | One-liner installer: Windows pure-CMD fallback |
+| `scripts/uninstall.sh` | One-liner uninstaller: macOS/Linux |
+| `scripts/uninstall.ps1` | One-liner uninstaller: Windows PowerShell |
+| `scripts/uninstall.cmd` | One-liner uninstaller: Windows pure-CMD fallback |

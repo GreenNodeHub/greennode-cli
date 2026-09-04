@@ -1,6 +1,6 @@
 # gateway
 
-Manage MCP gateways (the agent-core-gateway service).
+Manage MCP gateways (the gateway service).
 
 ```bash
 grn agentbase gateway <command> [options]

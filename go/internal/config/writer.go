@@ -24,7 +24,15 @@ func (w *ConfigFileWriter) ensureDir() error {
 	return os.MkdirAll(w.configDir, 0700)
 }
 
-// WriteCredentials writes client_id and client_secret for the given profile.
+// WriteCredentials writes client_id and client_secret for the given profile and
+// switches the profile to machine auth mode (auth_mode=machine), clearing any
+// prior PKCE login token (refresh_token, token_expires_at). This is the
+// symmetric inverse of WriteLoginToken (which sets auth_mode=user + a
+// refresh_token): running `grn configure` or `grn configure set
+// client_id/client_secret` after `grn login` repoints the profile at machine
+// credentials — without this, the stale auth_mode=user left NewTokenProvider
+// selecting LoginTokenProvider and ignoring the just-configured machine creds.
+// iam_env is preserved (it selects the environment for both auth modes).
 func (w *ConfigFileWriter) WriteCredentials(profile, clientID, clientSecret string) error {
 	if err := w.ensureDir(); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -42,6 +50,13 @@ func (w *ConfigFileWriter) WriteCredentials(profile, clientID, clientSecret stri
 	}
 	section.Key("client_id").SetValue(clientID)
 	section.Key("client_secret").SetValue(clientSecret)
+	section.Key("auth_mode").SetValue("machine")
+	// Drop any prior PKCE login token — it is not active under machine mode.
+	// iam_env is intentionally preserved: it selects the environment for both
+	// auth modes (machine client_credentials + user refresh both resolve the
+	// IAM token URL from it).
+	section.DeleteKey("refresh_token")
+	section.DeleteKey("token_expires_at")
 
 	return w.save(cfg, filePath)
 }
@@ -162,7 +177,7 @@ func (w *ConfigFileWriter) ClearLoginToken(profile string) error {
 // write: loadOrCreate preserves every other key/section, NewSection is
 // idempotent (returns the existing section without wiping its keys), and save
 // is the same atomic 0600 rename used by WriteLoginToken. An empty name clears
-// the key (explicit unset) rather than being a no-op, so `workload use` can
+// the key (explicit unset) rather than being a no-op, so `agent-id use` can
 // distinguish "select none" from "no change".
 func (w *ConfigFileWriter) WriteAgentIdentity(profile, name string) error {
 	if err := w.ensureDir(); err != nil {

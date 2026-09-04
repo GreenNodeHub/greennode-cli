@@ -172,6 +172,47 @@ func TestLoginTokenProvider_Non2xx_HardErrors(t *testing.T) {
 	}
 }
 
+// TestLoginTokenProvider_Non2xx_DoesNotExposeIAMDetails: a refresh-grant
+// failure (here the 500 {"errors":[]} IAM returns for an expired/revoked RT)
+// must surface as just the re-login guidance — no status code, no raw body —
+// so the user-facing error isn't noise that looks like a server incident.
+func TestLoginTokenProvider_Non2xx_DoesNotExposeIAMDetails(t *testing.T) {
+	t.Parallel()
+	srv, _ := newTokenServer(t, []string{`{"errors":[]}`}, http.StatusInternalServerError)
+
+	p := NewLoginTokenProvider("rt-orig", "cid", "", srv.URL, nil)
+	_, err := p.GetToken()
+	if !errors.Is(err, ErrLoginTokenRefreshFailed) {
+		t.Errorf("err=%v, want ErrLoginTokenRefreshFailed", err)
+	}
+	for _, leak := range []string{"500", "errors", "status"} {
+		if strings.Contains(err.Error(), leak) {
+			t.Errorf("err=%q leaks IAM detail %q; want just the re-login guidance", err.Error(), leak)
+		}
+	}
+}
+
+// TestLoginTokenProvider_TransportError_JustRequestsLogin: a transport-level
+// refresh failure (IAM unreachable) also surfaces as just the re-login
+// guidance — no connection/dial details leaked.
+func TestLoginTokenProvider_TransportError_JustRequestsLogin(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	addr := srv.URL
+	srv.Close() // tear down → the next dial is refused
+
+	p := NewLoginTokenProvider("rt-orig", "cid", "", addr, nil)
+	_, err := p.GetToken()
+	if !errors.Is(err, ErrLoginTokenRefreshFailed) {
+		t.Errorf("err=%v, want ErrLoginTokenRefreshFailed", err)
+	}
+	for _, leak := range []string{"connect", "refused", "dial", addr} {
+		if strings.Contains(err.Error(), leak) {
+			t.Errorf("err=%q leaks transport detail %q; want just the re-login guidance", err.Error(), leak)
+		}
+	}
+}
+
 func TestLoginTokenProvider_RefreshRequestShape(t *testing.T) {
 	t.Parallel()
 	body := `{"access_token":"at-1","token_type":"Bearer","refresh_token":"rt-orig","expires_in":3600}`

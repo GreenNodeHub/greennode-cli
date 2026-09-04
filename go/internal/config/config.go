@@ -112,10 +112,10 @@ func LoadConfig(profile string) (*Config, error) {
 	anyFileExists := false
 
 	// Load credentials — env vars override file
-	if v := os.Getenv("GRN_ACCESS_KEY_ID"); v != "" {
+	if v := os.Getenv("GRN_CLIENT_ID"); v != "" {
 		cfg.ClientID = v
 	}
-	if v := os.Getenv("GRN_SECRET_ACCESS_KEY"); v != "" {
+	if v := os.Getenv("GRN_CLIENT_SECRET"); v != "" {
 		cfg.ClientSecret = v
 	}
 	if cfg.ClientID != "" && cfg.ClientSecret != "" {

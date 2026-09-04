@@ -79,32 +79,32 @@ nav:
       - current: commands/agentbase/context/current.md
       - headers: commands/agentbase/context/headers.md
       - decorators: commands/agentbase/context/decorators.md
-    - Identity:
-      - Overview: commands/agentbase/identity/index.md
-      - workload create: commands/agentbase/identity/workload-create.md
-      - workload list: commands/agentbase/identity/workload-list.md
-      - workload get: commands/agentbase/identity/workload-get.md
-      - workload update: commands/agentbase/identity/workload-update.md
-      - workload use: commands/agentbase/identity/workload-use.md
-      - workload delete: commands/agentbase/identity/workload-delete.md
-      - outbound-auth static create: commands/agentbase/identity/outbound-auth-static-create.md
-      - outbound-auth static list: commands/agentbase/identity/outbound-auth-static-list.md
-      - outbound-auth static get: commands/agentbase/identity/outbound-auth-static-get.md
-      - outbound-auth static update: commands/agentbase/identity/outbound-auth-static-update.md
-      - outbound-auth static delete: commands/agentbase/identity/outbound-auth-static-delete.md
-      - outbound-auth static get-key: commands/agentbase/identity/outbound-auth-static-get-key.md
-      - outbound-auth delegated create: commands/agentbase/identity/outbound-auth-delegated-create.md
-      - outbound-auth delegated list: commands/agentbase/identity/outbound-auth-delegated-list.md
-      - outbound-auth delegated get: commands/agentbase/identity/outbound-auth-delegated-get.md
-      - outbound-auth delegated delete: commands/agentbase/identity/outbound-auth-delegated-delete.md
-      - outbound-auth delegated get-key: commands/agentbase/identity/outbound-auth-delegated-get-key.md
-      - outbound-auth oauth2 create: commands/agentbase/identity/outbound-auth-oauth2-create.md
-      - outbound-auth oauth2 list: commands/agentbase/identity/outbound-auth-oauth2-list.md
-      - outbound-auth oauth2 get: commands/agentbase/identity/outbound-auth-oauth2-get.md
-      - outbound-auth oauth2 update: commands/agentbase/identity/outbound-auth-oauth2-update.md
-      - outbound-auth oauth2 delete: commands/agentbase/identity/outbound-auth-oauth2-delete.md
-      - outbound-auth oauth2 m2m-token: commands/agentbase/identity/outbound-auth-oauth2-m2m-token.md
-      - outbound-auth oauth2 3lo-token: commands/agentbase/identity/outbound-auth-oauth2-3lo-token.md
+    - Access:
+      - Overview: commands/agentbase/access/index.md
+      - agent-id create: commands/agentbase/access/agent-id-create.md
+      - agent-id list: commands/agentbase/access/agent-id-list.md
+      - agent-id get: commands/agentbase/access/agent-id-get.md
+      - agent-id update: commands/agentbase/access/agent-id-update.md
+      - agent-id use: commands/agentbase/access/agent-id-use.md
+      - agent-id delete: commands/agentbase/access/agent-id-delete.md
+      - outbound-auth static create: commands/agentbase/access/outbound-auth-static-create.md
+      - outbound-auth static list: commands/agentbase/access/outbound-auth-static-list.md
+      - outbound-auth static get: commands/agentbase/access/outbound-auth-static-get.md
+      - outbound-auth static update: commands/agentbase/access/outbound-auth-static-update.md
+      - outbound-auth static delete: commands/agentbase/access/outbound-auth-static-delete.md
+      - outbound-auth static get-key: commands/agentbase/access/outbound-auth-static-get-key.md
+      - outbound-auth delegated create: commands/agentbase/access/outbound-auth-delegated-create.md
+      - outbound-auth delegated list: commands/agentbase/access/outbound-auth-delegated-list.md
+      - outbound-auth delegated get: commands/agentbase/access/outbound-auth-delegated-get.md
+      - outbound-auth delegated delete: commands/agentbase/access/outbound-auth-delegated-delete.md
+      - outbound-auth delegated get-key: commands/agentbase/access/outbound-auth-delegated-get-key.md
+      - outbound-auth oauth2 create: commands/agentbase/access/outbound-auth-oauth2-create.md
+      - outbound-auth oauth2 list: commands/agentbase/access/outbound-auth-oauth2-list.md
+      - outbound-auth oauth2 get: commands/agentbase/access/outbound-auth-oauth2-get.md
+      - outbound-auth oauth2 update: commands/agentbase/access/outbound-auth-oauth2-update.md
+      - outbound-auth oauth2 delete: commands/agentbase/access/outbound-auth-oauth2-delete.md
+      - outbound-auth oauth2 m2m-token: commands/agentbase/access/outbound-auth-oauth2-m2m-token.md
+      - outbound-auth oauth2 3lo-token: commands/agentbase/access/outbound-auth-oauth2-3lo-token.md
     - Gateway:
       - Overview: commands/agentbase/gateway/index.md
       - create: commands/agentbase/gateway/create.md
@@ -165,17 +165,17 @@ nav:
       - record insert: commands/agentbase/memory/record-insert.md
       - record generate-from-session: commands/agentbase/memory/record-generate-from-session.md
       - record generate-from-content: commands/agentbase/memory/record-generate-from-content.md
-    - Catalog:
-      - Overview: commands/agentbase/catalog/index.md
-      - flavors list: commands/agentbase/catalog/flavors-list.md
-      - openclaw-versions list: commands/agentbase/catalog/openclaw-versions-list.md
-      - openclaw list: commands/agentbase/catalog/openclaw-list.md
-      - openclaw create: commands/agentbase/catalog/openclaw-create.md
-      - openclaw get: commands/agentbase/catalog/openclaw-get.md
-      - openclaw delete: commands/agentbase/catalog/openclaw-delete.md
-      - openclaw start: commands/agentbase/catalog/openclaw-start.md
-      - openclaw stop: commands/agentbase/catalog/openclaw-stop.md
-      - openclaw update-version: commands/agentbase/catalog/openclaw-update-version.md
+    - Marketplace:
+      - Overview: commands/agentbase/marketplace/index.md
+      - flavors list: commands/agentbase/marketplace/flavors-list.md
+      - openclaw-versions list: commands/agentbase/marketplace/openclaw-versions-list.md
+      - openclaw list: commands/agentbase/marketplace/openclaw-list.md
+      - openclaw create: commands/agentbase/marketplace/openclaw-create.md
+      - openclaw get: commands/agentbase/marketplace/openclaw-get.md
+      - openclaw delete: commands/agentbase/marketplace/openclaw-delete.md
+      - openclaw start: commands/agentbase/marketplace/openclaw-start.md
+      - openclaw stop: commands/agentbase/marketplace/openclaw-stop.md
+      - openclaw update-version: commands/agentbase/marketplace/openclaw-update-version.md
     - Policy:
       - Overview: commands/agentbase/policy/index.md
       - group create: commands/agentbase/policy/group-create.md

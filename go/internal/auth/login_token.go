@@ -110,11 +110,16 @@ func (p *LoginTokenProvider) refresh() (string, error) {
 		ClientSecret: p.clientSecret,
 		Scope:        "openid",
 	})
-	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrLoginTokenRefreshFailed, err)
-	}
-	if errResp != nil {
-		return "", fmt.Errorf("%w: iam status=%d body=%s", ErrLoginTokenRefreshFailed, errResp.Status, string(errResp.RawBody))
+	if err != nil || errResp != nil {
+		// Refresh failed — transport error (err) or a non-2xx IAM response
+		// (errResp). Do not expose IAM's status code or raw body to the user: the
+		// actionable fix is the same in every case (re-login), and the raw envelope
+		// is noise that reads like a server incident when it's typically a token
+		// problem (IAM currently 500s with {"errors":[]} for an expired/revoked
+		// refresh token instead of a proper 400 invalid_grant). Return the sentinel
+		// alone so the surfaced error is just "login token expired or revoked —
+		// run `grn login`" (callers wrap it as "authentication failed: ...").
+		return "", ErrLoginTokenRefreshFailed
 	}
 	tok, err := login.DecodeTokenBody(resp.Raw)
 	if err != nil {
