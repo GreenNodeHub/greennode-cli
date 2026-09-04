@@ -53,9 +53,15 @@ Beyond commands and flags, `grn` completes flag *values*:
 
 - Global: `--region`, `--output`, `--color`, `--profile`
 - VKS: `--cluster-id`, `--nodegroup-id`, `--k8s-version`, `--os`, `--network-type`, `--release-channel`
-- vserver resources used by VKS: `--vpc-id`, `--subnet-id`, `--ssh-key-id`, `--security-groups`, `--disk-type`
+- vserver resources used by VKS: `--vpc-id`, `--subnet-id`, `--subnet-ids`, `--ssh-key-id`, `--security-groups`, `--disk-type`
 
 Resource-id completions call the API using your configured credentials and
 `project_id`. They have a short timeout and fail silently — if credentials or
-network are unavailable, completion simply returns nothing. `--subnet-id`
-suggestions require `--vpc-id` to be set first.
+network are unavailable, completion simply returns nothing.
+
+Subnet suggestions (`--subnet-ids` on `create-cluster`, `--subnet-id` on
+`create-nodegroup`) need to know the VPC. They use `--vpc-id` when the command
+has it, and otherwise resolve it from `--cluster-id` — so set one of the two
+before asking for subnet completions. The cluster lookup costs an extra API call
+inside the same short timeout, so on a slow connection completion may return
+nothing where `--vpc-id` would have succeeded.
