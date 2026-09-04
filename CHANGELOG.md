@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.12.0...v1.13.0) (2026-09-04)
+
+
+### Features
+
+* **enhance:** fix login and env vars, add installation by scripts ([#17](https://github.com/GreenNodeHub/greennode-cli/issues/17)) ([bb4805c](https://github.com/GreenNodeHub/greennode-cli/commit/bb4805c0b007aad98f2c11b8092cd5db2dd5728b))
+
 ## [1.12.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.11.0...v1.12.0) (2026-08-05)
 
 
