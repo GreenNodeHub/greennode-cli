@@ -92,6 +92,8 @@ func init() {
 	LoginCmd.Flags().StringVar(&flagTokenURL, "token-url", "", "Override the IAM /v2 token URL")
 	LoginCmd.Flags().StringVar(&flagScope, "scope", "", "OAuth scopes (space-separated); default openid")
 	LoginCmd.Flags().DurationVar(&flagTimeout, "timeout", defaultTimeout, "Maximum time to wait for the browser login to complete")
+	LoginCmd.Flags().StringVar(&flagMethod, "method", "", "Login method: pkce|sso (default: menu when interactive, pkce otherwise)")
+	LoginCmd.Flags().StringVar(&flagSso, "sso", "", "SSO authorize URL (non-interactive sso; implies --method sso)")
 }
 
 // resolveConfig builds a loginpkg.Config from the flag/env inputs plus the
