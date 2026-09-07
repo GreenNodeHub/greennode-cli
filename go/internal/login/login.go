@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 )
 
@@ -51,66 +52,111 @@ type Token struct {
 	ExpiresAt    time.Time
 }
 
-// openBrowser is the browser-open seam. Tests replace it with a no-op. The
-// default tries os/exec openers and prints the URL on failure (see below).
+// openBrowser is the browser-open seam used by Login's back-compat path. Tests
+// replace it with a no-op. The cmd-layer Prepare/Complete flow does NOT use
+// this seam — it calls the exported OpenBrowser directly (so tests of the cmd
+// control opening without touching this var).
 var openBrowser = defaultOpenBrowser
 
 func defaultOpenBrowser(rawurl string) error {
 	return browserRunner()(rawurl) // platform-specific, defined in opener.go
 }
 
-// Login runs the full PKCE authorization-code flow against IAM and returns the
-// minted token. It does NOT persist anything — the caller decides how/where to
-// store the refresh token. ctx bounds the whole browser wait.
-func Login(ctx context.Context, cfg Config) (Token, error) {
+// OpenBrowser opens rawurl in the user's default browser, best-effort. It is the
+// exported form of the platform opener (darwin `open` / windows `start` / linux
+// `xdg-open`), exposed so the cmd-layer Prepare/Complete flow can open the
+// browser itself without duplicating the platform logic. A non-nil error means
+// no opener was available or the launch command failed — the caller should have
+// already printed the URL so a manual open is still possible.
+func OpenBrowser(rawurl string) error { return defaultOpenBrowser(rawurl) }
+
+// Flow is a prepared PKCE login: a live loopback listener armed with a nonce,
+// the PKCE pair, and the resolved config. The browser is NOT opened by Prepare —
+// opening is the CALLER's job (the cmd prints the URL, confirms, then opens).
+// Call Complete to wait for the callback and exchange the code; call Close
+// (usually deferred) to release the loopback port if Complete is never reached
+// (e.g. the user cancels at a confirm prompt).
+type Flow struct {
+	listener *Listener
+	pair     Pair
+	nonce    string
+	cfg      Config
+}
+
+// Prepare generates the PKCE pair + nonce, binds the loopback listener, arms the
+// state-mismatch check, and returns a *Flow. It does NOT build the authorize URL
+// yet and does NOT open a browser — the caller may still override
+// cfg.AuthorizeURL (e.g. for SSO strip-and-replace) via SetAuthorizeURL before
+// calling AuthURL/Complete. Listener is bound and armed; Complete starts Serve.
+func Prepare(ctx context.Context, cfg Config) (*Flow, error) {
 	pair, err := Generate()
 	if err != nil {
-		return Token{}, fmt.Errorf("login: pkce generate: %w", err)
+		return nil, fmt.Errorf("login: pkce generate: %w", err)
 	}
 	nonce, err := randomNonce()
 	if err != nil {
-		return Token{}, fmt.Errorf("login: nonce: %w", err)
+		return nil, fmt.Errorf("login: nonce: %w", err)
 	}
-
 	l, err := NewListener()
 	if err != nil {
-		return Token{}, fmt.Errorf("login: listener: %w", err)
+		return nil, fmt.Errorf("login: listener: %w", err)
 	}
-	defer l.Close()
 	l.setExpectedState(nonce) // arm the nonce check so a mismatch serves a failure page
+	return &Flow{listener: l, pair: pair, nonce: nonce, cfg: cfg}, nil
+}
 
-	authURL := cfg.BuildAuthorizeURL(l.RedirectURI(), pair.Challenge, nonce)
-	// Trace the resolved config BEFORE opening the browser so a stale-binary /
-	// wrong-env mistake is visible immediately. client_id and redirect_uri are
-	// public; the secret is reported as presence+length only, never its value.
-	dbg("endpoints authorize=%s token=%s", cfg.AuthorizeURL, cfg.TokenURL)
-	dbg("client client_id=%s redirect_uri=%s has_basic=%t secret_len=%d", cfg.ClientID, l.RedirectURI(), cfg.ClientSecret != "", len(cfg.ClientSecret))
+// RedirectURI returns the loopback URI the listener is bound to, so the caller
+// can force a user-supplied SSO authorize URL's redirectUri param onto the
+// listener (strip-and-replace) before AuthURL is built.
+func (f *Flow) RedirectURI() string { return f.listener.RedirectURI() }
+
+// SetAuthorizeURL overrides the authorize endpoint (e.g. a user-supplied SSO
+// link after strip-and-replace). Must be called before AuthURL/Complete. A
+// clientId present in the supplied URL is adopted into cfg.ClientID so
+// BuildAuthorizeURL (which force-sets clientId from cfg.ClientID) preserves it
+// rather than stomping it back to the default — that is the strip-and-replace
+// the caller relies on. Best-effort: an unparseable URL is stored as-is.
+func (f *Flow) SetAuthorizeURL(u string) {
+	if pu, perr := url.Parse(u); perr == nil && pu != nil {
+		if cid := pu.Query().Get("clientId"); cid != "" {
+			f.cfg.ClientID = cid
+		}
+	}
+	f.cfg.AuthorizeURL = u
+}
+
+// AuthURL builds the authorize URL from the flow's config, loopback redirect,
+// PKCE challenge, and nonce. Rebuilt each call (cheap) so a SetAuthorizeURL
+// override takes effect immediately.
+func (f *Flow) AuthURL() string {
+	return f.cfg.BuildAuthorizeURL(f.listener.RedirectURI(), f.pair.Challenge, f.nonce)
+}
+
+// Complete waits for the callback (Serve) and exchanges the code for a token.
+// It does NOT open a browser. It emits the same redacted --debug trace Login
+// does, and surfaces the same errors (ErrStateMismatch, *ErrAuthzDenied,
+// transport/exchange errors, ctx errors). Returns the minted Token; persistence
+// is the CALLER's job.
+func (f *Flow) Complete(ctx context.Context) (Token, error) {
+	authURL := f.AuthURL()
+	dbg("endpoints authorize=%s token=%s", f.cfg.AuthorizeURL, f.cfg.TokenURL)
+	dbg("client client_id=%s redirect_uri=%s has_basic=%t secret_len=%d", f.cfg.ClientID, f.listener.RedirectURI(), f.cfg.ClientSecret != "", len(f.cfg.ClientSecret))
 	dbg("authorize_url %s", authURL) // carries challenge+appState only; the verifier never leaves the token POST
 
-	// Open the browser best-effort; on failure print the URL and keep waiting
-	// (headless/SSH users can complete the flow manually).
-	if oerr := openBrowser(authURL); oerr != nil {
-		fmt.Fprintf(noisyStderr, "Could not open a browser automatically.\nOpen this URL to log in:\n  %s\n", authURL)
-	}
-
-	code, _, serr := l.Serve(ctx)
+	code, _, serr := f.listener.Serve(ctx)
 	if serr != nil {
 		return Token{}, serr // ErrStateMismatch / *ErrAuthzDenied / ctx error — listener owns the nonce check
 	}
-
-	// Trace the exact grant the POST will carry. code and verifier are
-	// secret-shaped (one is a bearer grant, the other the PKCE proof) — lengths
-	// only, never the values.
-	dbg("callback ok code_len=%d state_len=%d", len(code), len(nonce))
+	dbg("callback ok code_len=%d state_len=%d", len(code), len(f.nonce))
 	dbg("exchange grant_type=authorization_code client_id=%s redirect_uri=%s code_len=%d verifier_len=%d has_basic=%t",
-		cfg.ClientID, l.RedirectURI(), len(code), len(pair.Verifier), cfg.ClientSecret != "")
+		f.cfg.ClientID, f.listener.RedirectURI(), len(code), len(f.pair.Verifier), f.cfg.ClientSecret != "")
 	tc := New(30 * time.Second)
-	resp, errE, err := tc.ExchangeCode(ctx, cfg.TokenURL, ExchangeParams{
+	resp, errE, err := tc.ExchangeCode(ctx, f.cfg.TokenURL, ExchangeParams{
 		Code:         code,
-		RedirectURI:  l.RedirectURI(),
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-		CodeVerifier: pair.Verifier,
+		RedirectURI:  f.listener.RedirectURI(),
+		ClientID:     f.cfg.ClientID,
+		ClientSecret: f.cfg.ClientSecret,
+		CodeVerifier: f.pair.Verifier,
 	})
 	if err != nil {
 		dbg("exchange transport_error=%v", err)
@@ -122,26 +168,44 @@ func Login(ctx context.Context, cfg Config) (Token, error) {
 	}
 	dbg("exchange http_ok status=2xx body_len=%d", len(resp.Raw))
 
-	accessToken, err := cfg.AccessTokenFrom(resp.Raw)
+	accessToken, err := f.cfg.AccessTokenFrom(resp.Raw)
 	if err != nil {
 		return Token{}, fmt.Errorf("login: %w", err)
 	}
-
 	tok, refreshToken, err := decodeTokenBody(resp.Raw, accessToken)
 	if err != nil {
-		// access_token parsed fine but refresh/expires decode failed — partial.
 		dbg("decode failed err=%v", err)
 		return Token{AccessToken: accessToken, TokenType: "Bearer"}, fmt.Errorf("login: token body decode: %w", err)
 	}
 	dbg("decoded access_token_len=%d token_type=%s refresh_present=%t expires_at=%s",
 		len(tok.AccessToken), tok.TokenType, refreshToken != "", tok.ExpiresAt.Format(time.RFC3339))
-
 	if refreshToken == "" {
-		// Partial success: access token is valid but IAM returned no refresh
-		// token. Warn the caller; persistence is the caller's call regardless.
 		fmt.Fprintf(noisyStderr, "Warning: IAM returned no refresh_token — re-login needed after expiry.\n")
 	}
 	return tok, nil
+}
+
+// Close releases the loopback port. Safe to call multiple times (idempotent).
+// Call it (usually deferred) even when the user cancels before Complete.
+func (f *Flow) Close() error { return f.listener.Close() }
+
+// Login runs the full PKCE authorization-code flow against IAM and returns the
+// minted token — the back-compat wrapper over Prepare/Complete. It DOES open the
+// browser best-effort (the original behavior), printing the URL on failure.
+// Existing callers (and the login_test.go suite) keep working unchanged. The
+// staged Prepare/Complete path is what the `grn login` cmd now uses so it can
+// own the UX (show link → confirm → open → spinner → wait).
+func Login(ctx context.Context, cfg Config) (Token, error) {
+	f, err := Prepare(ctx, cfg)
+	if err != nil {
+		return Token{}, err
+	}
+	defer f.Close()
+	authURL := f.AuthURL()
+	if oerr := openBrowser(authURL); oerr != nil {
+		fmt.Fprintf(noisyStderr, "Could not open a browser automatically.\nOpen this URL to log in:\n  %s\n", authURL)
+	}
+	return f.Complete(ctx)
 }
 
 // tokenBody is the subset of the /v2 response Login decodes (snake_case).
