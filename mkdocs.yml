@@ -229,6 +229,30 @@ nav:
       - placement-group: commands/vserver/placement-group.md
     - Images:
       - user-image: commands/vserver/user-image.md
+  - vDB Commands:
+    - Overview: commands/vdb/index.md
+    - Relational:
+      - instance: commands/vdb/relational-instance.md
+      - catalog: commands/vdb/relational-catalog.md
+      - backup: commands/vdb/relational-backup.md
+      - configuration: commands/vdb/relational-configuration.md
+      - backup-storage: commands/vdb/relational-backup-storage.md
+    - PostgreSQL Cluster:
+      - cluster: commands/vdb/postgresql-cluster.md
+      - catalog: commands/vdb/postgresql-catalog.md
+      - backup: commands/vdb/postgresql-backup.md
+    - MemoryStore:
+      - instance: commands/vdb/memorystore-instance.md
+      - catalog: commands/vdb/memorystore-catalog.md
+      - backup: commands/vdb/memorystore-backup.md
+      - configuration: commands/vdb/memorystore-configuration.md
+      - backup-storage: commands/vdb/memorystore-backup-storage.md
+    - Kafka:
+      - cluster: commands/vdb/kafka-cluster.md
+      - topic: commands/vdb/kafka-topic.md
+      - user: commands/vdb/kafka-user.md
+      - configuration: commands/vdb/kafka-configuration.md
+      - catalog: commands/vdb/kafka-catalog.md
   - Development:
     - Contributing: development/contributing.md
     - Architecture & Adding a Service: development/architecture.md

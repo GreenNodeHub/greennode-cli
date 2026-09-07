@@ -15,10 +15,13 @@ var REGIONS = map[string]map[string]string{
 	"HCM-3": {
 		"vks_endpoint":     "https://vks.api.vngcloud.vn",
 		"vserver_endpoint": "https://hcm-3.api.vngcloud.vn/vserver/vserver-gateway",
+		"vdb_endpoint":     "https://vdb-gateway.vngcloud.vn",
 	},
 	"HAN": {
 		"vks_endpoint":     "https://vks-han-1.api.vngcloud.vn",
 		"vserver_endpoint": "https://han-1.api.vngcloud.vn/vserver/vserver-gateway",
+		// No vdb_endpoint: vdb is not offered in HAN yet. GetEndpoint returns a
+		// clear "endpoint not found for service 'vdb' in region 'HAN'" error.
 	},
 }
 
