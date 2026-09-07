@@ -107,6 +107,26 @@ grn --profile staging vks list-clusters
 
 For more configuration options, see the [Configuration Guide](https://greennodehub.github.io/greennode-cli/configuration/).
 
+### Login
+
+Log in to GreenNode against VNG IAM with `grn login`. Two methods are available,
+chosen via an interactive menu or the `--method`/`--sso` flags:
+
+- **pkce** (default) — browser + local-callback PKCE authorization-code flow.
+- **sso** — paste an SSO/IdP login link; the CLI runs PKCE against that authorize URL.
+
+The browser is **not** auto-opened: the login URL is printed and, when interactive,
+`ENTER` opens it (`s` to skip; non-TTY skips the prompt and just prints the URL).
+A six-dot spinner runs on stderr while waiting for the callback. The refresh token
+is stored in `~/.greennode/credentials` (0600); the access token stays in memory.
+Use `--profile` for separate logins.
+
+```bash
+grn login
+```
+
+See the [Login guide](https://greennodehub.github.io/greennode-cli/commands/login/) for all flags.
+
 ### Basic Commands
 
 The GreenNode CLI uses a multi-part command structure:

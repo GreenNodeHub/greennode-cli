@@ -27,6 +27,12 @@ go/
 │   │   ├── list.go                  # grn configure list
 │   │   ├── get.go                   # grn configure get
 │   │   └── set.go                   # grn configure set
+│   ├── login/
+│   │   ├── login.go                 # LoginCmd + flag registration (--method/--sso/--iam-env/--client-id/--timeout) + runLogin staged Prepare/Complete UX (menu → print URL → ENTER-to-confirm → spinner → Complete → persist)
+│   │   ├── methods.go               # resolveMethod (precedence: --sso > --method > menu(TTY)/pkce(non-TTY)) + isInteractive
+│   │   ├── prompts.go               # promptMenu / promptSSOLink / confirmOpen (ENTER-to-open, s=skip, EOF=cancel)
+│   │   ├── sso.go                   # stripRedirectURI (rewrite redirectUri to loopback; discard link clientId, use baked)
+│   │   └── flow_seam.go             # loginFlow interface (Prepare/Complete/Close seam for tests)
 │   └── vks/
 │       ├── vks.go                   # VKS parent command
 │       ├── helpers.go               # Shared utilities (client, output, parsing)
@@ -64,6 +70,7 @@ go/
 │   │   ├── config.go               # Config + credentials loading (INI)
 │   │   └── writer.go               # ConfigFileWriter (0600 perms)
 │   ├── auth/token.go                # OAuth2 Client Credentials (IAM)
+│   ├── login/                       # PKCE auth-code flow (staged Prepare/Complete/Flow.Close + OpenBrowser; SSO = AuthorizeURL override)
 │   ├── client/client.go             # HTTP client with retry + auto-refresh
 │   ├── formatter/formatter.go       # JSON/Table/Text + JMESPath
 │   ├── kubeconfig/
@@ -79,6 +86,8 @@ go/
 │   │   ├── cliinput/                # interactive prompts
 │   │   ├── jsonslice/               # typed JSON slice helper
 │   │   └── output/                  # table/json/id + color + banner
+│   ├── ui/
+│   │   └── spinner/spinner.go       # six-dot login-wait animation (stderr, ctx-cancelable, stdlib only)
 │   └── validator/validator.go       # ID format validation
 ├── go.mod, go.sum
 

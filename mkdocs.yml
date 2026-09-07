@@ -32,6 +32,7 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Configuration: configuration.md
+  - Login: commands/login.md
   - Usage:
     - Getting Started: usage/getting-started.md
     - Output Formatting: usage/output.md
