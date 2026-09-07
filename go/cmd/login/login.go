@@ -20,6 +20,7 @@ import (
 
 	"github.com/greennodehub/greennode-cli/internal/config"
 	loginpkg "github.com/greennodehub/greennode-cli/internal/login"
+	"github.com/greennodehub/greennode-cli/internal/ui/spinner"
 )
 
 // The IAM endpoint presets per environment live in loginpkg.IamEndpoints
@@ -196,49 +197,77 @@ func runLogin(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	// The global --debug flag gates the library's stderr trace. Restored on
-	// return so a debug run never leaves the seam armed for later invocations.
 	if dbg, _ := cmd.Flags().GetBool("debug"); dbg {
 		loginpkg.SetDebug(true)
 		defer loginpkg.SetDebug(false)
 	}
+
+	interactive := isStdinInteractive()
+	method, ssoURL, err := resolveMethod(flagMethod, flagSso, bufio.NewReader(os.Stdin), interactive)
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
 
-	// The library mints and returns the Token; persistence is our job. Fold the
-	// refresh token + non-secret refresh context (iam_env) into the per-profile
-	// credentials INI so a later usage slice can refresh without re-prompting.
-	// The client_id is NOT persisted — it is a public id baked into source and
-	// resolved from iam_env at refresh (internal/login.ClientIDForEnv). The
-	// access token is NEVER persisted — only the refresh token is (0600). On
-	// partial success (no refresh_token) there is nothing to persist; the
-	// library already warned on stderr.
-	tok, err := loginpkg.Login(ctx, cfg)
+	flow, err := newFlow(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer flow.Close()
+
+	// SSO: force the user-supplied link's redirectUri onto our loopback listener
+	// so the callback lands on us; inject the baked client_id if the link omits
+	// it. PKCE uses cfg.AuthorizeURL as resolved from the iam-env preset.
+	if method == "sso" {
+		bakedCID, _ := loginpkg.ClientIDForEnv(iamEnv)
+		overridden, sErr := stripRedirectURI(ssoURL, flow.RedirectURI(), bakedCID)
+		if sErr != nil {
+			return sErr
+		}
+		flow.SetAuthorizeURL(overridden)
+	}
+
+	authURL := flow.AuthURL()
+	fmt.Printf("Open this URL to log in:\n  %s\n", authURL)
+
+	// ENTER-to-open-browser (interactive only). Non-interactive: the link is
+	// already printed; the user opens it on the same machine manually.
+	if interactive {
+		open, cerr := confirmOpen(bufio.NewReader(os.Stdin))
+		if cerr != nil {
+			fmt.Fprintln(os.Stderr, "Login canceled.")
+			return cerr
+		}
+		if open {
+			if oerr := openBrowserFn(authURL); oerr != nil {
+				fmt.Fprintf(os.Stderr, "Could not open a browser automatically; open the URL above yourself.\n")
+			}
+		}
+	}
+
+	// Animate the wait so the user sees the CLI is working (stderr, ctx-cancelable).
+	sp := spinner.New(ctx, os.Stderr)
+	sp.Start("Waiting for login completion")
+	tok, err := flow.Complete(ctx)
+	sp.Stop()
 	if err != nil {
 		return err
 	}
 
 	profile := resolveProfile(cmd)
 	if tok.RefreshToken != "" {
-		// Persist the RESOLVED iam-env (flag > GRN_IAM_ENV > prod) — not the raw
-		// flag — so refresh targets the environment the user actually logged in
-		// against, even when they selected it via GRN_IAM_ENV.
+		// Persist the RESOLVED iam-env (flag > GRN_IAM_ENV > prod) so refresh
+		// targets the env the user logged in against. auth_mode=user for both
+		// pkce and sso (both are PKCE-under-the-hood; refresh is identical).
 		if err := config.NewConfigFileWriter().WriteLoginToken(profile, tok.RefreshToken, tok.ExpiresAt, "user", iamEnv); err != nil {
 			return fmt.Errorf("persist login token: %w", err)
 		}
 	}
 
-	// Prompt for the default region — same UX as `grn configure` — so a
-	// login-only profile is immediately usable for vks/vserver without a
-	// separate `grn configure` (a login-only profile otherwise hits "region is
-	// not configured" on the first service call). The prompt defaults to the
-	// profile's existing region, validates against config.REGIONS, and
-	// preserves the existing output/project_id. A prompt/IO failure is
-	// non-fatal: login already succeeded.
 	region, regionErr := promptDefaultRegion(profile, bufio.NewReader(os.Stdin))
 
-	// Do not echo the access token (credential hygiene). Report only the profile
-	// the refresh token landed in + the access-token expiry.
 	fmt.Printf("Logged in. Refresh token saved to profile '%s'.", profile)
 	if !tok.ExpiresAt.IsZero() {
 		fmt.Printf(" Access token expires %s.", tok.ExpiresAt.Format(time.RFC3339))
