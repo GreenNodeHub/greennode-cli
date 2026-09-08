@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBuildCreateBody(t *testing.T) {
@@ -106,5 +107,37 @@ func TestListDoesNotOfferPaginationFlags(t *testing.T) {
 	}
 	if listCmd.Flags().Lookup("name") == nil {
 		t.Error("`certificate list` should offer --name (the API honours it)")
+	}
+}
+
+// The list table carries no expiry column: expiredAt is null in practice, and
+// notAfter is epoch milliseconds that the table layer cannot format. Expiry is
+// surfaced by `certificate get` and by the delete preview instead.
+func TestCertificateTableHasNoExpiryColumn(t *testing.T) {
+	for _, col := range tableColumns {
+		if col == "expiredAt" {
+			t.Error("expiredAt is null in practice; it renders a blank column that hides expired certificates")
+		}
+		if col == "notAfter" {
+			t.Error("notAfter is epoch milliseconds and the table layer cannot format it")
+		}
+	}
+}
+
+func TestExpiryOfPrefersNotAfterAndFlagsExpiry(t *testing.T) {
+	past := float64(time.Now().Add(-48 * time.Hour).UnixMilli())
+	got := expiryOf(map[string]interface{}{"notAfter": past, "expiredAt": nil})
+	if !strings.Contains(got, "EXPIRED") {
+		t.Errorf("expiryOf = %q, want it to flag an expired certificate", got)
+	}
+
+	future := float64(time.Now().Add(48 * time.Hour).UnixMilli())
+	got = expiryOf(map[string]interface{}{"notAfter": future})
+	if strings.Contains(got, "EXPIRED") {
+		t.Errorf("expiryOf = %q, want no EXPIRED marker for a valid certificate", got)
+	}
+
+	if got := expiryOf(map[string]interface{}{}); got != "unknown" {
+		t.Errorf("expiryOf with neither field = %q, want \"unknown\"", got)
 	}
 }

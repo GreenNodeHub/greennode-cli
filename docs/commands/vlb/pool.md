@@ -115,26 +115,62 @@ grn vlb pool create
 !!! warning "The service requires more than the API reference suggests"
     `timeout`, `interval`, `healthyThreshold` and `unhealthyThreshold` are
     **always required** — the service returns HTTP 500, not a validation error,
-    if any is missing. With `healthCheckProtocol` set to `HTTP` or `HTTPS` you
-    must also give `healthCheckPath`, `healthCheckMethod`, `successCode` and
-    `httpVersion`; and `httpVersion=1.1` additionally requires `domainName`.
-    The CLI checks all of this before sending and tells you exactly what is
-    missing.
+    if any is missing. The CLI checks everything below before sending and tells
+    you exactly what is wrong.
+
+    **Required per protocol**
+
+    - `HTTP` also needs `healthCheckPath`, `healthCheckMethod`, `successCode`
+      and `httpVersion`.
+    - `HTTPS` needs only `healthCheckMethod` in addition to the four above.
+    - `TCP` and `PING-UDP` need nothing more.
+
+    **Forbidden combinations**
+
+    - `TCP` and `PING-UDP` **must not** carry `healthCheckPath`,
+      `healthCheckMethod`, `successCode`, `domainName` or `httpVersion`.
+    - `httpVersion=1.1` **requires** `domainName`; `httpVersion=1.0`
+      **forbids** it.
+    - `timeout` must be strictly **less than** `interval`.
+
+    **Protocol pairing**
+
+    - A `UDP` pool must use `healthCheckProtocol=PING-UDP`, and `PING-UDP` is
+      valid only for a `UDP` pool.
+    - The load balancer type narrows the choice further — an Application
+      (Layer 7) load balancer accepts `TCP` or `HTTP`, a Network (Layer 4) one
+      accepts `TCP`, `PING-UDP`, `HTTP` or `HTTPS`. The CLI does not know the
+      type without an extra request, so that one is reported by the API.
 
 `--algorithm` (string)
 : How requests are distributed. Default: `ROUND_ROBIN`.
 : - Possible values: `ROUND_ROBIN`, `LEAST_CONNECTIONS`, `SOURCE_IP`
 
 `--stickiness` (boolean)
-: Enable sticky sessions. Default: `false`.
+: Enable sticky sessions. **HTTP pools only.** Default: `false`.
 
 `--tls-encryption` (boolean)
-: Encrypt traffic to the members. Default: `false`.
+: Encrypt traffic to the members. **HTTP pools only.** Default: `false`.
+
+!!! note "Both flags apply to HTTP pools only"
+    The API requires these two fields on an HTTP pool and forbids them on any
+    other protocol — it tests for their presence, so sending `false` is rejected
+    just as `true` would be. The CLI therefore sends them only when
+    `--protocol HTTP`, and refuses the flags with a clear message otherwise
+    rather than dropping them silently.
+
+    Pool protocols are fixed by the load balancer type: a **Layer 7**
+    (Application) load balancer takes `HTTP` pools, a **Layer 4** (Network) one
+    takes `TCP`, `UDP` or `PROXY`. So these two flags are only ever usable on a
+    Layer 7 load balancer.
 
 `--member` (struct, repeatable)
 : A backend server in the pool.
 : - Members: `ipAddress`, `port`, `monitorPort`, `weight`, `name`, `backup`
 : - Constraints: `ipAddress`, `port` and **`monitorPort`** are all required. Set `monitorPort` to the same value as `port` unless health checks target a different port.
+: - `backup` is also required by the API, but the CLI fills in `false` when you
+  omit it, so you only pass it for an actual backup member. `weight` defaults to
+  `0` server-side.
 : - Shorthand: `ipAddress=10.0.0.4,port=80,monitorPort=80,weight=1,backup=false`
 : - JSON: `{"ipAddress":"10.0.0.4","port":80,"monitorPort":80,"weight":1,"backup":false}`
 
@@ -152,6 +188,7 @@ grn vlb pool create --load-balancer-id lb-1234abcd \
     --member ipAddress=10.0.0.5,port=80,monitorPort=80,backup=true
 
 # HTTP health check — needs path, method, successCode and httpVersion too
+# (httpVersion=1.0 must NOT be given a domainName; 1.1 requires one)
 grn vlb pool create --load-balancer-id lb-1234abcd \
     --name web-pool --protocol HTTP --algorithm ROUND_ROBIN \
     --health-monitor healthCheckProtocol=HTTP,healthCheckPath=/healthz,healthCheckMethod=GET,successCode=200,httpVersion=1.0,timeout=5,interval=30,healthyThreshold=3,unhealthyThreshold=3 \

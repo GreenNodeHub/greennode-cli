@@ -13,3 +13,13 @@ After a release tag `vX.Y.Z` exists (with binaries + `SHA256SUMS` attached), run
 - [ ] **Windows (arm64, if hardware available):** `install.ps1` → `grn --version` correct.
 
 If a one-liner fails: check the release has 6 binaries + `SHA256SUMS`, the versioned filenames match `grn-<plat>-vX.Y.Z[.exe]`, and the `SHA256SUMS` line for the platform is present. Do not announce the release until all passing one-liners pass.
+
+## Gating a service that is still behind a build tag
+
+`grn vlb` is registered behind `//go:build !vks_only` (`go/cmd/register_vlb.go`), so it is built and tested in CI but excluded from the release binary, which `release.yml` builds with `-tags vks_only`. The same applies to `grn vserver`.
+
+**Before removing that tag for a service, its live E2E runbook must have been run end to end against a real project**, because the Go tests cannot reach the `RunE` network path (resolve → request → output) — `cli.NewTokenProvider` only targets the prod/dev IAM presets, so a command cannot be pointed at a local server without real credentials.
+
+- [ ] **VLB:** run [`tests/vlb/RUNBOOK.md`](tests/vlb/RUNBOOK.md) in full (~2 hours, creates 3–4 real load balancers). Fill in `tests/vlb/RESULTS.md` from `RESULTS.template.md` and attach it to the PR that removes the tag. All six P0 regressions must be green, teardown must be clean, and the credentials used for the run must be rotated afterwards.
+
+Any real bug the runbook finds gets fixed, pinned by a unit test, and documented in the service's `CLAUDE.md` plus `docs/commands/<service>/` before the tag comes off — recording it in `RESULTS.md` is not enough.

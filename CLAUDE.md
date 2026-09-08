@@ -151,6 +151,15 @@ scripts/
 ├── uninstall.ps1        # one-liner uninstaller (Windows PowerShell)
 ├── uninstall.cmd        # one-liner uninstaller (Windows pure-CMD)
 └── new-product          # scaffold a new product command
+
+tests/
+├── install.test.{sh,ps1,cmd}    # hermetic installer harnesses (run in CI)
+├── uninstall.test.{sh,ps1,cmd}
+├── release.test.sh              # release-artifact harness
+└── vlb/                         # live E2E runbook — release gate for `grn vlb`
+    ├── RUNBOOK.md               # all 38 commands, manual, ~2h, creates real LBs
+    ├── env.example.sh           # copy to env.sh (gitignored); NEVER holds credentials
+    └── RESULTS.template.md      # copy to RESULTS.md (gitignored), attach to the PR
 ```
 
 ## Code conventions

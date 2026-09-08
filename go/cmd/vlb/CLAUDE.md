@@ -43,12 +43,27 @@ truth for the API is `openapi-vlb.json` at the repo root.
   rather than left as flags that silently do nothing, and a test in
   `loadbalancer/builders_test.go` pins that. Re-add them in the flat form (which
   `name` proves is the right shape) once the backend implements them.
-- **Response envelopes vary**: single resources come back as `{"data": {...}}`,
-  list endpoints under a load balancer as `{"data": [...]}`, and the paginated
-  top-level lists (`loadBalancers`, `cas`, `packages`) as
-  `{"listData": [...], "page": n, "totalItem": n}`. Each package has an
-  `unwrapData` helper; completers pass the right envelope key to
-  `cli.ExtractCompletions`.
+- **Response envelopes vary — five shapes, not three.** Single resources come
+  back as `{"data": {...}}`, list endpoints under a load balancer as
+  `{"data": [...]}`, and the paginated top-level lists (`loadBalancers`, `cas`,
+  `packages`) as `{"listData": [...], "page": n, "totalItem": n}`. Beyond those:
+  `list-scale-history` and `list-by-subnet` return a **bare array**, and
+  `get-clone-metadata` and `GET /cas/{caId}` return a **bare object** — while
+  `POST /cas` wraps in `{"data": ...}`, so `certificate get --query uuid` works
+  but `certificate create` needs `data.uuid`. Each package has an `unwrapData`
+  helper; completers pass the right envelope key to `cli.ExtractCompletions`.
+- **`POST` keys the new id under `uuid`**, not a resource-named key:
+  `lb create` returns `{"uuid": "lb-..."}`. Same for pool, listener and policy.
+- **`zoneId` is `null` in `lb list`** for every load balancer even though
+  `--zone-id` filters correctly server-side; `lb get` returns a full `zone`
+  object instead.
+- **`displayStatus` casing differs per resource**: load balancer `ACTIVE`,
+  listener/pool/member `HEALTHY`, health monitor `active`. Compare
+  case-insensitively, per resource.
+- **`CREATING-BILLING` is a fourth transient load-balancer status**, seen
+  between `CREATING` and `ACTIVE`. `evaluateActive` survives it only because it
+  treats unrecognised statuses as keep-polling; do not turn that into an
+  allowlist.
 - **PUTs are not partial.** `updateListener`, `updatePool` and `updateL7Policy`
   declare required fields (the three listener timeouts; the pool algorithm plus
   four health-monitor thresholds; the policy action). Those commands therefore
@@ -75,10 +90,36 @@ either an HTTP 500 or a 400 naming a field the user never supplied, so
 
 - **Health monitor**: `timeout`, `interval`, `healthyThreshold` and
   `unhealthyThreshold` are always required. Omitting any of them yields
-  **HTTP 500**, not a validation error.
-- **HTTP/HTTPS health monitor** additionally requires `healthCheckPath`,
-  `healthCheckMethod`, `successCode` and `httpVersion`.
-- `httpVersion=1.1` additionally requires `domainName`.
+  **HTTP 500**, not a validation error. `CreateHMonitorRequest` also bounds them:
+  thresholds 2-10, `timeout` 2-120s, `interval` 5-3600s. The CLI does not check
+  those ranges, so an out-of-range value is answered by the API.
+- **An HTTP health monitor** additionally requires `healthCheckPath`,
+  `healthCheckMethod`, `successCode` and `httpVersion`
+  (`CreatePoolValidator.validateHealthCheck`). It is keyed on the *health check*
+  protocol, not the pool protocol. **HTTPS requires only `healthCheckMethod`**:
+  `validateMethod` rejects a nil method for both, but `validateHttpVersion`
+  returns early on nil and only the HTTP branch demands path/successCode. The
+  CLI used to require all four for HTTPS and so refused requests the API
+  accepts.
+- `httpVersion=1.1` **requires** `domainName`; `httpVersion=1.0` **forbids** it.
+- **A TCP or PING-UDP monitor forbids** `healthCheckPath`, `healthCheckMethod`,
+  `successCode`, `domainName` and `httpVersion` — sending any of them is a 400.
+- **`timeout` must be strictly less than `interval`** ("Timeout must be less
+  than interval"), checked on create only — `UpdatePoolValidator` does not
+  re-check it, so neither does the CLI.
+- **A UDP pool must pair with a `PING-UDP` health check**, and `PING-UDP` is
+  valid only for a UDP pool (`validateHealthCheckProtocol`). The rule holds
+  without knowing the load balancer type, so the CLI enforces it.
+- `healthCheckMethod` must be `GET`/`POST`/`PUT`; `httpVersion` must be
+  `1.0`/`1.1` when present.
+
+  All of the above are enforced client-side by `validateHealthMonitor` and
+  `validateMonitorFieldCombinations` (`pool/create.go`), the latter reused by
+  `pool update` against the monitor's *stored* protocol, since the backend
+  re-runs the same check there. What the CLI deliberately leaves to the API:
+  the numeric ranges, and which health-check protocols each **load balancer
+  type** allows (L7: `TCP`/`HTTP`; L4: `TCP`/`PING-UDP`/`HTTP`/`HTTPS`) — that
+  needs the LB type, which `pool create` does not fetch.
 - **Member `monitorPort` is mandatory**, though the spec lists only
   `ipAddress`, `port` and `backup` as required. Omitting it returns
   `400 members[N].monitorPort: Invalid port number` — baffling, since the user
@@ -102,9 +143,48 @@ either an HTTP 500 or a 400 naming a field the user never supplied, so
   `400 Missing required rules property` — an empty array is not enough, so the
   CLI requires `--rule` on create. There is no catch-all policy; the listener's
   `--default-pool-id`/`--default-action` handle unmatched traffic.
-- **`defaultPoolName` is always `null`** on a listener, even with a default pool
-  attached — the listener table shows `defaultPoolId` instead of an always-blank
-  column.
+- **`defaultPoolName` IS populated** when a default pool is attached — it is
+  `null` only when there is none. Verified live 2026-09-08 against an
+  Application load balancer whose listener had a default pool attached: the
+  service returned the pool's name, not null. An earlier note here
+  claimed it was always null; that was wrong, and the listener table still shows
+  the unreadable `defaultPoolId` because of it (see Open defects). Note
+  `listener/delete.go` already prints `defaultPoolName` in its preview.
+- **`stickiness` and `tlsEncryption` are gated on the pool protocol.** Backend
+  `CreatePoolValidator.validateNonPoolConfiguration` tests `!= null`, so sending
+  `false` is as fatal as `true`: an HTTP pool **requires** both, a non-HTTP pool
+  **forbids** both. `validatePoolProtocol` additionally restricts Layer 7 to
+  `HTTP` and Layer 4 to `TCP`/`UDP`/`PROXY`. `UpdatePoolValidator` applies the
+  same check using the pool's stored protocol, so echoing the service's own
+  `stickiness: false` back on a TCP pool is rejected too (see Open defects).
+- **Member `backup` is required.** Omitting it returns
+  `400 members[0].backup: must not be null;` — the spec agrees it is required,
+  but `validateMembers` does not check it (see Open defects).
+- **The inline `--listener`/`--pool` on `lb create` are all-or-nothing** —
+  supplying one gives `400 Both listener and pool properties must be required
+  (non null) or both are not required (null)`. The inline listener also requires
+  all three timeouts (the standalone `listener create` defaults them to 50/50/5;
+  the inline struct has no defaults), and the inline pool requires
+  `healthMonitor`, which is a nested object and therefore **impossible in the
+  `k=v` shorthand** — `--pool` is JSON-only in practice (see Open defects).
+- **`CREATING-BILLING` is a fourth transient status.** Observed live between
+  `CREATING` and `ACTIVE`. The waiter survives it only because `evaluateActive`
+  treats unrecognised statuses as keep-polling; do not turn that into a strict
+  allowlist.
+- **There are five response envelopes, not three.** Besides `{"data": {...}}`,
+  `{"data": [...]}` and `{"listData": [...], ...}`: `list-scale-history` and
+  `list-by-subnet` return a **bare array**, and `get-clone-metadata` and
+  `GET /cas/{caId}` return a **bare object** — while `POST /cas` wraps in
+  `{"data": ...}`, so `certificate get --query uuid` works but
+  `certificate create` needs `data.uuid`.
+- **`POST` responses key the new id under `uuid`** (not a resource-named key):
+  `lb create` -> `{"uuid": "lb-..."}`. Same for pool/listener/policy create.
+- **`zoneId` is `null` in `lb list`** for every load balancer, though
+  `--zone-id` filters correctly server-side. `lb get` returns a full `zone`
+  object instead. The list table cannot show a zone column.
+- **`displayStatus` casing differs per resource**: load balancer `ACTIVE`,
+  listener/pool/member `HEALTHY`, health monitor `active` (lowercase). Compare
+  case-insensitively, per resource.
 - **L7 policy `position` starts at 1**, even though `ReorderPolicyRequest.position`
   is documented as zero-based. The reorder endpoint is **not exposed by the CLI**
   at all: the single live attempt (with `position=0`) was accepted with HTTP 200,
@@ -166,7 +246,17 @@ output). `cli.NewTokenProvider` only targets the prod/dev IAM presets, so a
 command cannot be pointed at a local server without real credentials. That path
 was exercised by hand against a real HCM-3 project on 2026-09-08 — a full
 create/update/delete lifecycle — which is where every quirk documented above
-came from. Repeat that before shipping.
+came from.
+
+**`tests/vlb/RUNBOOK.md` is that run, written down.** It covers all 38 commands
+across happy path, validation errors, dry-run, output formats and completion,
+and carries the P0 regressions for the bugs that actually happened here: the
+two-GET pool update, the TLS-field skip on a non-HTTPS listener, the non-partial
+listener PUT, and the three member-update modes. Run it in full and attach
+`RESULTS.md` before removing the `vks_only` tag — `RELEASING.md` gates on it.
+
+It was last run on 2026-09-08 against a real HCM-3 project. That run found five
+release blockers, all since fixed — see "Live-run history" below.
 
 ## Waiters
 
@@ -185,8 +275,40 @@ Naming note: the command is `loadbalancer wait-active`, not vks's
 `wait loadbalancer-active`, to keep VLB's noun-group-then-verb shape. The leaf
 verb is still the canonical `wait`, so `cmd/conventions_test.go` is satisfied.
 
+## Live-run history
+
+**2026-09-08, a real HCM-3 project.** `tests/vlb/RUNBOOK.md` found five
+release blockers; all five are **fixed and re-verified live** on the same
+project. Keep the tests that pin them — each one shipped because nothing pinned
+it.
+
+| Defect | Fix | Pinned by |
+|---|---|---|
+| `pool create` sent `stickiness`/`tlsEncryption` unconditionally, so **no** pool could be created on a Layer 4 load balancer (every legal L4 protocol 400'd, and the one protocol the CLI could send was illegal on L4) | gate both keys on `protocol == "HTTP"`; refuse the flags for other protocols instead of dropping them | `pool/builders_test.go` `TestStickinessIsGatedOnThePoolProtocol` |
+| `pool update` echoed the service's own `stickiness: false` back, breaking every non-HTTP pool | gate on `current["protocol"]` from `GET /pools/{id}` | same test |
+| `pool member update --member ''` returned the very error prescribing it, so a pool could not be emptied | guard on `Changed("member")`, not `len(memberFlags)` — pflag collapses an empty `stringArray` occurrence to an empty slice | `member/builders_test.go` `TestEmptyMemberFlagReachesTheBuilderAsPflagDeliversIt`, which drives real pflag rather than a hand-written `[]string{""}` |
+| `members[].backup` (`@NotNull` boxed Boolean) produced a 400 naming a field the user never set | fill in `false`; its default is unambiguous, unlike `monitorPort`'s | `TestMemberBackupDefaultsToFalse`, `TestMemberUpdateFillsInBackup` |
+| Both inline examples in `lb create --help` always failed; `--pool` shorthand was structurally impossible | `MarkFlagsRequiredTogether("listener","pool")`, default the three inline listener timeouts to 50/50/5, document `--pool` as JSON-only | `dryrun_test.go` (required-together cases + the defaulted timeouts) |
+
+Two table columns read fields that are null in practice; both now read the
+populated one:
+
+- the listener table shows `defaultPoolName` (the service does populate it — an
+  earlier note here wrongly said it never did)
+- `certificate list` has **no expiry column** at all. `expiredAt` was null on
+  17 of 18 certificates and contradicted its own `notAfter` on the one that was
+  set, so a column reading it rendered blank and hid that 10 had already
+  expired; `notAfter` is correct but is epoch milliseconds and the output layer
+  does no per-column value formatting, so it rendered as a bare integer. Both
+  were worse than omitting it. Expiry is surfaced by `certificate get` and by
+  `certificate delete`, whose preview formats `notAfter` and marks `(EXPIRED)`.
+  `formatter.cellString` was added along the way so that large JSON numbers in
+  any product's table stop rendering as `1.781232534e+12`.
+
 ## Release gate
 
 `grn vlb` is registered in `cmd/register_vlb.go` behind `//go:build !vks_only`,
 so it is built and tested in CI but excluded from the public release binary
-(built with `-tags vks_only`). Remove that tag when VLB is ready to ship.
+(built with `-tags vks_only`). Remove that tag when VLB is ready to ship —
+after `tests/vlb/RUNBOOK.md` has been run end to end against a real project and
+its `RESULTS.md` is attached to the PR that removes it.

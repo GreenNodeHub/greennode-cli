@@ -45,3 +45,21 @@ go test ./...
 > On macOS 26 (Darwin 25) with Go 1.22, `go test` may abort with
 > `dyld: missing LC_UUID`. Use the external linker:
 > `CGO_ENABLED=1 go test -ldflags='-linkmode=external' ./...`
+
+### Live end-to-end runbooks
+
+`go test ./...` cannot reach a command's `RunE` network path (resolve → request → output):
+`cli.NewTokenProvider` only targets the prod/dev IAM presets, so a command cannot be pointed at a
+local server without real credentials. Services still behind a build tag therefore carry a manual
+runbook that is run against a real project before the tag comes off:
+
+| Service | Runbook | Gate |
+|---|---|---|
+| VLB | `tests/vlb/RUNBOOK.md` | run in full before removing `-tags vks_only`; see `RELEASING.md` |
+
+These runbooks create real, billable resources and take hours — do not run one casually. Everything
+they create is prefixed and tagged so teardown can verify nothing leaked. Copy
+`RESULTS.template.md` to `RESULTS.md` (gitignored) and attach it to the PR that removes the tag.
+
+The installer and release-artifact harnesses in `tests/` (`install.test.sh`, `release.test.sh`, and
+their PowerShell/CMD counterparts) are hermetic and run in CI.

@@ -247,3 +247,23 @@ func TestBuildUpdateBodyOmitsTLSFieldsOnPlainHTTP(t *testing.T) {
 		}
 	})
 }
+
+// The service does populate defaultPoolName when a default pool is attached — an
+// earlier comment here claimed it was always null, so the table showed a raw
+// UUID instead. Verified live: the service returns the pool's name here.
+func TestListenerTableShowsThePoolName(t *testing.T) {
+	for _, col := range tableColumns {
+		if col == "defaultPoolId" {
+			t.Error("table shows defaultPoolId; defaultPoolName is populated and reads better")
+		}
+	}
+	found := false
+	for _, col := range tableColumns {
+		if col == "defaultPoolName" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("table is missing defaultPoolName")
+	}
+}

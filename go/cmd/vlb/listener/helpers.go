@@ -10,10 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// defaultPoolId, not defaultPoolName: the service returns the name as null even
-// when a default pool is attached, which rendered an always-blank column.
+// defaultPoolName, not defaultPoolId: the service does populate the name when a
+// default pool is attached (verified live — an earlier note here claimed it was
+// always null, which was wrong), and a name reads better than a UUID. It is null
+// only when the listener genuinely has no default pool. Scripts wanting the id
+// can still reach it with --query, and `listener delete` prints the name too.
 var tableColumns = []string{
-	"uuid", "name", "protocol", "protocolPort", "defaultPoolId",
+	"uuid", "name", "protocol", "protocolPort", "defaultPoolName",
 	"defaultAction", "displayStatus",
 }
 

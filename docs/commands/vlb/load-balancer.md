@@ -157,16 +157,30 @@ grn vlb loadbalancer create
 : - JSON: `{"key":"env","value":"prod"}`
 
 `--listener` (struct)
-: An initial listener created with the load balancer.
+: An initial listener created with the load balancer. **Requires `--pool`** — the
+  API rejects one without the other.
 : - Members: `listenerName`, `listenerProtocol`, `listenerProtocolPort`, `timeoutClient`, `timeoutMember`, `timeoutConnection`, `allowedCidrs`, `blockedCidrs`, `defaultAction`, `certificateAuthorities`, `defaultCertificateAuthority`, `clientCertificate`, `insertHeaders`, `alpnProtocols`, `tlsSecurityPolicy`
 : - Shorthand: `listenerName=web,listenerProtocol=HTTP,listenerProtocolPort=80`
 : - JSON: `{"listenerName":"web","listenerProtocol":"HTTP","listenerProtocolPort":80}`
+: - `timeoutClient`, `timeoutMember` and `timeoutConnection` are required by the
+  API. The CLI defaults them to 50, 50 and 5 — the same values `listener create`
+  uses — so you only set them to override.
 
 `--pool` (struct)
-: An initial pool created with the load balancer.
+: An initial pool created with the load balancer. **Requires `--listener`.**
 : - Members: `poolName`, `poolProtocol`, `algorithm`, `stickiness`, `tlsEncryption`, `healthMonitor`, `members`
-: - Shorthand: `poolName=web,poolProtocol=HTTP,algorithm=ROUND_ROBIN`
-: - JSON is required to nest `healthMonitor` or `members`.
+: - **JSON only in practice**: `healthMonitor` is required by the API and is a
+  nested object, which the `key=value` shorthand cannot express (commas separate
+  the struct's own fields; `|` only builds nested lists).
+: - `stickiness` and `tlsEncryption` apply to an HTTP pool only; on a Layer 4
+  load balancer, whose pools are `TCP`/`UDP`/`PROXY`, leave them out.
+: - JSON:
+  ```json
+  {"poolName":"web","poolProtocol":"HTTP","algorithm":"ROUND_ROBIN",
+   "stickiness":false,"tlsEncryption":false,
+   "healthMonitor":{"healthCheckProtocol":"TCP","timeout":5,"interval":30,
+                    "healthyThreshold":3,"unhealthyThreshold":3}}
+  ```
 
 `--dry-run` (boolean)
 : Validate the parameters and print the request body without creating anything.

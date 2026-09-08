@@ -2,6 +2,7 @@ package certificate
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/vlbclient"
@@ -65,11 +66,30 @@ func printDeletePreview(response interface{}) {
 	fmt.Printf("  Name:    %v\n", c["name"])
 	fmt.Printf("  Type:    %v\n", c["certificateType"])
 	fmt.Printf("  Domain:  %v\n", c["domainName"])
-	fmt.Printf("  Expires: %v\n", c["expiredAt"])
+	fmt.Printf("  Expires: %s\n", expiryOf(c))
 	fmt.Println()
 	if inUse, _ := c["inUse"].(bool); inUse {
 		fmt.Println("WARNING: this certificate is currently in use by a listener.")
 		fmt.Println()
 	}
 	fmt.Println("This action is irreversible.")
+}
+
+// expiryOf renders the certificate's expiry for a human. expiredAt is null on
+// almost every certificate the service returns, so notAfter — epoch
+// milliseconds, and the actual X.509 field — is the source of truth, with
+// expiredAt kept only as a fallback for anything that does set it.
+func expiryOf(c map[string]interface{}) string {
+	if ms, ok := c["notAfter"].(float64); ok && ms > 0 {
+		t := time.UnixMilli(int64(ms)).UTC()
+		expired := ""
+		if t.Before(time.Now().UTC()) {
+			expired = " (EXPIRED)"
+		}
+		return t.Format("2006-01-02 15:04:05 MST") + expired
+	}
+	if v, ok := c["expiredAt"]; ok && v != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return "unknown"
 }

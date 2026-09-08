@@ -10,8 +10,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// No expiry column. expiredAt is null on almost every certificate the service
+// returns (17 of 18 in the project this was verified against) and contradicted
+// its own notAfter on the one that was set, so it rendered blank and hid
+// certificates that had already expired. notAfter carries the real value but is
+// epoch milliseconds, and the table layer does no per-column value formatting,
+// so it rendered as a raw integer — accurate but unreadable. Both are worse than
+// leaving expiry out of the list: `certificate get` shows notAfter in full, and
+// `certificate delete` formats it and marks (EXPIRED) before you confirm.
 var tableColumns = []string{
-	"uuid", "name", "certificateType", "domainName", "issuer", "expiredAt", "inUse",
+	"uuid", "name", "certificateType", "domainName", "inUse",
 }
 
 func resolve(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, string, error) {

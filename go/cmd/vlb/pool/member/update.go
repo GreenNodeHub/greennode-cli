@@ -47,7 +47,12 @@ var currentMemberFields = map[string]string{
 
 // buildUpdateBody assembles the ChangeMembersRequest. `current` is the member
 // list from GET (nil unless --keep-existing).
-func buildUpdateBody(current []interface{}, memberFlags []string, keepExisting bool) (map[string]interface{}, error) {
+// memberFlagGiven must come from pflag's Changed, not from len(memberFlags):
+// pflag collapses an empty stringArray occurrence, so `--member ”` arrives as an
+// empty slice, indistinguishable from the flag never being passed. Guarding on
+// the length made the documented way to empty a pool return the very error that
+// prescribes it.
+func buildUpdateBody(current []interface{}, memberFlags []string, memberFlagGiven, keepExisting bool) (map[string]interface{}, error) {
 	members := []map[string]interface{}{}
 
 	if keepExisting {
@@ -81,10 +86,16 @@ func buildUpdateBody(current []interface{}, memberFlags []string, keepExisting b
 			return nil, fmt.Errorf("--member[%d]: monitorPort is required by the API "+
 				"(set it to the same value as port for a plain health check)", i)
 		}
+		// backup is a boxed @NotNull Boolean on MemberRequest, so omitting it
+		// fails with "must not be null". Its default is unambiguous, so fill it
+		// in rather than demand it.
+		if _, ok := m["backup"]; !ok {
+			m["backup"] = false
+		}
 	}
 	members = append(members, parsed...)
 
-	if len(members) == 0 && len(memberFlags) == 0 {
+	if len(members) == 0 && !memberFlagGiven {
 		return nil, fmt.Errorf("provide at least one --member, or pass --member '' explicitly to empty the pool")
 	}
 
@@ -113,7 +124,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 	current := memberList(response)
 
-	body, err := buildUpdateBody(current, memberFlags, keepExisting)
+	body, err := buildUpdateBody(current, memberFlags, f.Changed("member"), keepExisting)
 	if err != nil {
 		return err
 	}

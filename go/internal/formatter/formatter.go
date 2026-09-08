@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -153,7 +155,7 @@ func formatRowsTable(rows []interface{}, w io.Writer, color bool) {
 		m, _ := row.(map[string]interface{})
 		strRows[i] = make([]string, len(headers))
 		for j, h := range headers {
-			val := fmt.Sprint(m[h])
+			val := cellString(m[h])
 			strRows[i][j] = val
 			if len(val) > colWidths[j] {
 				colWidths[j] = len(val)
@@ -184,7 +186,7 @@ func formatKeyValueTable(m map[string]interface{}, w io.Writer, color bool) {
 	valWidth := len("VALUE")
 	vals := make([]string, len(keys))
 	for i, k := range keys {
-		vals[i] = fmt.Sprint(m[k])
+		vals[i] = cellString(m[k])
 		if len(vals[i]) > valWidth {
 			valWidth = len(vals[i])
 		}
@@ -255,7 +257,7 @@ func mapValues(m map[string]interface{}) []string {
 	keys := mapKeys(m)
 	vals := make([]string, len(keys))
 	for i, k := range keys {
-		vals[i] = fmt.Sprint(m[k])
+		vals[i] = cellString(m[k])
 	}
 	return vals
 }
@@ -357,7 +359,7 @@ func formatTableColumns(data interface{}, columns []string, w io.Writer, color b
 		m, _ := row.(map[string]interface{})
 		strRows[i] = make([]string, len(columns))
 		for j, col := range columns {
-			val := fmt.Sprint(m[col])
+			val := cellString(m[col])
 			if val == "<nil>" {
 				val = ""
 			}
@@ -417,4 +419,16 @@ func formatHeader(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// cellString renders one table or text cell. JSON numbers arrive as float64, and
+// fmt.Sprint switches to scientific notation for large magnitudes — an epoch
+// millisecond timestamp such as notAfter rendered as "1.781232534e+12". Whole
+// values are therefore printed as integers.
+func cellString(v interface{}) string {
+	if f, ok := v.(float64); ok && f == math.Trunc(f) && !math.IsInf(f, 0) &&
+		f >= math.MinInt64 && f <= math.MaxInt64 {
+		return strconv.FormatInt(int64(f), 10)
+	}
+	return fmt.Sprint(v)
 }

@@ -61,15 +61,30 @@ func buildUpdateBody(current, currentMonitor map[string]interface{}, changed map
 		return nil, fmt.Errorf("could not determine the pool's current algorithm; pass --algorithm explicitly")
 	}
 
-	if changed["stickiness"] {
-		body["stickiness"] = stickiness
-	} else if v, ok := current["stickiness"]; ok {
-		body["stickiness"] = v
-	}
-	if changed["tls-encryption"] {
-		body["tlsEncryption"] = tlsEncryption
-	} else if v, ok := current["tlsEncryption"]; ok {
-		body["tlsEncryption"] = v
+	// stickiness and tlsEncryption are gated on the pool's own protocol.
+	// UpdatePoolValidator.validateUpdatePoolProperties re-runs the create-time
+	// check (validateNonPoolConfiguration) against the protocol stored for the
+	// pool, and that check tests != null — so echoing the service's own
+	// "stickiness": false back at it on a TCP pool is rejected. GET /pools/{id}
+	// reports both fields as false for every pool regardless of protocol, which
+	// is exactly the trap: seeding from current state broke every non-HTTP
+	// pool update. Same shape as the TLS fields on a non-HTTPS listener.
+	protocol, _ := current["protocol"].(string)
+	if protocol == poolProtocolHTTP {
+		if changed["stickiness"] {
+			body["stickiness"] = stickiness
+		} else if v, ok := current["stickiness"]; ok {
+			body["stickiness"] = v
+		}
+		if changed["tls-encryption"] {
+			body["tlsEncryption"] = tlsEncryption
+		} else if v, ok := current["tlsEncryption"]; ok {
+			body["tlsEncryption"] = v
+		}
+	} else if err := rejectHTTPOnlyPoolFlags(
+		httpOnlyFlagContext("this pool's protocol", protocol),
+		changed["stickiness"], changed["tls-encryption"]); err != nil {
+		return nil, err
 	}
 
 	hm := map[string]interface{}{}
@@ -96,6 +111,15 @@ func buildUpdateBody(current, currentMonitor map[string]interface{}, changed map
 	if len(hm) == 0 {
 		return nil, fmt.Errorf("could not read the pool's current health monitor; " +
 			"pass the full monitor via --health-monitor")
+	}
+	// healthCheckProtocol is fixed at creation and stripped from the body, but
+	// the backend still validates the body against it: UpdatePoolValidator reads
+	// the stored protocol and re-runs validateNonPoolConfiguration, so an
+	// override that adds an HTTP-shaped field to a TCP monitor is a 400.
+	if protocol, ok := currentMonitor["healthCheckProtocol"].(string); ok {
+		if err := validateMonitorFieldCombinations(protocol, hm); err != nil {
+			return nil, err
+		}
 	}
 	body["healthMonitor"] = hm
 

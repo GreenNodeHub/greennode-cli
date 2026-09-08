@@ -24,8 +24,13 @@ func init() {
 	f.String("zone-id", "", "Availability zone ID")
 	f.Bool("auto-scalable", false, "Enable autoscale mode")
 	f.StringArray("tag", nil, "Tag as key=value or JSON (repeatable)")
-	f.String("listener", "", "Initial listener, shorthand (listenerName=web,listenerProtocol=HTTP,listenerProtocolPort=80) or JSON")
-	f.String("pool", "", "Initial pool, shorthand (poolName=web,poolProtocol=HTTP,algorithm=ROUND_ROBIN) or JSON")
+	f.String("listener", "", "Initial listener; JSON, or shorthand "+
+		"(listenerName=web,listenerProtocol=HTTP,listenerProtocolPort=80). Requires --pool")
+	f.String("pool", "", "Initial pool; JSON only — it must carry a nested healthMonitor, "+
+		"e.g. '{\"poolName\":\"web\",\"poolProtocol\":\"HTTP\",\"algorithm\":\"ROUND_ROBIN\","+
+		"\"stickiness\":false,\"tlsEncryption\":false,\"healthMonitor\":"+
+		"{\"healthCheckProtocol\":\"TCP\",\"timeout\":5,\"interval\":30,"+
+		"\"healthyThreshold\":3,\"unhealthyThreshold\":3}}'. Requires --listener")
 	f.Bool("dry-run", false, "Validate parameters and print the request body without creating")
 
 	for _, name := range []string{"name", "package-id", "scheme", "subnet-id", "type"} {
@@ -33,6 +38,21 @@ func init() {
 			panic(fmt.Sprintf("BUG: MarkFlagRequired(%q): %v", name, err))
 		}
 	}
+	// CreateLoadBalancerRequest is annotated @LbValid, which rejects one without
+	// the other: "Both listener and pool properties must be required (non null)
+	// or both are not required (null)".
+	createCmd.MarkFlagsRequiredTogether("listener", "pool")
+}
+
+// inlineListenerTimeoutDefaults are the timeouts the nested LbListener declares
+// @NotNull. The standalone `listener create` defaults them, but the inline struct
+// has no defaults of its own, so a caller copying the shorthand hit
+// "listener.timeoutClient: must not be null". Defaulting them here keeps the two
+// paths consistent.
+var inlineListenerTimeoutDefaults = map[string]interface{}{
+	"timeoutClient":     50,
+	"timeoutMember":     50,
+	"timeoutConnection": 5,
 }
 
 // listenerIntFields / listenerBoolFields drive shorthand type coercion for the
@@ -75,6 +95,11 @@ func buildCreateBody(name, packageID, scheme, subnetID, lbType, zoneID string, a
 		l, err := cli.ParseStructFlagTyped(listenerStr, listenerIntFields, nil)
 		if err != nil {
 			return nil, fmt.Errorf("--listener: %w", err)
+		}
+		for k, v := range inlineListenerTimeoutDefaults {
+			if _, ok := l[k]; !ok {
+				l[k] = v
+			}
 		}
 		body["listener"] = l
 	}

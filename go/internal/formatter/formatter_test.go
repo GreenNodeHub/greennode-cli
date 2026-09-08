@@ -186,3 +186,26 @@ func TestFormatTableWithColumnsRendersBareObject(t *testing.T) {
 		}
 	}
 }
+
+// JSON numbers arrive as float64, and fmt.Sprint switches to scientific
+// notation for large magnitudes — an epoch-millisecond timestamp such as a
+// certificate's notAfter rendered as "1.781232534e+12" in a table cell.
+func TestCellStringDoesNotUseScientificNotation(t *testing.T) {
+	for _, tc := range []struct {
+		in   interface{}
+		want string
+	}{
+		{float64(1781232534000), "1781232534000"},
+		{float64(2000), "2000"},
+		{float64(0), "0"},
+		{float64(-1781232534000), "-1781232534000"},
+		{float64(1.5), "1.5"},
+		{"already a string", "already a string"},
+		{true, "true"},
+		{nil, "<nil>"},
+	} {
+		if got := cellString(tc.in); got != tc.want {
+			t.Errorf("cellString(%#v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

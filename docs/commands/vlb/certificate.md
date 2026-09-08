@@ -42,7 +42,24 @@ grn vlb certificate list [--name <value>]
 ```bash
 grn vlb certificate list --output table
 grn vlb ca list --name example.com
+
+# Expiry is not a table column — see the note below. To review it, ask for the
+# field directly (notAfter is epoch milliseconds):
+grn vlb certificate list --query 'listData[].{name:name,notAfter:notAfter,inUse:inUse}'
 ```
+
+!!! note "The table has no expiry column"
+    The service reports `expiredAt` as `null` for almost every certificate, and
+    where it is set it has been seen to contradict the certificate's own
+    `notAfter`. A column reading it therefore rendered blank and hid
+    certificates that had already expired, so it was removed rather than left
+    misleading.
+
+    `notAfter` is the real X.509 field and is always populated, but it is epoch
+    milliseconds and the table layer does no per-column formatting. Reach it
+    with `--query` as above, or read it from
+    [`certificate get`](#get). [`certificate delete`](#delete) formats it and
+    marks `(EXPIRED)` in its confirmation preview.
 
 ---
 

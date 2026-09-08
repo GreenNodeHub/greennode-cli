@@ -86,15 +86,26 @@ func TestDryRunRequestBodies(t *testing.T) {
 			absent: []string{"zoneId", "autoScalable", "tags", "listener", "pool"},
 		},
 		{
+			// --listener and --pool must be given together (@LbValid), and the
+			// inline pool needs a nested healthMonitor, which the k=v shorthand
+			// cannot express — hence JSON for the pool.
 			name: "loadbalancer create with a nested listener coerces the port to an int",
 			args: []string{"loadbalancer", "create", "--name", "my-lb", "--package-id", "pkg-1",
 				"--scheme", "Internal", "--subnet-id", "sub-1", "--type", "Layer 4",
 				"--zone-id", "HCM03-1A", "--auto-scalable",
 				"--tag", "key=env,value=prod",
 				"--listener", "listenerName=web,listenerProtocol=HTTP,listenerProtocolPort=80",
+				"--pool", `{"poolName":"web","poolProtocol":"HTTP","algorithm":"ROUND_ROBIN",` +
+					`"stickiness":false,"tlsEncryption":false,` +
+					`"healthMonitor":{"healthCheckProtocol":"TCP","timeout":5,"interval":30,` +
+					`"healthyThreshold":3,"unhealthyThreshold":3}}`,
 				"--dry-run"},
 			want: []string{"zoneId: HCM03-1A", "autoScalable: true",
-				"key:env value:prod", "listenerProtocolPort:80"},
+				"key:env value:prod", "listenerProtocolPort:80",
+				// The inline listener's three @NotNull timeouts are defaulted the
+				// way `listener create` defaults them; without this the API
+				// answered "listener.timeoutClient: must not be null".
+				"timeoutClient:50", "timeoutMember:50", "timeoutConnection:5"},
 		},
 		{
 			name: "loadbalancer resize",
@@ -226,6 +237,36 @@ func TestDryRunRejectsBadInput(t *testing.T) {
 			name:    "missing required flag",
 			args:    []string{"loadbalancer", "create", "--name", "my-lb", "--dry-run"},
 			wantErr: "required flag",
+		},
+		{
+			// @LbValid: "Both listener and pool properties must be required
+			// (non null) or both are not required (null)". Caught locally
+			// instead of as a 400 with no field name.
+			name: "an inline listener without a pool is refused",
+			args: []string{"loadbalancer", "create", "--name", "my-lb", "--package-id", "pkg-1",
+				"--scheme", "Internet", "--subnet-id", "sub-1", "--type", "Layer 7",
+				"--listener", "listenerName=web,listenerProtocol=HTTP,listenerProtocolPort=80",
+				"--dry-run"},
+			wantErr: "must all be set",
+		},
+		{
+			name: "an inline pool without a listener is refused",
+			args: []string{"loadbalancer", "create", "--name", "my-lb", "--package-id", "pkg-1",
+				"--scheme", "Internet", "--subnet-id", "sub-1", "--type", "Layer 7",
+				"--pool", "poolName=web,poolProtocol=HTTP,algorithm=ROUND_ROBIN",
+				"--dry-run"},
+			wantErr: "must all be set",
+		},
+		{
+			// The API tests stickiness with != null, so a non-HTTP pool must not
+			// carry it at all. Refuse rather than silently drop the user's flag.
+			name: "stickiness on a non-HTTP pool is refused",
+			args: []string{"pool", "create", "--load-balancer-id", "lb-1", "--name", "p1",
+				"--protocol", "PROXY", "--stickiness",
+				"--health-monitor", "healthCheckProtocol=TCP,timeout=5,interval=30," +
+					"healthyThreshold=3,unhealthyThreshold=3",
+				"--dry-run"},
+			wantErr: "only valid for an HTTP pool",
 		},
 		{
 			name: "invalid id characters are rejected before the request",
