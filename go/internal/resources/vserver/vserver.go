@@ -13,6 +13,7 @@ import (
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/config"
+	"github.com/greennodehub/greennode-cli/internal/vserverclient"
 	"github.com/spf13/cobra"
 )
 
@@ -84,5 +85,8 @@ func registeredKeys() map[string]cli.CompFunc {
 		"vserver:sshkey":     cli.FlagFromAPI(simpleList("/v2/%s/sshKeys", "id", "name")),
 		"vserver:secgroup":   cli.FlagFromAPI(simpleList("/v2/%s/secgroups", "id")),
 		"vserver:volumetype": cli.FlagFromAPI(simpleList("/v1/%s/volume_types", "id")),
+		// Zones are filtered to the enabled ones, so reuse the vserverclient
+		// completer rather than a generic list.
+		"vserver:zone": vserverclient.CompleteZoneIDs,
 	}
 }

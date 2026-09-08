@@ -3,9 +3,8 @@ package vks
 import (
 	"errors"
 	"fmt"
-	"os"
-	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
@@ -22,17 +21,9 @@ func statusOf(result interface{}) string {
 }
 
 // isPermanentAPIError reports whether err is an HTTP client error that will not
-// resolve by polling again (bad request, unauthenticated, forbidden). 404 is
-// intentionally excluded here — each waiter interprets it for itself.
+// resolve by polling again. Shared with every other product's waiters.
 func isPermanentAPIError(err error) bool {
-	var apiErr *client.APIError
-	if errors.As(err, &apiErr) {
-		switch apiErr.StatusCode {
-		case 400, 401, 403:
-			return true
-		}
-	}
-	return false
+	return cli.IsPermanentAPIError(err)
 }
 
 // evaluateActive decides one poll for an "*-active" waiter. A fatal error aborts
@@ -90,51 +81,13 @@ var waitCmd = &cobra.Command{
 
 // evaluator decides, for one poll, whether the waiter is done, has failed, or
 // hit a fatal error that should abort polling immediately.
-type evaluator func(result interface{}, err error) (done bool, failed bool, status string, fatal error)
+type evaluator = cli.WaitEvaluator
 
-// runWaiter polls describe() every delay seconds up to maxAttempts times,
-// driving the waiter via eval. Progress goes to stderr; on success it prints
-// successMsg to stdout and returns nil. On a terminal failure or timeout it
-// exits with code 255 (matching AWS CLI waiter behavior).
+// runWaiter polls describe() until eval says the wait is over. The polling,
+// progress reporting and exit-code convention live in internal/cli so every
+// product behaves identically; only the evaluators differ per service.
 func runWaiter(label, successMsg string, describe func() (interface{}, error), eval evaluator, delay, maxAttempts int) error {
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result, err := describe()
-		done, failed, status, fatal := eval(result, err)
-
-		// A fatal error (e.g. 403 Forbidden) will never resolve by polling —
-		// abort immediately instead of retrying until timeout.
-		if fatal != nil {
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintf(os.Stderr, "Error waiting for %s: %v\n", label, fatal)
-			os.Exit(255)
-		}
-
-		shown := status
-		if shown == "" {
-			shown = "polling"
-		}
-		fmt.Fprintf(os.Stderr, "\rWaiting for %s: %s (attempt %d/%d)", label, shown, attempt, maxAttempts)
-
-		if done {
-			fmt.Fprintln(os.Stderr)
-			fmt.Println(successMsg)
-			return nil
-		}
-		if failed {
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintf(os.Stderr, "Waiter failed: %s reached %s\n", label, status)
-			os.Exit(255)
-		}
-
-		if attempt < maxAttempts {
-			time.Sleep(time.Duration(delay) * time.Second)
-		}
-	}
-
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "Waiter timed out after %d attempts\n", maxAttempts)
-	os.Exit(255)
-	return nil
+	return cli.RunWaiter(label, successMsg, describe, eval, delay, maxAttempts)
 }
 
 var (

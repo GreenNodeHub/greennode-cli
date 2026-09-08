@@ -3,6 +3,7 @@ package vserverclient
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/spf13/cobra"
 )
@@ -11,35 +12,7 @@ import (
 // listKeys: envelope keys to try in order (e.g. "listData", "data", "images").
 // idKey: field used as the completion value; nameKey: shown as the tab description.
 func extractCompletions(result interface{}, listKeys []string, idKey, nameKey string) []string {
-	var items []interface{}
-	switch v := result.(type) {
-	case []interface{}:
-		items = v
-	case map[string]interface{}:
-		for _, key := range listKeys {
-			if d, ok := v[key].([]interface{}); ok {
-				items = d
-				break
-			}
-		}
-	}
-	out := make([]string, 0, len(items))
-	for _, item := range items {
-		obj, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		id, _ := obj[idKey].(string)
-		if id == "" {
-			continue
-		}
-		if name, _ := obj[nameKey].(string); name != "" {
-			out = append(out, id+"\t"+name)
-		} else {
-			out = append(out, id)
-		}
-	}
-	return out
+	return cli.ExtractCompletions(result, listKeys, idKey, nameKey)
 }
 
 func buildCompleter(fetch func(*client.GreennodeClient, string) ([]string, error)) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {

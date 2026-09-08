@@ -22,12 +22,12 @@ func TestListPath(t *testing.T) {
 
 func TestRegisteredKeys(t *testing.T) {
 	keys := registeredKeys()
-	for _, k := range []string{"vserver:network", "vserver:subnet", "vserver:sshkey", "vserver:secgroup", "vserver:volumetype"} {
+	for _, k := range []string{"vserver:network", "vserver:subnet", "vserver:sshkey", "vserver:secgroup", "vserver:volumetype", "vserver:zone"} {
 		if keys[k] == nil {
 			t.Errorf("key %q not present in registeredKeys()", k)
 		}
 	}
-	if len(keys) != 5 {
-		t.Errorf("registeredKeys() has %d entries, want 5", len(keys))
+	if len(keys) != 6 {
+		t.Errorf("registeredKeys() has %d entries, want 6", len(keys))
 	}
 }
