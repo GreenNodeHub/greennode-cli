@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -66,6 +67,122 @@ func TestFormatTableTopLevelArray(t *testing.T) {
 	for _, want := range []string{"uuid", "s1", "s2"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("top-array table missing %q\n%s", want, out)
+		}
+	}
+}
+
+// TestExtractRowsIgnoresUnrelatedArrayFields is a regression test for a detail
+// object whose own array field was mistaken for the row set, producing empty
+// --output table. Found against the live VLB API: `certificate get` returns a
+// bare object carrying subjectAlternativeNames, and the table came out blank.
+func TestExtractRowsIgnoresUnrelatedArrayFields(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     interface{}
+		wantRows int
+		wantKey  string // a key the first row must have
+	}{
+		{
+			name: "bare detail object with an array field is one row",
+			data: map[string]interface{}{
+				"uuid":                    "secret-1",
+				"name":                    "web-cert",
+				"subjectAlternativeNames": []interface{}{"app.example.com"},
+			},
+			wantRows: 1,
+			wantKey:  "uuid",
+		},
+		{
+			name: "data-wrapped detail object with an array field is one row",
+			data: map[string]interface{}{"data": map[string]interface{}{
+				"uuid":    "pool-1",
+				"members": []interface{}{map[string]interface{}{"uuid": "m-1"}},
+			}},
+			wantRows: 1,
+			wantKey:  "uuid",
+		},
+		{
+			name:     "listData envelope yields its items",
+			data:     map[string]interface{}{"listData": []interface{}{map[string]interface{}{"uuid": "lb-1"}, map[string]interface{}{"uuid": "lb-2"}}},
+			wantRows: 2,
+			wantKey:  "uuid",
+		},
+		{
+			name:     "data array envelope yields its items",
+			data:     map[string]interface{}{"data": []interface{}{map[string]interface{}{"uuid": "li-1"}}},
+			wantRows: 1,
+			wantKey:  "uuid",
+		},
+		{
+			name:     "top-level array is the row set",
+			data:     []interface{}{map[string]interface{}{"id": float64(1)}},
+			wantRows: 1,
+			wantKey:  "id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := extractRows(tt.data)
+			if len(rows) != tt.wantRows {
+				t.Fatalf("extractRows returned %d rows, want %d: %#v", len(rows), tt.wantRows, rows)
+			}
+			m, ok := rows[0].(map[string]interface{})
+			if !ok {
+				t.Fatalf("row 0 is %T, want an object — a non-object row makes the table render nothing", rows[0])
+			}
+			if _, ok := m[tt.wantKey]; !ok {
+				t.Errorf("row 0 has no %q; got keys %v", tt.wantKey, mapKeys(m))
+			}
+		})
+	}
+}
+
+// TestExtractRowsIsDeterministic guards against the old "first array field
+// found" scan, whose result depended on Go's randomised map iteration order.
+func TestExtractRowsIsDeterministic(t *testing.T) {
+	data := map[string]interface{}{
+		"uuid": "secret-1",
+		"a":    []interface{}{"x"},
+		"b":    []interface{}{"y"},
+		"c":    []interface{}{map[string]interface{}{"uuid": "nested"}},
+	}
+	first := extractRows(data)
+	for i := 0; i < 200; i++ {
+		got := extractRows(data)
+		if len(got) != len(first) {
+			t.Fatalf("iteration %d returned %d rows, first call returned %d", i, len(got), len(first))
+		}
+		if !reflect.DeepEqual(got[0], first[0]) {
+			t.Fatalf("iteration %d returned a different row than the first call", i)
+		}
+	}
+	if len(first) != 1 {
+		t.Errorf("a detail object should be a single row, got %d", len(first))
+	}
+}
+
+// TestFormatTableWithColumnsRendersBareObject is the end-to-end form of the
+// regression: the command-level symptom was no output at all.
+func TestFormatTableWithColumnsRendersBareObject(t *testing.T) {
+	data := map[string]interface{}{
+		"uuid":                    "secret-1",
+		"name":                    "web-cert",
+		"certificateType":         "TLS/SSL",
+		"inUse":                   false,
+		"subjectAlternativeNames": []interface{}{"app.example.com"},
+	}
+	var buf bytes.Buffer
+	if err := FormatTableWithColumnsColor(data, []string{"uuid", "name", "certificateType", "inUse"}, "", &buf, false); err != nil {
+		t.Fatalf("FormatTableWithColumnsColor: %v", err)
+	}
+	out := buf.String()
+	if out == "" {
+		t.Fatal("rendered nothing for a bare detail object")
+	}
+	for _, want := range []string{"UUID", "NAME", "secret-1", "web-cert", "TLS/SSL", "false"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q\n--- got ---\n%s", want, out)
 		}
 	}
 }

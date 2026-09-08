@@ -383,24 +383,25 @@ func formatTableColumns(data interface{}, columns []string, w io.Writer, color b
 }
 
 func extractRows(data interface{}) []interface{} {
-	switch v := data.(type) {
-	case []interface{}:
-		return v
-	case map[string]interface{}:
-		// List envelope: {"listData": [...]} or any key holding a slice
-		for _, value := range v {
-			if items, ok := value.([]interface{}); ok {
-				return items
-			}
-		}
-		// Single-object envelope: {"data": {...}} — unwrap the inner object
+	// A top-level array, or an object wrapping one under a known list key, is
+	// the row set. listRows is shared with formatTable so both table paths
+	// agree on what counts as a list — and, crucially, it only looks under the
+	// known keys. Scanning every value for the first slice would let an
+	// unrelated array field (a certificate's subjectAlternativeNames, a
+	// resource's tags) hijack the rows, and would do so non-deterministically,
+	// since Go randomises map iteration order.
+	if rows, ok := listRows(data); ok {
+		return rows
+	}
+	if v, ok := data.(map[string]interface{}); ok {
+		// Single-object envelope: {"data": {...}} — unwrap the inner object.
 		if inner, ok := v["data"].(map[string]interface{}); ok {
 			return []interface{}{inner}
 		}
-		return []interface{}{v}
-	default:
+		// A bare detail object is a single row.
 		return []interface{}{v}
 	}
+	return []interface{}{data}
 }
 func formatHeader(s string) string {
 	var b strings.Builder
