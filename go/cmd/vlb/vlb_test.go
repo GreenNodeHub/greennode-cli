@@ -18,7 +18,7 @@ var wantTree = map[string][]string{
 		"wait-active", "wait-deleted",
 	},
 	"vlb listener":        {"create", "delete", "get", "list", "policy", "update"},
-	"vlb listener policy": {"create", "delete", "get", "list", "update", "update-order"},
+	"vlb listener policy": {"create", "delete", "get", "list", "update"},
 	"vlb pool":            {"create", "delete", "get", "get-health-monitor", "list", "member", "update"},
 	"vlb pool member":     {"list", "update"},
 	"vlb certificate":     {"create", "delete", "get", "list"},
@@ -94,18 +94,17 @@ func TestAliases(t *testing.T) {
 // every VLB path embeds the parent IDs, so those flags must be required.
 func TestRequiredParentIDFlags(t *testing.T) {
 	cases := map[string][]string{
-		"vlb loadbalancer get":             {"load-balancer-id"},
-		"vlb loadbalancer delete":          {"load-balancer-id"},
-		"vlb listener list":                {"load-balancer-id"},
-		"vlb listener get":                 {"load-balancer-id", "listener-id"},
-		"vlb listener policy list":         {"load-balancer-id", "listener-id"},
-		"vlb listener policy get":          {"load-balancer-id", "listener-id", "policy-id"},
-		"vlb listener policy update-order": {"load-balancer-id", "listener-id"},
-		"vlb pool list":                    {"load-balancer-id"},
-		"vlb pool get":                     {"load-balancer-id", "pool-id"},
-		"vlb pool member list":             {"load-balancer-id", "pool-id"},
-		"vlb pool member update":           {"load-balancer-id", "pool-id"},
-		"vlb certificate get":              {"certificate-id"},
+		"vlb loadbalancer get":     {"load-balancer-id"},
+		"vlb loadbalancer delete":  {"load-balancer-id"},
+		"vlb listener list":        {"load-balancer-id"},
+		"vlb listener get":         {"load-balancer-id", "listener-id"},
+		"vlb listener policy list": {"load-balancer-id", "listener-id"},
+		"vlb listener policy get":  {"load-balancer-id", "listener-id", "policy-id"},
+		"vlb pool list":            {"load-balancer-id"},
+		"vlb pool get":             {"load-balancer-id", "pool-id"},
+		"vlb pool member list":     {"load-balancer-id", "pool-id"},
+		"vlb pool member update":   {"load-balancer-id", "pool-id"},
+		"vlb certificate get":      {"certificate-id"},
 	}
 	for path, required := range cases {
 		cmd := find(t, path)
@@ -129,7 +128,7 @@ func TestMutatingCommandsHaveDryRun(t *testing.T) {
 		"vlb loadbalancer create", "vlb loadbalancer resize", "vlb loadbalancer clone",
 		"vlb loadbalancer configure-scaling", "vlb loadbalancer update-bandwidth",
 		"vlb listener create", "vlb listener update",
-		"vlb listener policy create", "vlb listener policy update", "vlb listener policy update-order",
+		"vlb listener policy create", "vlb listener policy update",
 		"vlb pool create", "vlb pool update", "vlb pool member update",
 		"vlb certificate create",
 	}

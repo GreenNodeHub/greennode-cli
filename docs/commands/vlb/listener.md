@@ -7,6 +7,13 @@ grn vlb listener <command> [options]
 grn vlb listener policy <command> [options]
 ```
 
+!!! note "Policy order cannot be changed from the CLI"
+    The API has a reorder endpoint, but it is not exposed: the only attempt
+    against the live service returned HTTP 200, changed no position, and left
+    the load balancer stuck in `UPDATING` for about 30 minutes, refusing
+    further changes and deletion alike. Delete and recreate policies to change
+    their order, or use the console.
+
 ## Commands
 
 | Command | Description |
@@ -21,7 +28,6 @@ grn vlb listener policy <command> [options]
 | [policy create](#policy-create) | Create an L7 policy |
 | [policy update](#policy-update) | Update an L7 policy |
 | [policy delete](#policy-delete) | Delete an L7 policy |
-| [policy update-order](#policy-update-order) | Reorder the L7 policies |
 
 ---
 
@@ -289,7 +295,8 @@ grn vlb listener delete --load-balancer-id lb-1234abcd --listener-id li-5678 --d
 
 ## policy list
 
-List the L7 policies of a listener, in evaluation order. `position` starts at 1.
+List the L7 policies of a listener, in evaluation order. `position` starts at 1
+and is assigned by the service.
 
 ### Synopsis
 
@@ -493,64 +500,6 @@ grn vlb listener policy delete
 
 `--dry-run` (boolean)
 : Show what would be deleted without deleting it. Default: `false`.
-
----
-
-## policy update-order
-
-Set the evaluation order of a listener's L7 policies.
-
-### Synopsis
-
-```
-grn vlb listener policy update-order
-    --load-balancer-id <value>
-    --listener-id <value>
-    --policy <value>
-    [--dry-run]
-```
-
-### Options
-
-`--load-balancer-id` (string)
-: Load balancer ID.
-: - Required: Yes
-
-`--listener-id` (string)
-: Listener ID.
-: - Required: Yes
-
-`--policy` (struct, repeatable)
-: A policy and the position it moves to.
-: - Required: Yes
-: - Members: `policyId`, `position`
-: - Constraints: both members are required, and `position` **starts at 1**.
-: - Shorthand: `policyId=pol-1,position=1`
-: - JSON: `{"policyId":"pol-1","position":1}`
-
-`--dry-run` (boolean)
-: Print the request body without applying the new order.
-
-!!! warning "Positions start at 1, not 0"
-    The API reference describes `position` as zero-based, but the service
-    numbers policies from 1 — that is what `policy list` reports. A reorder sent
-    with `position=0` was accepted with HTTP 200, changed nothing, and left the
-    load balancer stuck in `UPDATING` for about 30 minutes — refusing further
-    changes and deletion alike — before recovering on its own. The CLI rejects
-    positions below 1 for that reason.
-
-### Examples
-
-```bash
-# Run `policy list` first to see the current positions
-grn vlb listener policy list --load-balancer-id lb-1234abcd --listener-id li-5678 \
-    --query 'data[].{name:name,position:position}'
-
-# Move pol-2 to the front
-grn vlb listener policy update-order --load-balancer-id lb-1234abcd --listener-id li-5678 \
-    --policy policyId=pol-2,position=1 \
-    --policy policyId=pol-1,position=2
-```
 
 ---
 

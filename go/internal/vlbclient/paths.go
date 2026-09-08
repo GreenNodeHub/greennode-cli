@@ -61,11 +61,6 @@ func Policy(projectID, lbID, listenerID, policyID string) string {
 	return fmt.Sprintf("%s/%s", Policies(projectID, lbID, listenerID), policyID)
 }
 
-// ReorderPolicies is the listener's policy-reordering endpoint.
-func ReorderPolicies(projectID, lbID, listenerID string) string {
-	return fmt.Sprintf("%s/reorderL7Policies", Listener(projectID, lbID, listenerID))
-}
-
 // Pools is the pool collection of a load balancer.
 func Pools(projectID, lbID string) string {
 	return fmt.Sprintf("/v2/%s/loadBalancers/%s/pools", projectID, lbID)

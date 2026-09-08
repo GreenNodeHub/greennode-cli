@@ -159,14 +159,6 @@ func TestPutAndDeleteHitTheRightRoutes(t *testing.T) {
 			wantPath:   "/v2/proj-1/loadBalancers/lb-1/pools/pool-1/members",
 		},
 		{
-			name: "policy reorder",
-			call: func(c *client.GreennodeClient) (interface{}, error) {
-				return c.Put(ReorderPolicies(proj, lbID, listener), map[string]interface{}{"policies": []interface{}{}})
-			},
-			wantMethod: http.MethodPut,
-			wantPath:   "/v2/proj-1/loadBalancers/lb-1/listeners/li-1/reorderL7Policies",
-		},
-		{
 			name:       "certificate delete",
 			call:       func(c *client.GreennodeClient) (interface{}, error) { return c.Delete(Certificate(proj, caID), nil) },
 			wantMethod: http.MethodDelete,

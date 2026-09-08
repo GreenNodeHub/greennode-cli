@@ -101,7 +101,7 @@ Several flags take a small object. They accept AWS-CLI-style **shorthand** or
 ```
 
 Repeatable flags (`--member`, `--rule`, `--insert-header`, `--tag`,
-`--policy`, `--certificate`) are passed once per entry:
+`--certificate`) are passed once per entry:
 
 ```bash
 --member ipAddress=10.0.0.4,port=80 --member ipAddress=10.0.0.5,port=80

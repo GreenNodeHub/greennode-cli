@@ -42,7 +42,6 @@ func builtPaths() map[string]string {
 		Listener(proj, lbID, listener):               "/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}",
 		Policies(proj, lbID, listener):               "/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies",
 		Policy(proj, lbID, listener, policyID):       "/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies/{policyId}",
-		ReorderPolicies(proj, lbID, listener):        "/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/reorderL7Policies",
 		Pools(proj, lbID):                            "/v2/{projectId}/loadBalancers/{loadBalancerId}/pools",
 		Pool(proj, lbID, poolID):                     "/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}",
 		Members(proj, lbID, poolID):                  "/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}/members",
@@ -83,10 +82,23 @@ type openAPI struct {
 	} `json:"paths"`
 }
 
+// unimplementedSpecPaths are endpoints the CLI deliberately does not expose.
+// Listing them here keeps TestPathsCoverTheSpec meaningful: a genuinely
+// forgotten endpoint still fails the build, while a considered omission is
+// recorded with its reason.
+var unimplementedSpecPaths = map[string]string{
+	"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/reorderL7Policies": "" +
+		"policy reordering is not exposed: the only live attempt returned HTTP 200, " +
+		"changed no position, and left the load balancer stuck in UPDATING for ~30 " +
+		"minutes, refusing further changes and deletion alike. Re-add the command " +
+		"once the endpoint is understood.",
+}
+
 // TestPathsCoverTheSpec is the coverage proof: every path in openapi-vlb.json
-// must be produced by a builder in this package, and every builder must
-// correspond to a real path. It skips when the spec is not checked out, so it
-// never breaks a build that does not ship the file.
+// must be produced by a builder in this package unless it is listed in
+// unimplementedSpecPaths, and every builder must correspond to a real path. It
+// skips when the spec is not checked out, so it never breaks a build that does
+// not ship the file.
 func TestPathsCoverTheSpec(t *testing.T) {
 	raw, err := os.ReadFile(specPath())
 	if err != nil {
@@ -113,8 +125,21 @@ func TestPathsCoverTheSpec(t *testing.T) {
 	for path := range spec.Paths {
 		n := normalize.Replace(path)
 		inSpec[n] = true
+		if _, deliberate := unimplementedSpecPaths[n]; deliberate {
+			continue
+		}
 		if !implemented[n] {
 			missing = append(missing, path)
+		}
+	}
+	// A path that gains a builder should be dropped from the exception list,
+	// so the list cannot quietly outlive its reason.
+	for path := range unimplementedSpecPaths {
+		if implemented[path] {
+			t.Errorf("%s is implemented; remove it from unimplementedSpecPaths", path)
+		}
+		if !inSpec[path] {
+			t.Errorf("%s is in unimplementedSpecPaths but not in the spec", path)
 		}
 	}
 	for template := range implemented {
@@ -131,7 +156,8 @@ func TestPathsCoverTheSpec(t *testing.T) {
 	for _, p := range extra {
 		t.Errorf("path builder produces %s, which is not in the spec", p)
 	}
-	t.Logf("%d spec paths, all covered", len(spec.Paths))
+	t.Logf("%d spec paths: %d covered, %d deliberately unimplemented",
+		len(spec.Paths), len(spec.Paths)-len(unimplementedSpecPaths), len(unimplementedSpecPaths))
 }
 
 // TestEveryPathIsProjectScoped guards the invariant that makes ProjectID

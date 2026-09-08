@@ -106,15 +106,17 @@ either an HTTP 500 or a 400 naming a field the user never supplied, so
   attached — the listener table shows `defaultPoolId` instead of an always-blank
   column.
 - **L7 policy `position` starts at 1**, even though `ReorderPolicyRequest.position`
-  is documented as zero-based. Sending `position=0` was accepted with HTTP 200,
-  changed nothing, and left the load balancer in `UPDATING` for about 30
-  minutes — refusing further changes and deletion alike (`400 ... is updating`)
-  — while all 49 other load balancers in the project stayed `ACTIVE`. It then
-  recovered by itself and deleted normally, so this is a long stall, not a lost
-  resource. `buildUpdateOrderBody` refuses positions below 1 as a result. One
-  observation is not proof of causation, but 0 contradicts every position the
-  API itself reports.
-- `POST` responses are `{"<key>": "<id>"}` string maps, not full resources.
+  is documented as zero-based. The reorder endpoint is **not exposed by the CLI**
+  at all: the single live attempt (with `position=0`) was accepted with HTTP 200,
+  changed nothing, and left the load balancer in `UPDATING` for about 30 minutes
+  — refusing further changes and deletion alike (`400 ... is updating`) — while
+  all 49 other load balancers in the project stayed `ACTIVE`. It then recovered
+  by itself and deleted normally, so this is a long stall, not a lost resource.
+  One observation is not proof of causation, and a 1-based reorder was never
+  successfully tested, so the endpoint is listed in
+  `internal/vlbclient.unimplementedSpecPaths` with that reason rather than
+  shipped. `TestPathsCoverTheSpec` fails if it ever gains a builder without the
+  exception being removed.
 
 ## Command style
 

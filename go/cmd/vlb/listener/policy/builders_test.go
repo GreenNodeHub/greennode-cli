@@ -157,65 +157,6 @@ func TestBuildUpdateBody(t *testing.T) {
 	})
 }
 
-func TestBuildUpdateOrderBody(t *testing.T) {
-	got, err := buildUpdateOrderBody([]string{"policyId=pol-1,position=1", "policyId=pol-2,position=2"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	policies := got["policies"].([]map[string]interface{})
-	if len(policies) != 2 {
-		t.Fatalf("policies length = %d, want 2", len(policies))
-	}
-	if policies[0]["position"] != 1 {
-		t.Errorf("position = %#v, want the int 1", policies[0]["position"])
-	}
-
-	t.Run("JSON input keeps its numeric position", func(t *testing.T) {
-		got, err := buildUpdateOrderBody([]string{`{"policyId":"pol-1","position":2}`})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		p := got["policies"].([]map[string]interface{})[0]
-		if p["position"] != 2 {
-			t.Errorf("position = %#v, want 2", p["position"])
-		}
-	})
-
-	for _, tc := range []struct {
-		name  string
-		input []string
-	}{
-		{"no policies", nil},
-		{"missing policyId", []string{"position=1"}},
-		{"missing position", []string{"policyId=pol-1"}},
-		{"non-integer position", []string{"policyId=pol-1,position=first"}},
-	} {
-		if _, err := buildUpdateOrderBody(tc.input); err == nil {
-			t.Errorf("%s: expected a validation error", tc.name)
-		}
-	}
-}
-
-// Position 0 is what the spec documents, but the service numbers policies from
-// 1 and a reorder sent with 0 wedged a real load balancer in UPDATING — it
-// could not be changed again, nor deleted. The CLI refuses it.
-func TestBuildUpdateOrderRejectsPositionBelowOne(t *testing.T) {
-	for _, input := range []string{
-		"policyId=pol-1,position=0",
-		"policyId=pol-1,position=-1",
-		`{"policyId":"pol-1","position":0}`,
-	} {
-		_, err := buildUpdateOrderBody([]string{input})
-		if err == nil {
-			t.Errorf("%s: expected the position to be rejected", input)
-			continue
-		}
-		if !strings.Contains(err.Error(), "position must be 1 or greater") {
-			t.Errorf("%s: error = %q, want it to explain the 1-based numbering", input, err)
-		}
-	}
-}
-
 func TestUpdateFlagsCoverEveryBodyFlag(t *testing.T) {
 	f := pflag.NewFlagSet("update", pflag.ContinueOnError)
 	addUpdateFlags(f)

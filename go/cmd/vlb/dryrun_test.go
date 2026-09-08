@@ -181,14 +181,6 @@ func TestDryRunRequestBodies(t *testing.T) {
 			absent: []string{"redirectPoolId"},
 		},
 		{
-			name: "policy update-order coerces positions to ints",
-			args: []string{"listener", "policy", "update-order", "--load-balancer-id", "lb-1",
-				"--listener-id", "li-1",
-				"--policy", "policyId=pol-2,position=1",
-				"--policy", "policyId=pol-1,position=2", "--dry-run"},
-			want: []string{"policyId:pol-2 position:1", "policyId:pol-1 position:2"},
-		},
-		{
 			name: "certificate create redacts secret material",
 			args: []string{"certificate", "create", "--name", "web-cert", "--type", "TLS/SSL",
 				"--certificate", "-----BEGIN CERTIFICATE-----abc",
@@ -319,18 +311,6 @@ func TestDryRunRejectsBadInput(t *testing.T) {
 				"--listener-id", "li-1", "--name", "p", "--action", "REDIRECT_TO_POOL",
 				"--redirect-pool-id", "pool-1", "--dry-run"},
 			wantErr: "--rule is required",
-		},
-		{
-			name: "reorder position 0 is refused (it wedges the load balancer)",
-			args: []string{"listener", "policy", "update-order", "--load-balancer-id", "lb-1",
-				"--listener-id", "li-1", "--policy", "policyId=pol-1,position=0", "--dry-run"},
-			wantErr: "position must be 1 or greater",
-		},
-		{
-			name: "reorder entry without a position",
-			args: []string{"listener", "policy", "update-order", "--load-balancer-id", "lb-1",
-				"--listener-id", "li-1", "--policy", "policyId=pol-1", "--dry-run"},
-			wantErr: "position is required",
 		},
 		{
 			name: "certificate type must be one of the two",
