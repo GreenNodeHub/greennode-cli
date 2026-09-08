@@ -66,6 +66,17 @@ go/
 │   │   ├── list.go                  # grn configure list
 │   │   ├── get.go                   # grn configure get
 │   │   └── set.go                   # grn configure set
+│   ├── register_vlb.go              # Mounts grn vlb behind //go:build !vks_only
+│   ├── vlb/                         # grn vlb — noun-verb groups (see cmd/vlb/CLAUDE.md)
+│   │   ├── vlb.go                   # VlbCmd parent (self-registers)
+│   │   ├── completion.go            # registerCompletions() — walks the VLB tree
+│   │   ├── loadbalancer/            # list/get/create/delete/resize/clone/configure-scaling/wait-active/...
+│   │   ├── listener/                # list/get/create/update/delete
+│   │   │   └── policy/              # L7 policies: list/get/create/update/delete/update-order
+│   │   ├── pool/                    # list/get/create/update/delete/get-health-monitor
+│   │   │   └── member/              # list/update (update REPLACES the member list)
+│   │   ├── certificate/             # list/get/create (alias import)/delete
+│   │   └── lbpackage/               # grn vlb package list (`package` is a Go keyword)
 │   └── vks/
 │       ├── vks.go                   # VKS parent command
 │       ├── helpers.go               # Shared utilities (client, output, parsing)
@@ -93,7 +104,8 @@ go/
 │       └── auto_upgrade.go          # Set/delete auto-upgrade
 ├── internal/
 │   ├── cli/
-│   │   ├── client.go                # NewClient(cmd, serviceName) — shared HTTP client factory
+│   │   ├── client.go                # NewClient / NewClientWithConfig / ProjectID — shared HTTP client factory
+│   │   ├── waiter.go                # RunWaiter — shared polling loop for every product's wait commands
 │   │   ├── completion.go            # FlagValues/FlagValuesFrom/FlagFromAPI/ExtractIDs + RegisterResourceCompleter/ResourceCompletion
 │   │   ├── output.go                # Output(cmd, data) — unified JSON/table/text printing
 │   │   ├── parse.go                 # ParseCommaSeparated, BuildEventsQuery helpers
@@ -107,12 +119,18 @@ go/
 │   ├── kubeconfig/
 │   │   └── kubeconfig.go            # Merge kubeconfig into ~/.kube/config
 │   ├── resources/
-│   │   └── vserver/
-│   │       └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type)
+│   │   ├── vserver/
+│   │   │   └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type/zone)
+│   │   └── vlb/
+│   │       └── vlb.go               # vlb resource completers (loadbalancer/certificate)
 │   ├── vdbclient/
 │   │   ├── client.go                # BuildClient(cmd) + user-type header
 │   │   ├── query.go                 # BuildListQuery — 1-based pageNumber, flat filters
 │   │   └── output.go                # Unwrap({code,message,data}) + Output/OutputWithColumns
+│   ├── vlbclient/                   # VLB endpoint + URL path builders + resource completers
+│   │   ├── client.go                # BuildClient / ProjectID / Output (wraps internal/cli)
+│   │   ├── paths.go                 # Resolve() + every VLB URL path
+│   │   └── complete.go              # CompleteLoadBalancerIDs, CompletePoolIDs, ...
 │   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
 │   │   ├── auth/                    # OAuth2 v2 clientcredentials
 │   │   ├── client/                  # bearer-token HTTP client (401 refresh + retry-once, mirrors internal/client)
@@ -146,13 +164,18 @@ scripts/
 ## GreenNode API quirks
 
 - **IAM API uses camelCase**: `grantType`, `accessToken`, `expiresIn`
+- **VLB array query filters are comma-joined** (`ids=lb-1,lb-2`), and its
+  update PUTs are not partial (see `go/cmd/vlb/CLAUDE.md`)
 - **`--version` conflict**: Use `--k8s-version` for Kubernetes version
-- **Pagination differs per service** — check before writing a list command:
+- **Pagination differs per service** — check before writing a list command.
+  vServer and VLB paths are project-scoped (`/v2/{projectId}/...`) and
+  `client.GetAllPages` — which is VKS-shaped — must not be used for them:
 
   | Service | Params | First page |
   |---------|--------|------------|
   | vks | `page`, `pageSize` | `0` |
   | vserver | `page`, `size` | `1` |
+  | vlb | `page`, `size` | `1` |
   | vdb | `pageNumber`, `pageSize` | `1` |
   | vdb Kafka | — | **no pagination at all** |
 
@@ -280,7 +303,7 @@ Each release (tag `vX.Y.Z`) attaches:
 
 **Docs to check:**
 
-- `docs/commands/vks/` (GitHub Pages) — add/update command reference page, check `index.md` table
+- `docs/commands/<service>/` (GitHub Pages) — add/update the command reference page, check that service's `index.md` table (`vks/` is one page per command; `vserver/` and `vlb/` are one page per noun group)
 - `mkdocs.yml` — add nav entry for any new command page
 - `README.md`
 - `CLAUDE.md`
@@ -305,6 +328,9 @@ Code without docs is not done.
 |------|---------|
 | `cmd/root.go` | Root command, global flags, --version |
 | `cmd/vks/helpers.go` | Client creation, output formatting, label/taint parsing |
+| `cmd/vlb/CLAUDE.md` | VLB product notes — paging, envelopes, non-partial PUTs |
+| `internal/vlbclient/paths.go` | Resolve(cmd) + every VLB URL path (single place IDs enter a URL) |
+| `internal/cli/waiter.go` | RunWaiter — shared waiter loop (exit 255 on failure, AWS convention) |
 | `internal/config/config.go` | Config loading from ~/.greennode/, REGIONS map |
 | `internal/vdbclient/` | vDB client + error enrichment, envelope unwrap, 1-based list query, ID guard, action/resize bodies, security-rule parsing, dry-run preview |
 | `go/cmd/vdb/CLAUDE.md` | vDB API quirks — read before touching `grn vdb` |
