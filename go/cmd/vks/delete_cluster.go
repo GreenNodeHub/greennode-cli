@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
@@ -69,8 +68,7 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 
 	result, err := apiClient.Delete(fmt.Sprintf("/v1/clusters/%s", clusterID), nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)

@@ -61,8 +61,8 @@ For help on any command:
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
@@ -120,7 +120,16 @@ type usageError struct {
 func (e usageError) Error() string { return e.err.Error() }
 func (e usageError) Unwrap() error { return e.err }
 
+type exitCoder interface {
+	error
+	ExitCode() int
+}
+
 func exitCode(err error) int {
+	var coded exitCoder
+	if errors.As(err, &coded) {
+		return coded.ExitCode()
+	}
 	var target usageError
 	if errors.As(err, &target) {
 		return 2

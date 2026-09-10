@@ -81,8 +81,7 @@ func runUpdateKubeconfig(cmd *cobra.Command, args []string) error {
 
 	result, err := apiClient.Get(fmt.Sprintf("/v1/clusters/%s/kubeconfig", clusterID), nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	resMap, ok := result.(map[string]interface{})

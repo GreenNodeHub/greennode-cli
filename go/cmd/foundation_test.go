@@ -32,7 +32,6 @@ func TestFoundationRootHelper(t *testing.T) {
 		operation.Descriptor{Use: "foundation-dry-run", Short: "Offline fixture", Method: "DELETE", Path: "/fixture", Mutation: true, Destructive: true}))
 	rootCmd.SetArgs(args)
 	Execute()
-	os.Exit(0)
 }
 
 func TestFoundationRootOfflineSafety(t *testing.T) {
