@@ -9,8 +9,8 @@ var FloatingIPCmd = &cobra.Command{
 	Use:   "floating-ip",
 	Short: "Manage floating IPs (WAN IPs)",
 	Long:  "List floating IPs (public WAN IP addresses).",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

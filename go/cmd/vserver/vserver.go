@@ -27,8 +27,8 @@ var VServerCmd = &cobra.Command{
 	Long:  "Manage vServer instances and related resources.",
 	// Reject unknown subcommands (nested groups don't error by default in cobra).
 	Args: cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

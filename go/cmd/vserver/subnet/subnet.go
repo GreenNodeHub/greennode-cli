@@ -10,8 +10,8 @@ var SubnetCmd = &cobra.Command{
 	Short: "Manage subnets",
 	Long:  "Create, list, get, and delete subnets within a VPC.",
 	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
