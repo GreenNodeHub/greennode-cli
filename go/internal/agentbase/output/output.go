@@ -18,13 +18,19 @@ const (
 	FormatID    Format = "id"
 )
 
-var currentFormat Format = FormatTable
+var (
+	currentFormat Format = FormatTable
+	currentQuery  string
+)
 
 // SetFormat sets the active output format. Called once from rootCmd.PersistentPreRun.
 func SetFormat(f Format) { currentFormat = f }
 
 // GetFormat returns the active output format.
 func GetFormat() Format { return currentFormat }
+
+// SetQuery sets the active JMESPath query.
+func SetQuery(query string) { currentQuery = query }
 
 // ParseFormat parses an output format string, defaulting to table.
 func ParseFormat(s string) Format {

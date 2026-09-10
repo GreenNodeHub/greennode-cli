@@ -32,8 +32,13 @@ select dev/prod with 'grn configure set iam_env <dev|prod>' (machine) or
 access agent-id use <name>'. Run 'grn agentbase context current' to see the
 active environment and endpoints.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Use configured output unless explicitly overridden.
-		output.SetFormat(output.ParseFormat(effectiveOutputFormat(cmd, outputFormat)))
+		query := flagString(cmd, "query")
+		format := output.ParseFormat(effectiveOutputFormat(cmd, outputFormat))
+		if query != "" {
+			format = output.FormatJSON
+		}
+		output.SetFormat(format)
+		output.SetQuery(query)
 		output.SetShowSecret(showSecret)
 		cliinput.SetInteractive(interactiveMode && !cli.IsNonInteractive())
 	},

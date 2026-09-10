@@ -3,9 +3,11 @@ package output
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/redact"
+	"github.com/jmespath/go-jmespath"
 )
 
 var showSecret bool
@@ -51,9 +53,6 @@ func redactCredentials(v any, opaque bool) any {
 }
 
 func prepareJSON(v any, opaque bool) (any, error) {
-	if showSecret {
-		return v, nil
-	}
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -64,7 +63,24 @@ func prepareJSON(v any, opaque bool) (any, error) {
 	if err := decoder.Decode(&normalized); err != nil {
 		return nil, err
 	}
-	return redactCredentials(normalized, opaque), nil
+	if !showSecret {
+		normalized = redactCredentials(normalized, opaque)
+	}
+	if currentQuery == "" {
+		return normalized, nil
+	}
+	raw, err = json.Marshal(normalized)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(raw, &normalized); err != nil {
+		return nil, err
+	}
+	result, err := jmespath.Search(currentQuery, normalized)
+	if err != nil {
+		return nil, fmt.Errorf("JMESPath query error: %w", err)
+	}
+	return result, nil
 }
 
 // SecretJSON also masks scalar and envelope credentials.
