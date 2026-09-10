@@ -3,6 +3,7 @@ package login
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,16 +12,19 @@ import (
 	"time"
 )
 
-// Client posts to an OAuth /token endpoint. A thin wrapper around *http.Client
-// with a timeout; no retry. Mirrors agent-core-gateway
-// internal/clients/idpoauth/client.go.
+// Client posts token grants without retries or redirects.
 type Client struct {
 	http *http.Client
 }
 
 // New wraps an *http.Client with the supplied timeout.
 func New(timeout time.Duration) *Client {
-	return &Client{http: &http.Client{Timeout: timeout}}
+	return &Client{http: &http.Client{
+		Timeout: timeout,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}}
 }
 
 // ExchangeParams collects authorization_code grant inputs.
@@ -53,7 +57,7 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("login: status=%d body=%s", e.Status, string(e.RawBody))
+	return fmt.Sprintf("login: status=%d body=[REDACTED]", e.Status)
 }
 
 // ExchangeCode posts grant_type=authorization_code + code_verifier (+ Basic
@@ -87,32 +91,33 @@ func (c *Client) Refresh(ctx context.Context, tokenURL string, p RefreshParams) 
 func (c *Client) post(ctx context.Context, tokenURL string, v url.Values, clientID, clientSecret string) (*TokenResponse, *Error, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(v.Encode()))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, tokenRequestError(err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	// client_secret_basic per RFC 6749 §2.3.1 — sent on EVERY token POST. VNG
-	// IAM's /v2 endpoint requires Basic for all clients, including "public"
-	// (no-secret) ones: for those the password is empty and only the client_id
-	// (the Basic username) is validated. Verified against dev IAM: a correct
-	// PKCE POST without Basic is rejected as AUTHENTICATION_FAILED, while the
-	// same POST with Basic(client_id:) advances to grant validation
-	// (AUTH_CODE_INVALID for a bogus code). Body secrets are NOT honored by IAM
-	// — the credential travels only in this header. Mirrors agent-core-gateway
-	// internal/clients/idpoauth/client.go:108-113, extended to the public-client
-	// case the CLI needs.
+	// IAM requires Basic, including public clients with an empty secret.
 	req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, tokenRequestError(err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1 MiB cap
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, tokenRequestError(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, &Error{Status: resp.StatusCode, RawBody: body}, nil
 	}
 	return &TokenResponse{Raw: json.RawMessage(body)}, nil, nil
+}
+
+func tokenRequestError(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return context.Canceled
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return context.DeadlineExceeded
+	}
+	return errors.New("login: token request failed")
 }

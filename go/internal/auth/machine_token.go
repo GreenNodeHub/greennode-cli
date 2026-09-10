@@ -2,52 +2,41 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"net/http"
 	"sync"
 	"time"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-// MachineTokenProvider mints short-lived access tokens via the IAM v2
-// client_credentials grant (RFC 6749) using golang.org/x/oauth2/clientcredentials.
-// It is the machine counterpart to LoginTokenProvider and satisfies
-// internal/client.TokenProvider (GetToken/RefreshToken, ctx-less — the fetch uses
-// context.Background, matching LoginTokenProvider and the former v1 TokenManager).
-//
-// v2 is the RFC 6749 facade over the same IAM backend as v1: the same
-// client_id/client_secret registry and the same token authority, so vks/vserver's
-// existing machine creds are valid at v2 and their backends accept v2-minted
-// tokens. The tokenURL is resolved by the caller from the profile's iam_env
-// (default prod) so machine mode is env-aware, mirroring the user refresh path.
-//
-// The access token is held in memory only for the process lifetime (NEVER
-// persisted — by design). IAM does not issue a refresh token for the
-// client_credentials grant, so there is no rotation/persist path here (unlike the
-// user LoginTokenProvider, which rotates and persists the refresh token).
+// MachineTokenProvider uses IAM v2 client_credentials; access tokens stay in memory.
 type MachineTokenProvider struct {
-	cfg clientcredentials.Config
+	cfg        clientcredentials.Config
+	baseCtx    context.Context
+	httpClient *http.Client
 
 	mu          sync.Mutex
 	accessToken string
 	expiresAt   time.Time
 }
 
-// NewMachineTokenProvider builds a machine client_credentials provider against
-// the given IAM v2 tokenURL. tokenURL is resolved by the caller from the
-// profile's iam_env (default prod) via internal/login.TokenURLForEnv.
+// NewMachineTokenProvider uses the caller's IAM v2 endpoint.
 func NewMachineTokenProvider(clientID, clientSecret, tokenURL string) *MachineTokenProvider {
 	return &MachineTokenProvider{
+		baseCtx:    context.Background(),
+		httpClient: newTokenHTTPClient(30 * time.Second),
 		cfg: clientcredentials.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			TokenURL:     tokenURL,
+			AuthStyle:    oauth2.AuthStyleInHeader,
 		},
 	}
 }
 
-// GetToken returns a valid access token, re-minting if the cache is empty or
-// within the expiry skew. GreennodeClient calls this once per request.
+// GetToken returns a cached token or refreshes it before expiry.
 func (p *MachineTokenProvider) GetToken() (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -57,17 +46,14 @@ func (p *MachineTokenProvider) GetToken() (string, error) {
 	return p.mint()
 }
 
-// RefreshToken force-mints regardless of cache state. GreennodeClient calls this
-// on HTTP 401 to retry once with a fresh token.
+// RefreshToken mints a token regardless of cache state.
 func (p *MachineTokenProvider) RefreshToken() (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.mint()
 }
 
-// SetToken pre-seeds the provider with a static token and expiry.
-// Intended for use in tests only (mirrors the former TokenManager.SetToken):
-// it lets a GreennodeClient fixture return a captive Bearer without hitting IAM.
+// SetToken supplies a cached token for tests.
 func (p *MachineTokenProvider) SetToken(token string, expiresAt time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -77,9 +63,15 @@ func (p *MachineTokenProvider) SetToken(token string, expiresAt time.Time) {
 
 // mint fetches a new access token via the client_credentials grant. Caller holds p.mu.
 func (p *MachineTokenProvider) mint() (string, error) {
-	tok, err := p.cfg.Token(context.Background())
+	tok, err := p.cfg.Token(context.WithValue(p.baseCtx, oauth2.HTTPClient, p.httpClient))
 	if err != nil {
-		return "", fmt.Errorf("IAM machine token request failed: %w", err)
+		if errors.Is(err, context.Canceled) {
+			return "", context.Canceled
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return "", context.DeadlineExceeded
+		}
+		return "", errors.New("IAM machine token request failed")
 	}
 	p.accessToken = tok.AccessToken
 	exp := tok.Expiry
@@ -90,9 +82,33 @@ func (p *MachineTokenProvider) mint() (string, error) {
 	return p.accessToken, nil
 }
 
-// Compile-time assertion that MachineTokenProvider satisfies the consumer-side
-// internal/client.TokenProvider contract (GetToken/RefreshToken). Kept local as
-// an anonymous interface so internal/auth need not import internal/client.
+// SetBaseContext supplies cancellation for subsequent IAM requests.
+func (p *MachineTokenProvider) SetBaseContext(ctx context.Context) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	p.baseCtx = ctx
+}
+
+// SetHTTPTimeout sets the total IAM request timeout; zero disables it.
+func (p *MachineTokenProvider) SetHTTPTimeout(timeout time.Duration) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.httpClient = newTokenHTTPClient(timeout)
+}
+
+func newTokenHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
+// Check the consumer's token-provider contract without an import cycle.
 var _ interface {
 	GetToken() (string, error)
 	RefreshToken() (string, error)
