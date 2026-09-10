@@ -5,6 +5,7 @@ import (
 	_ "github.com/greennodehub/greennode-cli/cmd/saasai"
 	_ "github.com/greennodehub/greennode-cli/cmd/vbackup"
 	_ "github.com/greennodehub/greennode-cli/cmd/vcr"
+	_ "github.com/greennodehub/greennode-cli/cmd/vdb"
 	_ "github.com/greennodehub/greennode-cli/cmd/vks"
 	_ "github.com/greennodehub/greennode-cli/cmd/vlb"
 	_ "github.com/greennodehub/greennode-cli/cmd/vmonitor"
