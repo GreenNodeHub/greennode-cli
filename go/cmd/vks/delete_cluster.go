@@ -32,6 +32,13 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 	if err := validator.ValidateID(clusterID, "cluster-id"); err != nil {
 		return err
 	}
+	if dryRun {
+		cli.PrintDryRun("delete", "VKS cluster "+clusterID, map[string]any{
+			"method": "DELETE",
+			"path":   "/v1/clusters/" + clusterID,
+		})
+		return nil
+	}
 
 	apiClient, err := createClient(cmd)
 	if err != nil {
@@ -54,11 +61,6 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 
 	// Show preview
 	printClusterPreview(cluster, nodegroups)
-
-	if dryRun {
-		cli.DryRunNotice("delete")
-		return nil
-	}
 
 	if !cli.Confirm(force, "Are you sure you want to delete this cluster?") {
 		fmt.Println("Aborted.")
