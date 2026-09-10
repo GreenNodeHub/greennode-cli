@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -55,7 +56,10 @@ For help on any command:
 		if NonInteractive && (cmd == configure.ConfigureCmd || cmd == login.LoginCmd) {
 			return fmt.Errorf("%s requires interaction; omit --non-interactive (use 'configure set' for scripted configuration)", cmd.CommandPath())
 		}
-		return validateGlobalFlags(cmd)
+		if err := validateGlobalFlags(cmd); err != nil {
+			return usageError{err}
+		}
+		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
@@ -83,6 +87,9 @@ func init() {
 	_ = rootCmd.RegisterFlagCompletionFunc("color", cli.FlagValues("on", "off", "auto"))
 
 	rootCmd.SetVersionTemplate("grn-cli/{{.Version}}\n")
+	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return usageError{err}
+	})
 	userAgent := "grn-cli/" + cliVersion
 	client.UserAgent = userAgent
 	internalAuth.UserAgent = userAgent
@@ -102,8 +109,23 @@ func Execute() {
 	defer stop()
 	if err := ExecuteContext(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		os.Exit(exitCode(err))
 	}
+}
+
+type usageError struct {
+	err error
+}
+
+func (e usageError) Error() string { return e.err.Error() }
+func (e usageError) Unwrap() error { return e.err }
+
+func exitCode(err error) int {
+	var target usageError
+	if errors.As(err, &target) {
+		return 2
+	}
+	return 1
 }
 
 // ExecuteContext propagates cancellation and confirmation failures.

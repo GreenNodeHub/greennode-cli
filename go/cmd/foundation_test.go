@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"strings"
@@ -67,6 +68,27 @@ func TestFoundationRootOfflineSafety(t *testing.T) {
 				t.Fatalf("command hung reading stdin: %s", out)
 			}
 			if (err == nil) != tc.success || !strings.Contains(string(out), tc.want) {
+				t.Fatalf("exit=%v output=%s", err, out)
+			}
+		})
+	}
+}
+
+func TestFoundationUsageErrorsExitTwo(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"invalid flag", []string{"--unknown"}},
+		{"invalid output", []string{"--output", "xml"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := append([]string{"-test.run=^TestFoundationRootHelper$", "--"}, tc.args...)
+			child := exec.Command(os.Args[0], args...)
+			child.Env = []string{"GRN_FOUNDATION_HELPER=1", "HOME=" + t.TempDir()}
+			out, err := child.CombinedOutput()
+			var exitErr *exec.ExitError
+			if !errors.As(err, &exitErr) || exitErr.ExitCode() != 2 {
 				t.Fatalf("exit=%v output=%s", err, out)
 			}
 		})
