@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -61,6 +62,17 @@ func runUpdateTags(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one tag is required (--tag or --edited-tag)")
 	}
 
+	body := map[string]interface{}{
+		"resourceId":     imageID,
+		"resourceType":   "IMAGE",
+		"tagRequestList": tagList,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/tag/resource/%s", "<project-id>", imageID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -71,12 +83,6 @@ func runUpdateTags(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	body := map[string]interface{}{
-		"resourceId":     imageID,
-		"resourceType":   "IMAGE",
-		"tagRequestList": tagList,
-	}
-
 	result, err := apiClient.Put(fmt.Sprintf("/v2/%s/tag/resource/%s", projectID, imageID), body)
 	if err != nil {
 		return fmt.Errorf("failed to update tags for user image %s: %w", imageID, err)
@@ -85,8 +91,6 @@ func runUpdateTags(cmd *cobra.Command, args []string) error {
 	return outputResult(cmd, cfg, result)
 }
 
-// parseTagRequests converts key=value flags into tag request entries, stamping
-// each with the given isEdited marker.
 func parseTagRequests(raw []string, isEdited bool) ([]interface{}, error) {
 	out := make([]interface{}, 0, len(raw))
 	for _, t := range raw {

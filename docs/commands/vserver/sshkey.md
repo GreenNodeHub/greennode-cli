@@ -11,6 +11,7 @@ grn vserver sshkey <command> [options]
 | Command | Description |
 |---------|-------------|
 | [list](#list) | List all SSH keys |
+| [get](#get) | Get an SSH key |
 | [create](#create) | Generate a new SSH key pair |
 | [import](#import) | Import an existing SSH public key |
 | [delete](#delete) | Delete an SSH key |
@@ -28,6 +29,7 @@ grn vserver sshkey list
     [--page <value>]
     [--page-size <value>]
     [--name <value>]
+    [--show-secret]
 ```
 
 ### Options
@@ -48,6 +50,20 @@ grn vserver sshkey list
 grn vserver sshkey list --output table
 ```
 
+Private-key fields are `[REDACTED]` unless `--show-secret` is set. Public-key fields remain visible.
+
+---
+
+## get
+
+Get one SSH key by ID.
+
+```bash
+grn vserver sshkey get --sshkey-id <id> [--show-secret]
+```
+
+Private-key fields are `[REDACTED]` unless `--show-secret` is set. Public-key fields remain visible.
+
 ---
 
 ## create
@@ -60,6 +76,7 @@ Generate a new SSH key pair. The private key is saved locally and the public key
 grn vserver sshkey create
     --name <value>
     [--output-dir <value>]
+    [--show-secret]
 ```
 
 ### Options
@@ -69,6 +86,9 @@ grn vserver sshkey create
 
 `--output-dir` (string)
 : Directory to save the `.pem` private key file. Defaults to the system Downloads folder. If a file named `<name>.pem` already exists, the file is saved as `<name>(1).pem`, `<name>(2).pem`, etc.
+
+`--show-secret` (boolean)
+: Also permit private-key material in command output. The saved file remains mode `0600`; existing paths are not overwritten.
 
 ### Examples
 
@@ -92,6 +112,7 @@ Import an existing SSH public key into your project.
 grn vserver sshkey import
     --name <value>
     (--public-key <value> | --public-key-file <value>)
+    [--show-secret]
 ```
 
 ### Options
@@ -104,6 +125,9 @@ grn vserver sshkey import
 
 `--public-key-file` (string)
 : Path to a local file containing the SSH public key. Exactly one of `--public-key` or `--public-key-file` must be provided.
+
+`--show-secret` (boolean)
+: Permit any secret fields returned by the API in command output.
 
 ### Examples
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -49,6 +50,16 @@ func runCreateImage(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	body := map[string]interface{}{
+		"name": name,
+		"tags": tags,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/user-images/servers/%s", "<project-id>", serverID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -57,11 +68,6 @@ func runCreateImage(cmd *cobra.Command, args []string) error {
 	projectID, err := getProjectID(cfg)
 	if err != nil {
 		return err
-	}
-
-	body := map[string]interface{}{
-		"name": name,
-		"tags": tags,
 	}
 
 	result, err := apiClient.Post(
@@ -75,8 +81,6 @@ func runCreateImage(cmd *cobra.Command, args []string) error {
 	return outputResult(cmd, cfg, result)
 }
 
-// parseTags converts repeated --tag key=value flags into the API tag list.
-// Each entry must contain a "=" separator and a non-empty key.
 func parseTags(raw []string) ([]interface{}, error) {
 	tags := make([]interface{}, 0, len(raw))
 	for _, t := range raw {

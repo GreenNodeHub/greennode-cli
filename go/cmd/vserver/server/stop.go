@@ -28,6 +28,11 @@ func runStop(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/servers/%s/stop", "<project-id>", serverID), nil)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err

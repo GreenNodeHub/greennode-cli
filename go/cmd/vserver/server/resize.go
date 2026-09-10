@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,14 @@ func runResize(cmd *cobra.Command, args []string) error {
 
 	if err := validator.ValidateID(serverID, "server-id"); err != nil {
 		return err
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		if flavorID == "" {
+			return fmt.Errorf("--flavor-id is required for dry-run")
+		}
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/servers/%s/resize", "<project-id>", serverID), map[string]interface{}{"flavorId": flavorID})
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)

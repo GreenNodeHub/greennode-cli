@@ -3,6 +3,7 @@ package placementgroup
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -37,17 +38,6 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("nothing to update: provide --name and/or --description")
 	}
 
-	apiClient, cfg, err := createClient(cmd)
-	if err != nil {
-		return err
-	}
-
-	projectID, err := getProjectID(cfg)
-	if err != nil {
-		return err
-	}
-
-	// serverGroupId is always sent; name/description only when the user set them.
 	body := map[string]interface{}{"serverGroupId": groupID}
 	if nameChanged {
 		name, _ := cmd.Flags().GetString("name")
@@ -56,6 +46,21 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	if descChanged {
 		description, _ := cmd.Flags().GetString("description")
 		body["description"] = description
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/serverGroups/%s", "<project-id>", groupID), body)
+		return nil
+	}
+
+	apiClient, cfg, err := createClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := getProjectID(cfg)
+	if err != nil {
+		return err
 	}
 
 	result, err := apiClient.Put(fmt.Sprintf("/v2/%s/serverGroups/%s", projectID, groupID), body)

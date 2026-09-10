@@ -3,6 +3,7 @@ package vserver
 import (
 	"github.com/greennodehub/greennode-cli/cmd/vserver/dhcp"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/flavor"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/flavorzone"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/floatingip"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/image"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/networkinterface"
@@ -38,6 +39,7 @@ func init() {
 	VServerCmd.AddCommand(subnet.SubnetCmd)
 	VServerCmd.AddCommand(secgroup.SecgroupCmd)
 	VServerCmd.AddCommand(flavor.FlavorCmd)
+	VServerCmd.AddCommand(flavorzone.FlavorZoneCmd)
 	VServerCmd.AddCommand(volumetype.VolumeTypeCmd)
 	VServerCmd.AddCommand(image.ImageCmd)
 	VServerCmd.AddCommand(sshkey.SSHKeyCmd)
@@ -46,6 +48,7 @@ func init() {
 	VServerCmd.AddCommand(floatingip.FloatingIPCmd)
 	VServerCmd.AddCommand(networkinterface.NetworkInterfaceCmd)
 	VServerCmd.AddCommand(dhcp.DhcpCmd)
+	registerAncillaryOperations(VServerCmd)
 
 	registerCompletions()
 	cli.RegisterService(VServerCmd)

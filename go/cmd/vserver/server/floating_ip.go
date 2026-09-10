@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +43,6 @@ func init() {
 	}
 }
 
-// runFloatingIPAction runs the attach or detach floating-IP request; action is "attach" or "detach".
 func runFloatingIPAction(cmd *cobra.Command, action string) error {
 	serverID, _ := cmd.Flags().GetString("server-id")
 	floatingIPID, _ := cmd.Flags().GetString("floating-ip-id")
@@ -56,6 +56,11 @@ func runFloatingIPAction(cmd *cobra.Command, action string) error {
 		if err := validator.ValidateID(check.val, check.flag); err != nil {
 			return err
 		}
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/servers/%s/wan-ips/%s/%s", "<project-id>", serverID, floatingIPID, action), map[string]interface{}{"networkInterfaceId": interfaceID})
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)

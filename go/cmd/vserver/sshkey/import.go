@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
+	"github.com/greennodehub/greennode-cli/internal/vserverclient"
 	"github.com/spf13/cobra"
 )
 
@@ -20,8 +22,10 @@ directly with --public-key, or — more conveniently — read from a file
 func init() {
 	f := importCmd.Flags()
 	f.String("name", "", "SSH key name (required)")
+	f.Bool("show-secret", false, "Print returned secret material")
 	f.String("public-key", "", "SSH public key contents (e.g. 'ssh-rsa AAAA...')")
 	f.String("public-key-file", "", "Path to a public key file to read (e.g. ~/.ssh/id_rsa.pub)")
+	f.Bool("dry-run", false, "Validate the SSH public key without importing it")
 
 	if err := importCmd.MarkFlagRequired("name"); err != nil {
 		panic(fmt.Sprintf("BUG: MarkFlagRequired(%q): %v", "name", err))
@@ -32,6 +36,7 @@ func runImport(cmd *cobra.Command, args []string) error {
 	name, _ := cmd.Flags().GetString("name")
 	publicKey, _ := cmd.Flags().GetString("public-key")
 	publicKeyFile, _ := cmd.Flags().GetString("public-key-file")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	if name == "" {
 		return fmt.Errorf("flag --name is required")
@@ -42,19 +47,24 @@ func runImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if dryRun {
+		cli.PrintDryRun("import", "SSH public key", map[string]any{"name": name, "publicKey": "validated"})
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
 	}
 
-	projectID, err := getProjectID(cfg)
+	projectID, err := vserverclient.ProjectID(cfg)
 	if err != nil {
 		return err
 	}
 
-	result, err := apiClient.Post(
+	result, err := requestKey(apiClient, "POST",
 		fmt.Sprintf("/v2/%s/sshKeys/import", projectID),
-		map[string]interface{}{"name": name, "pubKey": pubKey},
+		nil, map[string]any{"name": name, "pubKey": pubKey},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to import SSH key %q: %w", name, err)
@@ -63,9 +73,6 @@ func runImport(cmd *cobra.Command, args []string) error {
 	return outputKeyMutation(cmd, cfg, result)
 }
 
-// resolvePublicKey returns the public key contents from --public-key-file (if set)
-// or --public-key. Exactly one source must be provided. The value is whitespace-trimmed
-// and validated to look like an SSH public key.
 func resolvePublicKey(publicKey, publicKeyFile string) (string, error) {
 	if publicKey == "" && publicKeyFile == "" {
 		return "", fmt.Errorf("a public key is required: pass --public-key-file <path> or --public-key <value>")

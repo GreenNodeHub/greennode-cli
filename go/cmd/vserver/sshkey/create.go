@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
+	"github.com/greennodehub/greennode-cli/internal/vserverclient"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +22,9 @@ private key. The private key is returned only once and is saved as a
 func init() {
 	f := createCmd.Flags()
 	f.String("name", "", "SSH key name (required)")
+	f.Bool("show-secret", false, "Print returned secret material")
 	f.String("output-dir", "", "Directory to save the <name>.pem private key (default: Downloads)")
+	f.Bool("dry-run", false, "Validate the SSH key request without creating a key pair")
 	if err := createCmd.MarkFlagRequired("name"); err != nil {
 		panic(fmt.Sprintf("BUG: MarkFlagRequired(%q): %v", "name", err))
 	}
@@ -29,8 +33,17 @@ func init() {
 func runCreate(cmd *cobra.Command, args []string) error {
 	name, _ := cmd.Flags().GetString("name")
 	outputDir, _ := cmd.Flags().GetString("output-dir")
-	if name == "" {
-		return fmt.Errorf("flag --name is required")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	if err := validateKeyFileName(name); err != nil {
+		return err
+	}
+	if dryRun {
+		target := "default Downloads directory"
+		if outputDir != "" {
+			target = outputDir
+		}
+		cli.PrintDryRun("create", "SSH key pair", map[string]any{"name": name, "privateKeyOutput": target})
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)
@@ -38,20 +51,19 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	projectID, err := getProjectID(cfg)
+	projectID, err := vserverclient.ProjectID(cfg)
 	if err != nil {
 		return err
 	}
 
-	result, err := apiClient.Post(
+	result, err := requestKey(apiClient, "POST",
 		fmt.Sprintf("/v2/%s/sshKeys", projectID),
-		map[string]interface{}{"name": name},
+		nil, map[string]any{"name": name},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create SSH key %q: %w", name, err)
 	}
 
-	// Persist the private key to a .pem file (Downloads by default).
 	if data := keyData(result); data != nil {
 		privateKey := findStringField(data, "privateKey", "private_key", "privatekey", "priKey")
 		if privateKey != "" {

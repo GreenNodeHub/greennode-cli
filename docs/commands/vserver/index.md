@@ -22,6 +22,7 @@ grn vserver <resource> <command> [options]
 | [dhcp](dhcp.md) | Manage DHCP option sets |
 | [user-image](user-image.md) | Manage user-created images |
 | [flavor](flavor.md) | Browse available instance flavors |
+| `flavor-zone` | Browse flavor zones, families, products, and cluster support |
 | [image](image.md) | Browse available OS/GPU images |
 | [volume-type](volume-type.md) | Browse available volume types for a zone |
 
@@ -73,3 +74,11 @@ All vserver commands accept these global flags:
 | `--profile` | Use a specific credentials profile |
 | `--endpoint-url` | Override the vServer API endpoint |
 | `--debug` | Print raw HTTP requests and responses |
+
+Additional public-contract groups cover history, interconnects, interface peering, marketplace data and migrations, network ACLs, persistent volumes, project metadata, protocols, quotas, regions, route tables, tags, virtual addresses/subnets, and zones. Use `grn vserver --help` and each group's `--help` for the exact surface.
+
+New vServer operations require a positive numeric `portal_user_id` when their published contract includes that header. Marketplace catalog/template/package/instance reads and protocol listing are the documented exceptions; existing upstream commands retain their prior profile requirements.
+
+Every mutation exposes `--dry-run`. Dry-runs validate locally and do not load credentials, prompt, call the API, or write files. Destructive commands also require confirmation unless `--force` is set.
+
+SSH private keys and console URLs are masked as `[REDACTED]` by default. `--show-secret` permits command-output disclosure only; debug and error output remain masked.
