@@ -70,6 +70,14 @@ func PrintDeletedID(id string) error {
 
 // JSON prints any value as indented JSON to stdout.
 func JSON(v interface{}) error {
+	return writeJSON(v, false)
+}
+
+func writeJSON(v any, opaque bool) error {
+	v, err := prepareJSON(v, opaque)
+	if err != nil {
+		return err
+	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)
@@ -87,6 +95,9 @@ func Table(headers []string, rows [][]string) {
 	for _, row := range rows {
 		rowIface := make([]interface{}, len(row))
 		for i, cell := range row {
+			if !showSecret && ((i < len(headers) && credentialField(headers[i])) || (len(headers) == 2 && headers[0] == "Field" && i == 1 && credentialField(row[0]))) {
+				cell = Secret(cell)
+			}
 			rowIface[i] = cell
 		}
 		_ = t.Append(rowIface...)

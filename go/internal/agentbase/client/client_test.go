@@ -163,7 +163,7 @@ func TestDo_GetTokenErrorSurfaces(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	c := New(srv.URL, &fakeTokenProvider{err: errSentinel})
-	if err := c.Get(context.Background(), "/test", nil, nil); err != errSentinel {
+	if err := c.Get(context.Background(), "/test", nil, nil); !errors.Is(err, errSentinel) {
 		t.Errorf("expected provider error to surface, got %v", err)
 	}
 }
@@ -209,7 +209,7 @@ func TestAPIError_Error(t *testing.T) {
 	if msg == "" {
 		t.Error("expected non-empty error message")
 	}
-	if msg != "API error (HTTP 422): {\"detail\":\"invalid\"}" {
+	if msg != "API error (HTTP 422): [REDACTED]" {
 		t.Errorf("unexpected error message: %s", msg)
 	}
 }

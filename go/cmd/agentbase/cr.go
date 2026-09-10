@@ -33,8 +33,8 @@ account used for 'docker login':
     grn agentbase cr registry-credential get
     grn agentbase cr registry-credential reset-secret
 
-The robot-account secret is real (it authorizes push/pull): it is MASKED in
-table output and revealed only with -o json. Use 'reset-secret' to rotate it.`,
+Credentials are redacted unless --show-secret is explicit.
+Use 'reset-secret' to rotate the robot-account secret.`,
 }
 
 // newCRClient mirrors newPolicyClient: resolve the shared profile + env, select
@@ -47,7 +47,7 @@ func newCRClient(ctx context.Context, cmd *cobra.Command) (*crpkg.Client, error)
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return crpkg.NewClient(ab.endpoints.Cr, provider), nil
 }
@@ -243,10 +243,8 @@ var crArtifactDeleteCmd = &cobra.Command{
 var crRegistryCredentialCmd = &cobra.Command{
 	Use:   "registry-credential",
 	Short: "Manage the robot account used for docker login",
-	Long: `Manage the robot account (username + secret) used to authenticate to the
-registry for push/pull. The secret is MASKED in table output and revealed only
-with -o json (so you can pipe it into 'docker login'). 'reset-secret' rotates
-the secret.`,
+	Long: `Manage the registry robot account. Credentials require --show-secret.
+Use 'reset-secret' to rotate the secret.`,
 }
 
 var crRegistryCredentialGetCmd = &cobra.Command{
@@ -301,28 +299,15 @@ func renderRepository(repo *crpkg.Repository) error {
 	return nil
 }
 
-// renderRegistryCredential masks the secret in the human table; the JSON path
-// (output.FormatJSON) emits the raw struct and reveals it.
+// renderRegistryCredential honors explicit disclosure.
 func renderRegistryCredential(cred *crpkg.RegistryCredential) error {
 	rows := [][]string{
 		{"Username", cred.Username},
-		{"Secret", maskSecret(cred.Secret)},
+		{"Secret", output.Secret(cred.Secret)},
 	}
 	output.Table([]string{"Field", "Value"}, rows)
-	fmt.Fprintln(os.Stderr, "Secret is masked. Use -o json to reveal it for 'docker login'.")
+	fmt.Fprintln(os.Stderr, "Use --show-secret only when credential output is required.")
 	return nil
-}
-
-// maskSecret shows only the last 4 chars of a secret. Mirrors the
-// refresh_token masking posture used elsewhere in the CLI.
-func maskSecret(s string) string {
-	if s == "" {
-		return "-"
-	}
-	if len(s) <= 4 {
-		return "****"
-	}
-	return "********" + s[len(s)-4:]
 }
 
 // tagsToStr joins artifact tag names (comma-separated) for table display.

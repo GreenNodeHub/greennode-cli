@@ -51,7 +51,7 @@ func listQuery(page, size int, name string) url.Values {
 // access may provision it.
 func (c *Client) GetRepository(ctx context.Context) (*Repository, error) {
 	var out Repository
-	if err := c.http.Get(ctx, "/api/v1/repository", nil, &out); err != nil {
+	if err := c.http.GetOnce(ctx, "/api/v1/repository", nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -60,7 +60,7 @@ func (c *Client) GetRepository(ctx context.Context) (*Repository, error) {
 // ListImages returns a page of images in the user's namespace.
 func (c *Client) ListImages(ctx context.Context, name string, page, size int) (*ListImagesResponse, error) {
 	var out ListImagesResponse
-	if err := c.http.Get(ctx, "/api/v1/repository/images", listQuery(page, size, name), &out); err != nil {
+	if err := c.http.GetOnce(ctx, "/api/v1/repository/images", listQuery(page, size, name), &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -82,7 +82,7 @@ func (c *Client) ListArtifacts(ctx context.Context, imageName, name string, page
 	q := listQuery(page, size, name)
 	q.Set("imageName", imageName)
 	var out ListArtifactsResponse
-	if err := c.http.Get(ctx, "/api/v1/repository/artifacts", q, &out); err != nil {
+	if err := c.http.GetOnce(ctx, "/api/v1/repository/artifacts", q, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -106,7 +106,7 @@ func (c *Client) DeleteArtifact(ctx context.Context, imageName, digest string) e
 // The secret is real and used for `docker login` — handle with care.
 func (c *Client) GetRegistryCredential(ctx context.Context) (*RegistryCredential, error) {
 	var out RegistryCredential
-	if err := c.http.Get(ctx, "/api/v1/registry-credential", nil, &out); err != nil {
+	if err := c.http.GetOnce(ctx, "/api/v1/registry-credential", nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

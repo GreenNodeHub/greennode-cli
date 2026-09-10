@@ -78,7 +78,7 @@ func newDeployClients(cmd *cobra.Command) (*deployClients, error) {
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return &deployClients{ab: ab, provider: provider}, nil
 }

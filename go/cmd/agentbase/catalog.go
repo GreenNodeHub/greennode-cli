@@ -60,7 +60,7 @@ func newCatalogClient(ctx context.Context, cmd *cobra.Command) (*catalogpkg.Clie
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return catalogpkg.NewClient(ab.endpoints.Runtime, provider), nil
 }

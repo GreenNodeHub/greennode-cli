@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://agentbase.api.vngcloud.vn/identity/api-docs",
+    "title": "Agent Core Identity API",
+    "version": "0.0.1-SNAPSHOT",
+    "retrieved_at": "2026-09-10",
+    "sha256": "57b0e09330b2e059c127e46a8d9a1fba98b57161656eecb670c19b127df81279"
+  },
+  "base_url": "https://agentbase.api.vngcloud.vn/identity",
+  "legacy_runtime_paths_supported": false,
+  "operations": [
+    {"operation_id":"getM2mToken","method":"POST","path":"/api/v1/outbound-auth/oauth2-providers/{providerName}/agent-identities/{agentIdentityName}/tokens/m2m","required_body_fields":["scopes"],"responses":{"200":{"type":"object","fields":["accessToken","tokenType"]}}},
+    {"operation_id":"get3loToken","method":"POST","path":"/api/v1/outbound-auth/oauth2-providers/{providerName}/agent-identities/{agentIdentityName}/tokens/3lo","required_body_fields":["agentUserId","returnUrl","scopes"],"responses":{"200":{"type":"object","fields":["accessToken","authorizationUrl","sessionId","status","tokenType"]}}},
+    {"operation_id":"getDelegatedApiKey","method":"POST","path":"/api/v1/outbound-auth/delegated-api-key-providers/{providerName}/agent-identities/{agentIdentityName}/api-key","required_body_fields":["agentUserId","returnUrl"],"responses":{"200":{"type":"object","fields":["apikey","authorizationUrl","sessionId","status"]}}},
+    {"operation_id":"getApikeyForAgentIdentity","method":"GET","path":"/api/v1/outbound-auth/api-key-providers/{providerName}/agent-identities/{agentIdentityName}/api-key","required_body_fields":[],"responses":{"200":{"type":"object","fields":["apikey"]}}}
+  ]
+}

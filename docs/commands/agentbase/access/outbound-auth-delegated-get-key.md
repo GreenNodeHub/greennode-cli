@@ -9,8 +9,7 @@ Obtain a delegated API key for an agent identity from a delegated API key provid
 Required flags: `--agent-user-id` and `--return-url`.
 Optional flags: `--custom-state`, `--session-id`, `--force-delegation`.
 
-The response may include the API key value and an authorization URL. Use `-o json`
-(or `-o id`) to reveal the full values; the default `table` output is for human inspection.
+The API key and authorization URL are `[REDACTED]` unless `--show-secret` is explicit. ID output contains only the session ID.
 
 ## Synopsis
 
@@ -90,5 +89,5 @@ grn agentbase access outbound-auth delegated get-key \
   --agent-user-id user-123 \
   --return-url https://app.example.com/callback \
   --force-delegation \
-  -o json
+  -o json --show-secret
 ```

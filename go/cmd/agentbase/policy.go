@@ -49,7 +49,7 @@ func newPolicyClient(ctx context.Context, cmd *cobra.Command) (*policypkg.Client
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return policypkg.NewClient(ab.endpoints.Policy, provider), nil
 }

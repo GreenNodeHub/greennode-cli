@@ -55,7 +55,7 @@ func newGatewayClient(ctx context.Context, cmd *cobra.Command) (*gatewaypkg.Clie
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return gatewaypkg.NewClient(ab.endpoints.Gateway, provider), nil
 }

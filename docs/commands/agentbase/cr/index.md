@@ -12,8 +12,7 @@ when first read. The robot account (username + secret) is what you use for
 `docker login`. Delete operations identify their target by a query parameter
 (`?imageName=`, `?digest=`) and return `204 No Content` on success.
 
-The robot-account secret authorizes push/pull, so it is real — it is MASKED in
-table output (last-4 shown) and revealed only with `-o json`.
+The robot-account secret is `[REDACTED]` in every format unless `--show-secret` is explicit.
 
 ## Available commands
 
