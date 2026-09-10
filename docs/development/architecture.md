@@ -51,7 +51,7 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
    var VserverCmd = &cobra.Command{
        Use:   "vserver",
        Short: "VNG Cloud vServer commands",
-       Run:   func(cmd *cobra.Command, args []string) { cmd.Help() },
+       RunE:  func(cmd *cobra.Command, args []string) error { return cmd.Help() },
    }
 
    func init() {
@@ -97,7 +97,7 @@ IAM token requests also reject redirects and expose neither provider response bo
 
 `internal/redact` masks credential-shaped JSON fields, sensitive query/header names, and explicitly declared secret path values without modifying transmitted data. Sensitive response methods also suppress displayed error bodies and debug responses. `APIError.Body` deliberately retains raw data for product-specific handling: never log it directly. Key-based masking cannot discover arbitrary secrets inside free text; unknown binary bodies should be logged as metadata only.
 
-`internal/operation` owns descriptor parsing and the shared execution order: validate path/query/body → offline validation → dry-run early return → live validation → confirmation → client/request → response validation → output. Services own endpoint facts, body/schema contracts, status acceptance, and specialized hooks. Dry-run must not construct clients, read credentials, call the API, prompt, or write output files. The root translates legacy bool-based confirmation refusals into failure exits; new engine commands return the refusal directly.
+`internal/operation` owns descriptor parsing and the shared execution order: validate path/query/body → offline validation → dry-run early return → live validation → confirmation → client/request → response validation → output. Services own endpoint facts, body/schema contracts, status acceptance, and specialized hooks. Dry-run must not construct clients, read credentials, call the API, prompt, or write output files. Every Cobra handler uses `RunE` and returns failures to the root, which is the only process-exit boundary and preserves typed exit codes such as VKS waiter code 255. The root also translates legacy bool-based confirmation refusals into failure exits; new engine commands return the refusal directly.
 
 Use the [public contract-fixture convention](contract-fixtures.md) for independently sourced service tests. Shared engine tests alone do not establish provider compatibility.
 

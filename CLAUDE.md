@@ -21,7 +21,7 @@ go/
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
 │   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
-│   │   └── helpers.go               # mustLoadConfig / newAuthProvider
+│   │   └── helpers.go               # loadAgentbaseCtx / newAuthProvider
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list
@@ -148,7 +148,7 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 
 Use `internal/redact` for credential-shaped JSON, URL queries, headers, and declared secret path values. Sensitive response methods suppress debug/error bodies; raw `APIError.Body` remains private handling data and must not be logged. Shared transport retries only reads; writes, explicit no-retry calls, and streams are not replayed after 401 or an uncertain response. Respect `--non-interactive`: never prompt, require `--force` for confirmation, and return errors below the root exit boundary.
 
-Descriptor-driven services use `internal/operation` and independent [public contract fixtures](docs/development/contract-fixtures.md). Their dry-runs run before credentials, clients, network, prompts, or output-file writes. Existing VKS delete previews retain live reads. Use `cli.BuildClient`/`NewClientWithEndpoint` for specialized/global endpoints without replacing `NewTokenProvider`; add service-specific headers only where documented. Configuration adds `portal_user_id` without changing the existing `WriteConfig` signature or auth storage.
+Descriptor-driven services use `internal/operation` and independent [public contract fixtures](docs/development/contract-fixtures.md). All dry-runs run before credentials, clients, network, prompts, or output-file writes. Use `cli.BuildClient`/`NewClientWithEndpoint` for specialized/global endpoints without replacing `NewTokenProvider`; add service-specific headers only where documented. Configuration adds `portal_user_id` without changing the existing `WriteConfig` signature or auth storage.
 
 ## Building
 
