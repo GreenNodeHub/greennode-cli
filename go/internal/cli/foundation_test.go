@@ -175,7 +175,7 @@ func TestFoundationBuilderRegionAndCancellation(t *testing.T) {
 }
 
 func TestFoundationEndpointRejectsMalformedURLs(t *testing.T) {
-	for _, endpoint := range []string{"%", "localhost", "https:///missing-host", "ftp://example.com", "https://user:secret@api.vngcloud.vn", "https://api.vngcloud.vn/#secret"} {
+	for _, endpoint := range []string{"%", "localhost", "https:///missing-host", "ftp://example.com", "https://fixture-user:fixture-value@api.vngcloud.vn", "https://api.vngcloud.vn/#fragment"} {
 		if err := CheckEndpoint(endpoint, false, true); err == nil {
 			t.Errorf("accepted %q", endpoint)
 		}
