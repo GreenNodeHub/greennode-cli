@@ -46,10 +46,9 @@ func runGet(cmd *cobra.Command, args []string) {
 		value = cfg.Profile
 	case "project_id":
 		value = cfg.ProjectID
-	// Login (user) identity. refresh_token is secret-at-rest → masked (a user
-	// can confirm a login token is present without seeing it). auth_mode,
-	// iam_env and the expiry are non-secret refresh context. The client_id is
-	// not stored here — it is resolved from iam_env at refresh.
+	case "portal_user_id":
+		value = cfg.PortalUserID
+	// Mask stored refresh tokens; show non-secret auth context.
 	case "refresh_token":
 		value = config.MaskCredential(cfg.RefreshToken)
 	case "auth_mode":
@@ -60,7 +59,7 @@ func runGet(cmd *cobra.Command, args []string) {
 		if !cfg.TokenExpiresAt.IsZero() {
 			value = cfg.TokenExpiresAt.UTC().Format(time.RFC3339)
 		}
-	// agent_identity: the agentbase current-agent selection. Non-secret.
+	// AgentBase's per-profile current agent.
 	case "agent_identity":
 		value = cfg.AgentIdentity
 	default:

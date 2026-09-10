@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var validRegions = []string{"HCM-3", "HAN"}
+var validRegions = config.RegionNames()
 var validOutputs = []string{"json", "text", "table"}
 
 // ConfigureCmd is the `grn configure` command.
@@ -39,9 +39,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		profile = "default"
 	}
 
-	// Load existing config for defaults. A new/unknown profile (or a parse error)
-	// yields no config — start from empty defaults so `configure` can create it
-	// instead of crashing on a nil dereference.
+	// Use existing defaults; missing profiles start empty.
 	cfg, err := config.LoadConfig(profile)
 	if err != nil || cfg == nil {
 		cfg = &config.Config{}

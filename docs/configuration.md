@@ -54,12 +54,7 @@ it sets `auth_mode=machine` and drops the cached `refresh_token` /
 `token_expires_at` so the stale login token is not used. `iam_env` is preserved
 (it selects the environment for both modes).
 
-`grn login` mints a short-lived access token and persists only the **refresh
-token** (plus `auth_mode` and `iam_env`) to the profile's credentials file
-(`0600`). The access token is held in memory for the process only — it is never
-written to disk — and is auto-refreshed before expiry (60 s skew) and again on a
-`401` response. If IAM rotates the refresh token, the new one is persisted so
-later invocations keep working.
+`grn login` keeps access tokens in memory and persists refresh tokens with auth context in the profile credentials file (`0600`). Tokens refresh before expiry; rotated refresh tokens are saved for later invocations. Shared and AgentBase transports may replay safe reads after `401`, never writes or credential/provisioning reads.
 
 ### `grn login` options
 
@@ -104,6 +99,7 @@ Credentials are resolved in the following order (highest to lowest priority):
 | `GRN_CLIENT_SECRET` | Client Secret (overrides credentials file) |
 | `GRN_DEFAULT_REGION` | Default region |
 | `GRN_DEFAULT_PROJECT_ID` | Project ID (GreenNode project UUID) |
+| `GRN_PORTAL_USER_ID` | Numeric portal-user ID for operations that require that header |
 | `GRN_PROFILE` | Profile name (default: "default") |
 | `GRN_DEFAULT_OUTPUT` | Output format |
 
@@ -207,7 +203,15 @@ grn vks list-clusters
 
 ## Available regions
 
+Region support is service-specific: vBackup requires HCM-3, vLB supports HCM-3/HAN, and vStorage selects container APIs in HCM-3 or bucket APIs in HAN/HCM-4. HCM-4 is storage-only, not a VKS/vServer region. Global services use their own endpoints; see the [service references](index.md#additional-services).
+
 | Region | VKS Endpoint |
 |--------|-------------|
 | `HCM-3` | `https://vks.api.vngcloud.vn` |
 | `HAN` | `https://vks-han-1.api.vngcloud.vn` |
+
+## Portal-user configuration
+
+`grn configure set portal_user_id 12345` stores a positive 32-bit integer in the selected profile's config section. This is distinct from `project_id`; it is not an API key. `configure get portal_user_id` and `configure list` show it, and `GRN_PORTAL_USER_ID` overrides the stored value. Set an empty value to clear it. Invalid values fail without writing.
+
+The dedicated setter preserves other configuration keys, other profiles, and the entire credentials file, including login tokens and AgentBase identity. Normal region/output/project updates preserve this new key. A product builder attaches it only where the operation's documented contract requires it.

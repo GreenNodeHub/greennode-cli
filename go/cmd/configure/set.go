@@ -13,10 +13,10 @@ var setCmd = &cobra.Command{
 	Use:   "set <key> <value>",
 	Short: "Set a configuration value",
 	Args:  cobra.ExactArgs(2),
-	Run:   runSet,
+	RunE:  runSet,
 }
 
-func runSet(cmd *cobra.Command, args []string) {
+func runSet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 	value := args[1]
 	profile := cmd.Flag("profile").Value.String()
@@ -29,9 +29,7 @@ func runSet(cmd *cobra.Command, args []string) {
 
 	writer := config.NewConfigFileWriter()
 
-	// Load existing config so unrelated fields are preserved on write. For a
-	// brand-new profile LoadConfig returns (nil, err); fall back to empty
-	// defaults so the value can still be set instead of panicking.
+	// Preserve unrelated fields; new profiles start empty.
 	cfg, err := config.LoadConfig(profile)
 	if err != nil || cfg == nil {
 		cfg = &config.Config{}
@@ -40,66 +38,53 @@ func runSet(cmd *cobra.Command, args []string) {
 	switch key {
 	case "client_id":
 		if err := writer.WriteCredentials(profile, value, cfg.ClientSecret); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 	case "client_secret":
 		if err := writer.WriteCredentials(profile, cfg.ClientID, value); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 	case "region":
 		if err := writer.WriteConfig(profile, value, cfg.Output, cfg.ProjectID); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 	case "output":
 		if err := writer.WriteConfig(profile, cfg.Region, value, cfg.ProjectID); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 	case "project_id":
 		if err := writer.WriteConfig(profile, cfg.Region, cfg.Output, value); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
-	// iam_env selects dev/prod endpoints for every service (vks/vserver/agentbase)
-	// and the IAM v2 token URL. On a user (auth_mode=user) profile it is bound to
-	// the login token — repointing it would invalidate the refresh token, so
-	// refuse and point at re-login. Machine profiles switch freely. Validation is
-	// delegated to the login package so the accepted set lives in one place.
+	// User tokens bind iam_env; switching requires login. Machine profiles may switch.
 	case "iam_env":
 		if cfg.AuthMode == "user" {
-			fmt.Fprintf(os.Stderr, "Error: iam_env is bound to the login token on a user profile; re-login with 'grn login --iam-env %s' to switch\n", value)
-			os.Exit(1)
+			return fmt.Errorf("iam_env is bound to the login token on a user profile; re-login with 'grn login --iam-env %s' to switch", value)
 		}
 		if _, err := loginpkg.TokenURLForEnv(value); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 		if err := writer.WriteIamEnv(profile, value); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
-	// agent_identity: the agentbase current-agent selection. Normally set via
-	// 'grn agentbase access agent-id use|create --set-current', but exposed here
-	// so it is settable / clearable like any other profile key.
+	// AgentBase's per-profile current agent.
 	case "agent_identity":
 		if err := writer.WriteAgentIdentity(profile, value); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return err
+		}
+	case "portal_user_id":
+		if err := writer.WritePortalUserID(profile, value); err != nil {
+			return err
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown configuration key: %s\n", key)
-		os.Exit(1)
+		return fmt.Errorf("unknown configuration key: %s", key)
 	}
 
 	fmt.Printf("Set '%s' to '%s' for profile '%s'.\n", key, displaySetValue(key, value), profile)
+	return nil
 }
 
-// displaySetValue masks credential values so `configure set` never echoes a
-// secret in plaintext (matching how `configure list` masks them). Non-sensitive
-// values are shown as-is.
+// displaySetValue masks credentials before display.
 func displaySetValue(key, value string) string {
 	switch key {
 	case "client_id", "client_secret":

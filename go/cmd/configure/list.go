@@ -32,9 +32,7 @@ func runList(cmd *cobra.Command, args []string) {
 		profile = "default"
 	}
 
-	// Report a missing profile like `aws configure list` does, rather than
-	// printing empty values. LoadConfig only errors when config files exist but
-	// the profile is in neither — a fresh machine still lists unset defaults.
+	// Report missing profiles; fresh installations show unset defaults.
 	cfg, err := config.LoadConfig(profile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -54,16 +52,13 @@ func runList(cmd *cobra.Command, args []string) {
 		resolveConfigEntry("region", cfg.Region, configFile),
 		resolveConfigEntry("output", cfg.Output, configFile),
 		resolveConfigEntry("project_id", cfg.ProjectID, configFile),
-		// Login (user) identity — present on profiles created by `grn login`.
-		// refresh_token is secret-at-rest → masked; the rest is non-secret
-		// refresh context, shown as-is so a user can see which auth mode a
-		// profile is in and which IAM env it targets.
+		resolveConfigEntry("portal_user_id", cfg.PortalUserID, configFile),
+		// Store refresh tokens, never access tokens, in profile credentials.
 		resolveCredEntry("refresh_token", cfg.RefreshToken, credsFile),
 		resolveCredEntryPlain("auth_mode", cfg.AuthMode, credsFile),
 		resolveCredEntryPlain("iam_env", cfg.IamEnv, credsFile),
 		resolveCredEntryPlain("token_expires_at", tokenExpiresAtStr(cfg.TokenExpiresAt), credsFile),
-		// agent_identity: the agentbase current-agent selection, persisted by
-		// 'grn agentbase access agent-id use|create --set-current'. Non-secret.
+		// AgentBase's per-profile current agent.
 		resolveCredEntryPlain("agent_identity", cfg.AgentIdentity, credsFile),
 	}
 
@@ -117,9 +112,10 @@ func resolveConfigEntry(name, value, configFile string) configEntry {
 
 	// Check if value came from env var
 	envMap := map[string]string{
-		"region":     "GRN_DEFAULT_REGION",
-		"output":     "GRN_DEFAULT_OUTPUT",
-		"project_id": "GRN_DEFAULT_PROJECT_ID",
+		"region":         "GRN_DEFAULT_REGION",
+		"output":         "GRN_DEFAULT_OUTPUT",
+		"project_id":     "GRN_DEFAULT_PROJECT_ID",
+		"portal_user_id": "GRN_PORTAL_USER_ID",
 	}
 	if envVar, ok := envMap[name]; ok {
 		if os.Getenv(envVar) != "" {
@@ -132,10 +128,7 @@ func resolveConfigEntry(name, value, configFile string) configEntry {
 	return configEntry{name: name, value: value, typ: "config-file", location: loc}
 }
 
-// resolveCredEntryPlain is resolveCredEntry for non-secret credential-section
-// keys (auth_mode, iam_env, token_expires_at): same location logic, but the
-// value is shown as-is rather than masked (these are non-secret refresh
-// context, not credentials).
+// resolveCredEntryPlain locates non-secret credential keys without masking.
 func resolveCredEntryPlain(name, value, credsFile string) configEntry {
 	if value == "" {
 		return configEntry{name: name, value: "<not set>", typ: "None", location: "None"}
@@ -145,8 +138,7 @@ func resolveCredEntryPlain(name, value, credsFile string) configEntry {
 	return configEntry{name: name, value: value, typ: "config-file", location: loc}
 }
 
-// tokenExpiresAtStr renders the access-token expiry as RFC3339, or "" (→
-// "<not set>") when no expiry was recorded.
+// tokenExpiresAtStr returns RFC3339 expiry or empty.
 func tokenExpiresAtStr(t time.Time) string {
 	if t.IsZero() {
 		return ""
