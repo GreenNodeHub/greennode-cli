@@ -21,7 +21,7 @@ var ConfigureCmd = &cobra.Command{
 
 Prompts for Client ID, Client Secret, Region, and Output format.
 Saves credentials to ~/.greennode/credentials and config to ~/.greennode/config.`,
-	Run: runConfigure,
+	RunE: runConfigure,
 }
 
 func init() {
@@ -30,7 +30,7 @@ func init() {
 	ConfigureCmd.AddCommand(setCmd)
 }
 
-func runConfigure(cmd *cobra.Command, args []string) {
+func runConfigure(cmd *cobra.Command, args []string) error {
 	profile := cmd.Flag("profile").Value.String()
 	if profile == "" {
 		profile = os.Getenv("GRN_PROFILE")
@@ -92,16 +92,15 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	writer := config.NewConfigFileWriter()
 
 	if err := writer.WriteCredentials(profile, clientID, clientSecret); err != nil {
-		fmt.Fprintf(os.Stderr, "Error saving credentials: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("saving credentials: %w", err)
 	}
 
 	if err := writer.WriteConfig(profile, region, output, projectID); err != nil {
-		fmt.Fprintf(os.Stderr, "Error saving config: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("saving config: %w", err)
 	}
 
 	fmt.Println("Configuration saved successfully.")
+	return nil
 }
 
 func promptWithDefault(reader *bufio.Reader, prompt, defaultVal string) string {

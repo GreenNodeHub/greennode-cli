@@ -13,7 +13,7 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List current configuration values",
-	Run:   runList,
+	RunE:  runList,
 }
 
 type configEntry struct {
@@ -23,7 +23,7 @@ type configEntry struct {
 	location string
 }
 
-func runList(cmd *cobra.Command, args []string) {
+func runList(cmd *cobra.Command, args []string) error {
 	profile := cmd.Flag("profile").Value.String()
 	if profile == "" {
 		profile = os.Getenv("GRN_PROFILE")
@@ -35,8 +35,7 @@ func runList(cmd *cobra.Command, args []string) {
 	// Report missing profiles; fresh installations show unset defaults.
 	cfg, err := config.LoadConfig(profile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	if cfg == nil {
 		cfg = &config.Config{}
@@ -69,6 +68,7 @@ func runList(cmd *cobra.Command, args []string) {
 	for _, e := range entries {
 		fmt.Printf("%13s %24s %15s    %s\n", e.name, e.value, e.typ, e.location)
 	}
+	return nil
 }
 
 func resolveEntry(name, value, typ, location string) configEntry {

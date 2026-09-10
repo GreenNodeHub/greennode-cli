@@ -13,10 +13,10 @@ var getCmd = &cobra.Command{
 	Use:   "get <key>",
 	Short: "Get a configuration value",
 	Args:  cobra.ExactArgs(1),
-	Run:   runGet,
+	RunE:  runGet,
 }
 
-func runGet(cmd *cobra.Command, args []string) {
+func runGet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 	profile := cmd.Flag("profile").Value.String()
 	if profile == "" {
@@ -28,8 +28,7 @@ func runGet(cmd *cobra.Command, args []string) {
 
 	cfg, err := config.LoadConfig(profile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	var value string
@@ -63,12 +62,12 @@ func runGet(cmd *cobra.Command, args []string) {
 	case "agent_identity":
 		value = cfg.AgentIdentity
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown configuration key: %s\n", key)
-		os.Exit(1)
+		return fmt.Errorf("unknown configuration key: %s", key)
 	}
 
 	if value == "" {
 		value = "<not set>"
 	}
 	fmt.Println(value)
+	return nil
 }
