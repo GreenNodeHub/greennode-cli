@@ -33,6 +33,8 @@ func init() {
 	VksCmd.AddCommand(deleteNodegroupCmd)
 	VksCmd.AddCommand(updateNodegroupMetadataCmd)
 	VksCmd.AddCommand(listNodesCmd)
+	VksCmd.AddCommand(getNodegroupEventsCmd)
+	VksCmd.AddCommand(listNodegroupImagesCmd)
 
 	// Wait commands
 	VksCmd.AddCommand(waitCmd)
@@ -51,10 +53,20 @@ func init() {
 	VksCmd.AddCommand(listClusterVersionsCmd)
 	VksCmd.AddCommand(upgradeNodegroupVersionCmd)
 	VksCmd.AddCommand(getClusterEventsCmd)
+	VksCmd.AddCommand(getUpgradeInsightsCmd)
+	VksCmd.AddCommand(stopPOCCmd)
+	VksCmd.AddCommand(registerFleetCmd)
+	VksCmd.AddCommand(unregisterFleetCmd)
 
 	// Kubeconfig commands
 	VksCmd.AddCommand(generateKubeconfigCmd)
 	VksCmd.AddCommand(updateKubeconfigCmd)
+	VksCmd.AddCommand(acknowledgeKubeconfigWarningCmd)
+
+	// Workspace commands
+	VksCmd.AddCommand(getWorkspaceCmd)
+	VksCmd.AddCommand(createWorkspaceCmd)
+	VksCmd.AddCommand(resetWorkspaceServiceAccountCmd)
 
 	cli.RegisterService(VksCmd)
 	registerCompletions()
