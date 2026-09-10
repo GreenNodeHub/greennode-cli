@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
 
 	"github.com/greennodehub/greennode-cli/cmd/configure"
@@ -28,14 +30,14 @@ var (
 	CLIConnectTimeout int
 	Color             string
 	AllowUntrusted    bool
+	NonInteractive    bool
 )
 
 var rootCmd = &cobra.Command{
 	Use:     "grn",
 	Short:   "GreenNode CLI - unified command-line tool for GreenNode services",
 	Version: fmt.Sprintf("%s Go/%s %s/%s", cliVersion, runtime.Version()[2:], runtime.GOOS, runtime.GOARCH),
-	// Print a single clean "Error: ..." line on failure (done in Execute) rather
-	// than cobra's error plus a full usage dump.
+	// Execute prints one error without usage.
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	Long: `GreenNode CLI (grn) is a unified command-line tool for managing
@@ -46,9 +48,11 @@ To get started, run:
 
 For help on any command:
   grn <command> --help`,
-	// Validate global flags up front so an invalid --output fails fast with a
-	// suggestion, rather than silently falling back to JSON.
+	// Reject invalid global flags before execution.
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if NonInteractive && (cmd == configure.ConfigureCmd || cmd == login.LoginCmd) {
+			return fmt.Errorf("%s requires interaction; omit --non-interactive (use 'configure set' for scripted configuration)", cmd.CommandPath())
+		}
 		return validateGlobalFlags(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -57,6 +61,8 @@ For help on any command:
 }
 
 func init() {
+	cobra.OnInitialize(func() { cli.SetNonInteractive(NonInteractive) })
+	rootCmd.PersistentFlags().BoolVar(&NonInteractive, "non-interactive", false, "Never prompt; confirmations require --force")
 	rootCmd.PersistentFlags().StringVar(&Profile, "profile", "", "Use a specific profile from credentials file")
 	rootCmd.PersistentFlags().StringVar(&Region, "region", "", "The region to use (e.g. HCM-3, HAN)")
 	rootCmd.PersistentFlags().StringVar(&Output, "output", "", "The output format (json, text, table)")
@@ -76,8 +82,7 @@ func init() {
 
 	rootCmd.SetVersionTemplate("grn-cli/{{.Version}}\n")
 
-	// Tag every VKS API request with a version-stamped User-Agent so the backend
-	// can attribute traffic to the grn VKS CLI. Shares cliVersion with --version.
+	// Use the CLI version in API request identification.
 	client.UserAgent = "grn-vks-cli/" + cliVersion
 
 	rootCmd.AddCommand(configure.ConfigureCmd)
@@ -90,8 +95,18 @@ func init() {
 
 // Execute runs the root command.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	if err := ExecuteContext(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// ExecuteContext propagates cancellation and confirmation failures.
+func ExecuteContext(ctx context.Context) error {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
+		return err
+	}
+	return cli.ConfirmationError()
 }

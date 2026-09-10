@@ -2,7 +2,7 @@
 
 ## Dry-run
 
-All create, update, and delete commands support `--dry-run`:
+Commands that expose `--dry-run` preview their action without performing the mutation:
 
 ```bash
 # Validate create parameters without calling API
@@ -65,3 +65,9 @@ Use `--force` to skip the confirmation prompt (for scripting):
 ```bash
 grn vks delete-cluster --cluster-id k8s-xxxxx --force
 ```
+
+## Non-interactive automation
+
+Add `--non-interactive` to prevent prompts. A destructive confirmation without `--force` returns a failure exit status and leaves stdin untouched. `configure` and browser `login` refuse this mode; use `configure set` for scripted configuration. AgentBase's `--interactive` does not override `--non-interactive`. Placement-group creation requires an explicit `--policy-id` in this mode.
+
+The descriptor engine's dry-run is fully offline: it validates inputs and prints a redacted preview before configuration, client construction, network requests, confirmation, or output-file writes. Existing VKS delete previews retain their documented live reads above; `--non-interactive` suppresses prompting, not all network activity. Check each command's help for supported safety flags.
