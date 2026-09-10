@@ -127,3 +127,42 @@ func TestPortalUserIDRejectsMalformedExistingConfig(t *testing.T) {
 		t.Fatal("invalid INI changed")
 	}
 }
+
+func TestCredentialEnvironmentAliases(t *testing.T) {
+	isolateConfigEnv(t)
+	t.Setenv("GRN_ACCESS_KEY_ID", "fixture-legacy-id")
+	t.Setenv("GRN_SECRET_ACCESS_KEY", "fixture-legacy-secret")
+	cfg, err := LoadConfig("default")
+	if err != nil || cfg.ClientID != "fixture-legacy-id" || cfg.ClientSecret != "fixture-legacy-secret" {
+		t.Fatalf("legacy credential aliases not loaded: %#v, %v", cfg, err)
+	}
+
+	t.Setenv("GRN_CLIENT_ID", "fixture-current-id")
+	t.Setenv("GRN_CLIENT_SECRET", "fixture-current-secret")
+	cfg, err = LoadConfig("default")
+	if err != nil || cfg.ClientID != "fixture-current-id" || cfg.ClientSecret != "fixture-current-secret" {
+		t.Fatalf("current credential variables must win: %#v, %v", cfg, err)
+	}
+}
+
+func TestLoadProfileFilesIgnoresEnvironment(t *testing.T) {
+	isolateConfigEnv(t)
+	writer := NewConfigFileWriter()
+	if err := writer.WriteCredentials("default", "fixture-file-id", "fixture-file-secret"); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.WriteConfig("default", "HAN", "json", "fixture-file-project"); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GRN_CLIENT_ID", "fixture-env-id")
+	t.Setenv("GRN_CLIENT_SECRET", "fixture-env-secret")
+	t.Setenv("GRN_DEFAULT_PROJECT_ID", "fixture-env-project")
+
+	cfg, err := LoadProfileFiles("default")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ClientID != "fixture-file-id" || cfg.ClientSecret != "fixture-file-secret" || cfg.ProjectID != "fixture-file-project" {
+		t.Fatalf("persisted profile was overlaid by environment: %#v", cfg)
+	}
+}

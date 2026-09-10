@@ -88,7 +88,7 @@ left intact.
 
 Credentials are resolved in the following order (highest to lowest priority):
 
-1. **Environment variables**: `GRN_CLIENT_ID`, `GRN_CLIENT_SECRET`
+1. **Environment variables**: `GRN_CLIENT_ID`, `GRN_CLIENT_SECRET`, or their legacy aliases
 2. **Shared credentials file**: `~/.greennode/credentials`
 
 ## Environment variables
@@ -97,6 +97,8 @@ Credentials are resolved in the following order (highest to lowest priority):
 |----------|-------------|
 | `GRN_CLIENT_ID` | Client ID (overrides credentials file) |
 | `GRN_CLIENT_SECRET` | Client Secret (overrides credentials file) |
+| `GRN_ACCESS_KEY_ID` | Legacy alias for `GRN_CLIENT_ID` |
+| `GRN_SECRET_ACCESS_KEY` | Legacy alias for `GRN_CLIENT_SECRET` |
 | `GRN_DEFAULT_REGION` | Default region |
 | `GRN_DEFAULT_PROJECT_ID` | Project ID (GreenNode project UUID) |
 | `GRN_PORTAL_USER_ID` | Numeric portal-user ID for operations that require that header |
@@ -104,6 +106,8 @@ Credentials are resolved in the following order (highest to lowest priority):
 | `GRN_DEFAULT_OUTPUT` | Output format |
 
 Environment variables take priority over config file values.
+
+The current variable names take precedence over their legacy aliases. `grn configure set client_secret` prompts without echo when the value is omitted.
 
 ### Example
 
