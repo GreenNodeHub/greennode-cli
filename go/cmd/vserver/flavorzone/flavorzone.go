@@ -5,8 +5,8 @@ import "github.com/spf13/cobra"
 var FlavorZoneCmd = &cobra.Command{
 	Use:   "flavor-zone",
 	Short: "Discover flavor zones, families, and platform codes",
-	Run: func(cmd *cobra.Command, args []string) {
-		_ = cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
