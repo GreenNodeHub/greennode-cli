@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+// UserAgent identifies IAM token requests.
+var UserAgent = "grn-cli"
+
 // Client posts token grants without retries or redirects.
 type Client struct {
 	http *http.Client
@@ -95,6 +98,7 @@ func (c *Client) post(ctx context.Context, tokenURL string, v url.Values, client
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", UserAgent)
 	// IAM requires Basic, including public clients with an empty secret.
 	req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
 	resp, err := c.http.Do(req)

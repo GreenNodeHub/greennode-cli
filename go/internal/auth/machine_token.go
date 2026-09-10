@@ -11,6 +11,9 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+// UserAgent identifies IAM token requests.
+var UserAgent = "grn-cli"
+
 // MachineTokenProvider uses IAM v2 client_credentials; access tokens stay in memory.
 type MachineTokenProvider struct {
 	cfg        clientcredentials.Config
@@ -101,11 +104,22 @@ func (p *MachineTokenProvider) SetHTTPTimeout(timeout time.Duration) {
 
 func newTokenHTTPClient(timeout time.Duration) *http.Client {
 	return &http.Client{
-		Timeout: timeout,
+		Timeout:   timeout,
+		Transport: userAgentTransport{base: http.DefaultTransport},
 		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
+}
+
+type userAgentTransport struct {
+	base http.RoundTripper
+}
+
+func (t userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	request := req.Clone(req.Context())
+	request.Header.Set("User-Agent", UserAgent)
+	return t.base.RoundTrip(request)
 }
 
 // Check the consumer's token-provider contract without an import cycle.

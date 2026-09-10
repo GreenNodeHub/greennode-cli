@@ -75,7 +75,7 @@ func TestRequestSetsUserAgentHeader(t *testing.T) {
 
 	// Pin a known value; the production default is set from cmd at startup.
 	prev := UserAgent
-	UserAgent = "grn-vks-cli/9.9.9"
+	UserAgent = "grn-cli/9.9.9"
 	defer func() { UserAgent = prev }()
 
 	tm := auth.NewMachineTokenProvider("id", "secret", "")
@@ -85,15 +85,15 @@ func TestRequestSetsUserAgentHeader(t *testing.T) {
 	if _, err := c.Get("/v1/thing", nil); err != nil {
 		t.Fatalf("Get returned error: %v", err)
 	}
-	if gotUA != "grn-vks-cli/9.9.9" {
-		t.Errorf("User-Agent = %q, want %q", gotUA, "grn-vks-cli/9.9.9")
+	if gotUA != "grn-cli/9.9.9" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "grn-cli/9.9.9")
 	}
 }
 
-func TestUserAgentDefaultsToVKSCLI(t *testing.T) {
-	// The package default identifies the VKS CLI even if cmd never overrides it.
-	if UserAgent != "grn-vks-cli" {
-		t.Errorf("default UserAgent = %q, want %q", UserAgent, "grn-vks-cli")
+func TestUserAgentDefaultsToCLI(t *testing.T) {
+	// The package default identifies the CLI before cmd adds the version.
+	if UserAgent != "grn-cli" {
+		t.Errorf("default UserAgent = %q, want %q", UserAgent, "grn-cli")
 	}
 }
 

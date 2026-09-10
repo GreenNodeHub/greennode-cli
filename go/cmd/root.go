@@ -9,9 +9,11 @@ import (
 
 	"github.com/greennodehub/greennode-cli/cmd/configure"
 	"github.com/greennodehub/greennode-cli/cmd/login"
+	internalAuth "github.com/greennodehub/greennode-cli/internal/auth"
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
+	internalLogin "github.com/greennodehub/greennode-cli/internal/login"
 	"github.com/spf13/cobra"
 )
 
@@ -81,9 +83,10 @@ func init() {
 	_ = rootCmd.RegisterFlagCompletionFunc("color", cli.FlagValues("on", "off", "auto"))
 
 	rootCmd.SetVersionTemplate("grn-cli/{{.Version}}\n")
-
-	// Use the CLI version in API request identification.
-	client.UserAgent = "grn-vks-cli/" + cliVersion
+	userAgent := "grn-cli/" + cliVersion
+	client.UserAgent = userAgent
+	internalAuth.UserAgent = userAgent
+	internalLogin.UserAgent = userAgent
 
 	rootCmd.AddCommand(configure.ConfigureCmd)
 	rootCmd.AddCommand(login.LoginCmd)

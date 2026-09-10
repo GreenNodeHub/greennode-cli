@@ -51,7 +51,7 @@ var retryableStatusCodes = map[int]bool{
 }
 
 // UserAgent identifies API requests; cmd sets the versioned value.
-var UserAgent = "grn-vks-cli"
+var UserAgent = "grn-cli"
 
 // GreennodeClient is an HTTP client for Greennode APIs with retry and auto token refresh.
 type GreennodeClient struct {
