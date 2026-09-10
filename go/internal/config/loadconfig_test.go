@@ -13,7 +13,7 @@ func isolateConfigEnv(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	for _, k := range []string{
-		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET",
+		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
 		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
 	} {
 		t.Setenv(k, "")
@@ -136,7 +136,7 @@ func isolateLegacyConfigEnv(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	for _, k := range []string{
-		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET",
+		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
 		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
 	} {
 		t.Setenv(k, "")
@@ -178,7 +178,7 @@ func TestLoadConfigPrefersNewDirOverLegacy(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	for _, k := range []string{
-		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET",
+		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
 		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
 	} {
 		t.Setenv(k, "")

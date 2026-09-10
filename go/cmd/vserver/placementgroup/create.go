@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,23 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	if name == "" {
 		return fmt.Errorf("flag --name is required")
 	}
+	if policyID == "" && cli.IsNonInteractive() {
+		return fmt.Errorf("--policy-id is required in non-interactive mode")
+	}
+
+	body := map[string]interface{}{
+		"name":        name,
+		"description": description,
+		"policyId":    policyID,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		if policyID == "" {
+			body["policyId"] = "<interactive-selection>"
+		}
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/serverGroups", "<project-id>"), body)
+		return nil
+	}
 
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
@@ -57,11 +75,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	body := map[string]interface{}{
-		"name":        name,
-		"description": description,
-		"policyId":    policyID,
-	}
+	body["policyId"] = policyID
 
 	result, err := apiClient.Post(fmt.Sprintf("/v2/%s/serverGroups", projectID), body)
 	if err != nil {
@@ -71,8 +85,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	return outputResult(cmd, cfg, result)
 }
 
-// promptPolicySelection lists the available policies and asks the user to choose
-// one by number, returning the selected policy's ID.
 func promptPolicySelection(apiClient *client.GreennodeClient, projectID string) (string, error) {
 	result, err := apiClient.Get(fmt.Sprintf("/v2/%s/serverGroups/policies", projectID), nil)
 	if err != nil {

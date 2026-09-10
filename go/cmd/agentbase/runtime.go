@@ -51,13 +51,16 @@ Runtimes share the ~/.greennode profile like the rest of agentbase.`,
 // select the shared token provider, force-mint once so auth failures surface
 // before the first call, and point the typed client at the runtime endpoint.
 func newRuntimeClient(ctx context.Context, cmd *cobra.Command) (*runtimepkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return runtimepkg.NewClient(ab.endpoints.Runtime, provider), nil
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/kubeconfig"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
@@ -63,6 +64,15 @@ func runUpdateKubeconfig(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if dryRun {
+		cli.PrintDryRun("update", "local kubeconfig", map[string]any{
+			"cluster_id":          clusterID,
+			"context":             contextName,
+			"output_file":         targetPath,
+			"set_current_context": !noSetContext,
+		})
+		return nil
+	}
 
 	apiClient, err := createClient(cmd)
 	if err != nil {
@@ -71,8 +81,7 @@ func runUpdateKubeconfig(cmd *cobra.Command, args []string) error {
 
 	result, err := apiClient.Get(fmt.Sprintf("/v1/clusters/%s/kubeconfig", clusterID), nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	resMap, ok := result.(map[string]interface{})
@@ -97,15 +106,6 @@ func runUpdateKubeconfig(cmd *cobra.Command, args []string) error {
 	rawYAML, _ := resMap["kubeConfig"].(string)
 	if rawYAML == "" {
 		return fmt.Errorf("kubeconfig response did not contain kubeconfig data")
-	}
-
-	if dryRun {
-		fmt.Printf("=== DRY RUN ===\n")
-		fmt.Printf("Would merge context %q into %s\n", contextName, targetPath)
-		if !noSetContext {
-			fmt.Printf("Would set current-context to %q\n", contextName)
-		}
-		return nil
 	}
 
 	res, err := kubeconfig.Merge(targetPath, rawYAML, contextName, !noSetContext)

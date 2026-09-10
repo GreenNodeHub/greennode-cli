@@ -477,9 +477,9 @@ var staticGetKeyCmd = &cobra.Command{
 				{"API Key", output.StrOrDash(str(resp.Apikey))},
 			})
 		case output.FormatJSON:
-			return output.JSON(resp)
+			return output.SecretJSON(resp)
 		case output.FormatID:
-			output.PrintID(str(resp.Apikey))
+			output.PrintSecret(str(resp.Apikey))
 		}
 		return nil
 	},
@@ -669,12 +669,12 @@ Optional flags: --custom-state, --session-id, --force-delegation.`,
 		case output.FormatTable:
 			output.Table([]string{"Field", "Value"}, [][]string{
 				{"API Key", output.StrOrDash(str(resp.Apikey))},
-				{"Authorization URL", output.StrOrDash(str(resp.AuthorizationURL))},
+				{"Authorization URL", output.Secret(output.StrOrDash(str(resp.AuthorizationURL)))},
 				{"Session ID", output.StrOrDash(str(resp.SessionID))},
 				{"Status", output.StrOrDash(str(resp.Status))},
 			})
 		case output.FormatJSON:
-			return output.JSON(resp)
+			return output.SecretJSON(resp)
 		case output.FormatID:
 			output.PrintID(str(resp.SessionID))
 		}
@@ -946,9 +946,9 @@ var oauth2M2MTokenCmd = &cobra.Command{
 				{"Token Type", output.StrOrDash(str(resp.TokenType))},
 			})
 		case output.FormatJSON:
-			return output.JSON(resp)
+			return output.SecretJSON(resp)
 		case output.FormatID:
-			output.PrintID(str(resp.AccessToken))
+			output.PrintSecret(str(resp.AccessToken))
 		}
 		return nil
 	},
@@ -1022,14 +1022,14 @@ Optional flags: --session-id, --custom-parameters, --custom-state, --force-authe
 			output.Table([]string{"Field", "Value"}, [][]string{
 				{"Access Token", output.StrOrDash(str(resp.AccessToken))},
 				{"Token Type", output.StrOrDash(str(resp.TokenType))},
-				{"Authorization URL", output.StrOrDash(str(resp.AuthorizationURL))},
+				{"Authorization URL", output.Secret(output.StrOrDash(str(resp.AuthorizationURL)))},
 				{"Session ID", output.StrOrDash(str(resp.SessionID))},
 				{"Status", output.StrOrDash(str(resp.Status))},
 			})
 		case output.FormatJSON:
-			return output.JSON(resp)
+			return output.SecretJSON(resp)
 		case output.FormatID:
-			output.PrintID(str(resp.AccessToken))
+			output.PrintSecret(str(resp.AccessToken))
 		}
 		return nil
 	},
@@ -1167,13 +1167,16 @@ func formatTime(t *time.Time) string {
 // credential surfaces as a clear "authentication failed" error before the first
 // API call rather than mid-request.
 func newIdentityClient(ctx context.Context, cmd *cobra.Command) (*identitypkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return identitypkg.NewClient(ab.endpoints.Identity, provider), nil
 }

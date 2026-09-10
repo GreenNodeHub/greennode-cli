@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://docs.api.greennode.ai/service-docs/vcr.html",
+    "title": "vCR API",
+    "version": "",
+    "retrieved": "2026-09-10",
+    "sha256": "a0db9fa879aad4b7e82ed0643c5858f8ab63e7e70c889727e0bc5c05c09c9591"
+  },
+  "servers": [
+    {
+      "url": "https://vcr.api.vngcloud.vn"
+    }
+  ],
+  "security": [],
+  "components": {
+    "schemas": {
+      "ArtifactDto": {
+        "type": "object",
+        "required": []
+      },
+      "AttachRepoUserRequest": {
+        "type": "object",
+        "required": [
+          "repoId",
+          "repoUserList"
+        ]
+      },
+      "CreateRepoRequest": {
+        "type": "object",
+        "required": [
+          "isPublic",
+          "quotaLimit",
+          "repoName"
+        ]
+      },
+      "CreateRepoResponse": {
+        "type": "object",
+        "required": []
+      },
+      "CreateRepoUserRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "permissionRequestList"
+        ]
+      },
+      "DetachRepoUserRequest": {
+        "type": "object",
+        "required": [
+          "repoId",
+          "repoUserUuidList"
+        ]
+      },
+      "ImageDto": {
+        "type": "object",
+        "required": []
+      },
+      "InterfaceRobotAccountEntity": {
+        "type": "object",
+        "required": []
+      },
+      "PolicyDto": {
+        "type": "object",
+        "required": []
+      },
+      "RepoPermissionDto": {
+        "type": "object",
+        "required": []
+      },
+      "RepoPermissionRequest": {
+        "type": "object",
+        "required": [
+          "policyIdList",
+          "repoId"
+        ]
+      },
+      "RepoUserPermissionRequest": {
+        "type": "object",
+        "required": [
+          "policyIdList",
+          "repoUserId"
+        ]
+      },
+      "RepositoryDto": {
+        "type": "object",
+        "required": []
+      },
+      "RepositoryHistoryDto": {
+        "type": "object",
+        "required": []
+      },
+      "RobotAccountDto": {
+        "type": "object",
+        "required": []
+      },
+      "RobotAccountRepoPermissionDto": {
+        "type": "object",
+        "required": []
+      },
+      "Tag": {
+        "type": "object",
+        "required": []
+      },
+      "UpdatePermissionRepoUserRequest": {
+        "type": "object",
+        "required": [
+          "permissionRequestList",
+          "repoUserId"
+        ]
+      },
+      "UpdateRepoQuotaRequest": {
+        "type": "object",
+        "required": [
+          "quotaLimit",
+          "repoId"
+        ]
+      },
+      "UpdateRepoUserRequest": {
+        "type": "object",
+        "required": [
+          "repoUserId"
+        ]
+      },
+      "Paging_ArtifactDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_ImageDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_RepositoryDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_RepositoryHistoryDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_RobotAccountDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_RobotAccountRepoPermissionDto_": {
+        "type": "object",
+        "required": []
+      }
+    }
+  },
+  "operations": [
+    {"operation_id":"listRepoUsingGET_3","method":"GET","path":"/v1/repository","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"accessLevel","in":"query","required":false,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_RepositoryDto_"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createRepoUsingPOST_1","method":"POST","path":"/v1/repository","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["isPublic","quotaLimit","repoName"],"properties":{"isPublic":{"type":"boolean"},"quotaLimit":{"type":"integer","format":"int32"},"repoName":{"type":"string"}},"title":"CreateRepoRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/RepositoryDto"}}}},"401":{},"500":{}},"request_example":{"isPublic":true,"quotaLimit":1,"repoName":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listRepoUsingGET_2","method":"GET","path":"/v1/repository/{repoId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/RepositoryDto"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteRepoUsingDELETE_1","method":"DELETE","path":"/v1/repository/{repoId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/RepositoryDto"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"attachUserUsingPUT_1","method":"PUT","path":"/v1/repository/{repoId}/attach","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["repoId","repoUserList"],"properties":{"repoId":{"type":"string"},"repoUserList":{"type":"array","items":{"$ref":"#/components/schemas/RepoUserPermissionRequest"}}},"title":"AttachRepoUserRequest"}}},"required":true},"responses":{"200":{},"401":{},"500":{}},"request_example":{"repoId":"fixture-001","repoUserList":[]},"response_example":null},
+    {"operation_id":"detachUserUsingPUT_1","method":"PUT","path":"/v1/repository/{repoId}/detach","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["repoId","repoUserUuidList"],"properties":{"repoId":{"type":"string"},"repoUserUuidList":{"type":"array","items":{"type":"string"}}},"title":"DetachRepoUserRequest"}}},"required":true},"responses":{"200":{},"401":{},"500":{}},"request_example":{"repoId":"fixture-001","repoUserUuidList":[]},"response_example":null},
+    {"operation_id":"getRepoHistoryUsingGET_1","method":"GET","path":"/v1/repository/{repoId}/history","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_RepositoryHistoryDto_"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listImageUsingGET_3","method":"GET","path":"/v1/repository/{repoId}/images","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_ImageDto_"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listArtifactUsingGET_1","method":"GET","path":"/v1/repository/{repoId}/images/artifacts","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"imageName","in":"query","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_ArtifactDto_"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteImageUsingDELETE_2","method":"DELETE","path":"/v1/repository/{repoId}/images/artifacts/delete","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"digest","in":"query","required":true,"schema":{"type":"string"}},{"name":"imageName","in":"query","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+    {"operation_id":"deleteImageUsingDELETE_3","method":"DELETE","path":"/v1/repository/{repoId}/images/delete","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"imageName","in":"query","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+    {"operation_id":"listImageUsingGET_2","method":"GET","path":"/v1/repository/{repoId}/images/detail","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"imageName","in":"query","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ImageDto"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateRepoQuotaLimitUsingPUT_1","method":"PUT","path":"/v1/repository/{repoId}/quotas","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["quotaLimit","repoId"],"properties":{"quotaLimit":{"type":"integer","format":"int32"},"repoId":{"type":"string"}},"title":"UpdateRepoQuotaRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/RepositoryDto"}}}},"401":{},"500":{}},"request_example":{"quotaLimit":1,"repoId":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getUserAttachedRepoUsingGET_1","method":"GET","path":"/v1/repository/{repoId}/user","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"repoId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_RobotAccountRepoPermissionDto_"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listRepoUserUsingGET_1","method":"GET","path":"/v1/user","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_RobotAccountDto_"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createRepoUserUsingPOST_1","method":"POST","path":"/v1/user","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","permissionRequestList"],"properties":{"duration":{"type":"integer","format":"int32"},"name":{"type":"string"},"permissionRequestList":{"type":"array","items":{"$ref":"#/components/schemas/RepoPermissionRequest"}}},"title":"CreateRepoUserRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/CreateRepoResponse"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","permissionRequestList":[]},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getPermissionListUsingGET_1","method":"GET","path":"/v1/user/permissions","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/PolicyDto"}}}}},"401":{},"500":{}},"response_example":[]},
+    {"operation_id":"updateRepoUserUsingPUT_1","method":"PUT","path":"/v1/user/{repoUserId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoUserId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["repoUserId"],"properties":{"duration":{"type":"integer","format":"int32"},"repoUserId":{"type":"string"}},"title":"UpdateRepoUserRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/InterfaceRobotAccountEntity"}}}},"401":{},"500":{}},"request_example":{"repoUserId":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteRepoUserUsingDELETE_1","method":"DELETE","path":"/v1/user/{repoUserId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoUserId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+    {"operation_id":"disableRepoUserUsingPUT_1","method":"PUT","path":"/v1/user/{repoUserId}/disable","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoUserId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/InterfaceRobotAccountEntity"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"enableRepoUserUsingPUT_1","method":"PUT","path":"/v1/user/{repoUserId}/enable","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoUserId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/InterfaceRobotAccountEntity"}}}},"401":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateRepoUserPermissionUsingPUT_1","method":"PUT","path":"/v1/user/{repoUserId}/permission","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoUserId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["permissionRequestList","repoUserId"],"properties":{"permissionRequestList":{"type":"array","items":{"$ref":"#/components/schemas/RepoPermissionRequest"}},"repoUserId":{"type":"string"}},"title":"UpdatePermissionRepoUserRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/InterfaceRobotAccountEntity"}}}},"401":{},"500":{}},"request_example":{"permissionRequestList":[],"repoUserId":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"refreshRepoUserUsingGET_1","method":"GET","path":"/v1/user/{repoUserId}/refresh","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"repoUserId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"401":{},"500":{}},"response_example":"fixture-001"}
+  ]
+}

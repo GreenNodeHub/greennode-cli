@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/greennodehub/greennode-cli/internal/config"
@@ -8,8 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Output formats and prints an API response using the command's --output/--query
-// flags, falling back to the configured default output then "json".
+// Output applies flags, then configured defaults, then JSON.
 func Output(cmd *cobra.Command, data interface{}) error {
 	output, _ := cmd.Flags().GetString("output")
 	query, _ := cmd.Flags().GetString("query")
@@ -23,6 +23,9 @@ func Output(cmd *cobra.Command, data interface{}) error {
 	}
 	if output == "" {
 		output = "json"
+	}
+	if output != "json" && output != "text" && output != "table" {
+		return fmt.Errorf("invalid output format %q: must be json, text, or table", output)
 	}
 
 	colorMode, _ := cmd.Flags().GetString("color")

@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +47,11 @@ func runUpdateSecgroup(cmd *cobra.Command, args []string) error {
 		if err := validator.ValidateID(id, "security-group"); err != nil {
 			return err
 		}
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/servers/%s/update-sec-group", "<project-id>", serverID), map[string]interface{}{"securityGroup": secgroupIDs})
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)

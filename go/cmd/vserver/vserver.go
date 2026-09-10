@@ -3,6 +3,7 @@ package vserver
 import (
 	"github.com/greennodehub/greennode-cli/cmd/vserver/dhcp"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/flavor"
+	"github.com/greennodehub/greennode-cli/cmd/vserver/flavorzone"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/floatingip"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/image"
 	"github.com/greennodehub/greennode-cli/cmd/vserver/networkinterface"
@@ -26,8 +27,8 @@ var VServerCmd = &cobra.Command{
 	Long:  "Manage vServer instances and related resources.",
 	// Reject unknown subcommands (nested groups don't error by default in cobra).
 	Args: cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
@@ -38,6 +39,7 @@ func init() {
 	VServerCmd.AddCommand(subnet.SubnetCmd)
 	VServerCmd.AddCommand(secgroup.SecgroupCmd)
 	VServerCmd.AddCommand(flavor.FlavorCmd)
+	VServerCmd.AddCommand(flavorzone.FlavorZoneCmd)
 	VServerCmd.AddCommand(volumetype.VolumeTypeCmd)
 	VServerCmd.AddCommand(image.ImageCmd)
 	VServerCmd.AddCommand(sshkey.SSHKeyCmd)
@@ -46,6 +48,7 @@ func init() {
 	VServerCmd.AddCommand(floatingip.FloatingIPCmd)
 	VServerCmd.AddCommand(networkinterface.NetworkInterfaceCmd)
 	VServerCmd.AddCommand(dhcp.DhcpCmd)
+	registerAncillaryOperations(VServerCmd)
 
 	registerCompletions()
 	cli.RegisterService(VServerCmd)

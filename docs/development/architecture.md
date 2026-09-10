@@ -22,9 +22,11 @@ go/
     │   └── completion.go    # Value-completion framework + resource registry
     ├── resources/vserver/   # Cross-service completion providers (platform-owned)
     ├── config/          # Config + credentials (INI), region/endpoint resolution
-    ├── auth/            # OAuth2 client-credentials token manager
+    ├── auth/            # Profile-selected machine and user token providers
     ├── client/          # Low-level HTTP client (retry, 401 refresh, typed APIError)
     ├── formatter/       # JSON/table/text + JMESPath
+    ├── operation/       # Descriptor-driven command parsing and execution
+    ├── redact/          # Shared JSON, URL, header and path-value masking
     └── validator/       # ID validation
 ```
 
@@ -49,7 +51,7 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
    var VserverCmd = &cobra.Command{
        Use:   "vserver",
        Short: "VNG Cloud vServer commands",
-       Run:   func(cmd *cobra.Command, args []string) { cmd.Help() },
+       RunE:  func(cmd *cobra.Command, args []string) error { return cmd.Help() },
    }
 
    func init() {
@@ -81,15 +83,27 @@ A new product (e.g. `vserver`) is mounted without touching `root.go`:
 
 ## Self-contained subcommand: `agentbase`
 
-The agentbase subcommand package is a self-contained service stack that is
-compiled into the default `grn` binary and all release builds. Unlike
-`vks`/`vserver`, it does not reuse the shared `internal/cli` infrastructure: it
-ships its own v2 OAuth2 client-credentials auth, its own `./.greennode.json`
-config loader, and its own HTTP client + output helpers. `AgentbaseCmd`
-self-registers via
-`cli.RegisterService(...)` in `init()`, so it appears under `grn` with no
-further wiring. Its public command-reference pages live under
-`docs/commands/agentbase/*` and are published in the `mkdocs.yml` nav.
+AgentBase is compiled into the default binary and release builds. It shares INI profiles and `cli.NewTokenProvider` with VKS/vServer, including `auth_mode`, `iam_env`, refresh-token rotation, and `agent_identity`. Its product HTTP client and table/JSON/ID output helpers remain separate; only safe reads may refresh and retry after 401, while writes and credential/provisioning reads do not replay. It self-registers with `cli.RegisterService`. Its command reference lives under `docs/commands/agentbase/`.
+
+## Shared foundation
+
+`cli.NewClient` resolves regional endpoints. `cli.NewClientWithEndpoint` handles a documented global endpoint; `cli.BuildClient` supplies a resolver, optional region override, and a post-build validation/header hook. All use the existing profile-selected machine/user provider. Construction performs no token or API request. Command context and read timeout are applied to both IAM and API requests; vServer keeps its public builder and project-ID contract.
+
+`internal/client` preserves `GetAllPages` and the existing decoded-response helpers. Status-aware methods expose status and empty-body metadata; raw, byte, and stream methods retain the service's response representation. GET/HEAD/OPTIONS may retry transient failures up to three times and refresh once after 401. Writes, explicit no-retry calls (including state-changing GETs), and streams are never replayed automatically, including after 401. An uncertain write requires independent state verification, not a blind retry.
+
+Shared API requests reject redirects and non-2xx responses. This prevents redirected write replay and credential forwarding beyond the validated endpoint.
+
+IAM token requests also reject redirects and expose neither provider response bodies nor token metadata in diagnostics. Machine authentication sends its existing Basic client credentials once per grant; user refresh and PKCE exchange retain their existing Basic contract without retries.
+
+`internal/redact` masks credential-shaped JSON fields, sensitive query/header names, and explicitly declared secret path values without modifying transmitted data. Sensitive response methods also suppress displayed error bodies and debug responses. `APIError.Body` deliberately retains raw data for product-specific handling: never log it directly. Key-based masking cannot discover arbitrary secrets inside free text; unknown binary bodies should be logged as metadata only.
+
+`internal/operation` owns descriptor parsing and the shared execution order: validate path/query/body → offline validation → dry-run early return → live validation → confirmation → client/request → response validation → output. Services own endpoint facts, body/schema contracts, status acceptance, and specialized hooks. Dry-run must not construct clients, read credentials, call the API, prompt, or write output files. Every Cobra handler uses `RunE` and returns failures to the root, which is the only process-exit boundary and preserves typed exit codes such as VKS waiter code 255. The root also translates legacy bool-based confirmation refusals into failure exits; new engine commands return the refusal directly.
+
+Use the [public contract-fixture convention](contract-fixtures.md) for independently sourced service tests. Shared engine tests alone do not establish provider compatibility.
+
+vBackup, vCR, vDB, vLB, vMonitor, vMonitor Log, vStorage, and vStorage Gateway use the descriptor engine. SaaS AI uses shared transport with custom multipart and binary handling. All nine register in default and release builds; service tests retain independent public contract evidence.
+
+IAM management uses `internal/iamclient` for its global Accounts and Policies endpoints, with shared profile authentication. Its management commands do not replace `login`/`logout` or add token-issuance and impersonation flows. Protected credential body files, current-identity checks, confirmation, no-retry requests, and operation-specific response validation remain product-owned.
 
 ## Writing a command
 
@@ -113,8 +127,7 @@ func runGetThing(cmd *cobra.Command, args []string) error {
     }
     res, err := c.Get(fmt.Sprintf("/v2/%s/things/%s", projectID, id), nil)
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-        os.Exit(1)
+        return err
     }
     return cli.Output(cmd, res)
 }

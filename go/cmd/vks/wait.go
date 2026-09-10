@@ -92,10 +92,18 @@ var waitCmd = &cobra.Command{
 // hit a fatal error that should abort polling immediately.
 type evaluator func(result interface{}, err error) (done bool, failed bool, status string, fatal error)
 
+type waiterError struct {
+	err error
+}
+
+func (e waiterError) Error() string { return e.err.Error() }
+func (e waiterError) Unwrap() error { return e.err }
+func (e waiterError) ExitCode() int { return 255 }
+
 // runWaiter polls describe() every delay seconds up to maxAttempts times,
 // driving the waiter via eval. Progress goes to stderr; on success it prints
 // successMsg to stdout and returns nil. On a terminal failure or timeout it
-// exits with code 255 (matching AWS CLI waiter behavior).
+// returns a typed error with exit code 255 (matching AWS CLI waiter behavior).
 func runWaiter(label, successMsg string, describe func() (interface{}, error), eval evaluator, delay, maxAttempts int) error {
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		result, err := describe()
@@ -105,8 +113,7 @@ func runWaiter(label, successMsg string, describe func() (interface{}, error), e
 		// abort immediately instead of retrying until timeout.
 		if fatal != nil {
 			fmt.Fprintln(os.Stderr)
-			fmt.Fprintf(os.Stderr, "Error waiting for %s: %v\n", label, fatal)
-			os.Exit(255)
+			return waiterError{err: fmt.Errorf("waiting for %s: %w", label, fatal)}
 		}
 
 		shown := status
@@ -122,8 +129,7 @@ func runWaiter(label, successMsg string, describe func() (interface{}, error), e
 		}
 		if failed {
 			fmt.Fprintln(os.Stderr)
-			fmt.Fprintf(os.Stderr, "Waiter failed: %s reached %s\n", label, status)
-			os.Exit(255)
+			return waiterError{err: fmt.Errorf("waiter failed: %s reached %s", label, status)}
 		}
 
 		if attempt < maxAttempts {
@@ -132,9 +138,7 @@ func runWaiter(label, successMsg string, describe func() (interface{}, error), e
 	}
 
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "Waiter timed out after %d attempts\n", maxAttempts)
-	os.Exit(255)
-	return nil
+	return waiterError{err: fmt.Errorf("waiter timed out after %d attempts", maxAttempts)}
 }
 
 var (

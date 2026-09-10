@@ -21,7 +21,7 @@ go/
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
 │   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
-│   │   └── helpers.go               # mustLoadConfig / newAuthProvider
+│   │   └── helpers.go               # loadAgentbaseCtx / newAuthProvider
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list
@@ -63,18 +63,19 @@ go/
 │   ├── config/
 │   │   ├── config.go               # Config + credentials loading (INI)
 │   │   └── writer.go               # ConfigFileWriter (0600 perms)
-│   ├── auth/token.go                # OAuth2 Client Credentials (IAM)
-│   ├── client/client.go             # HTTP client with retry + auto-refresh
+│   ├── auth/                        # Machine/user IAM v2 providers selected from shared profiles
+│   ├── client/client.go             # Status/raw/byte/stream transport; read-only retries
+│   ├── operation/                   # Descriptor-driven command engine
+│   ├── redact/                      # Shared credential masking
 │   ├── formatter/formatter.go       # JSON/Table/Text + JMESPath
 │   ├── kubeconfig/
 │   │   └── kubeconfig.go            # Merge kubeconfig into ~/.kube/config
 │   ├── resources/
 │   │   └── vserver/
 │   │       └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type)
-│   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
-│   │   ├── auth/                    # OAuth2 v2 clientcredentials
-│   │   ├── client/                  # bearer-token HTTP client (401 refresh + retry-once, mirrors internal/client)
-│   │   ├── config/                  # ./.greennode.json loader
+│   ├── agentbase/                   # product clients/output; shared profiles and token selection
+│   │   ├── client/                  # bearer-token client; safe reads may refresh and retry once
+│   │   ├── config/                  # product endpoint/environment constants
 │   │   ├── identity/                # access (agent identities) API client + models
 │   │   ├── cliinput/                # interactive prompts
 │   │   ├── jsonslice/               # typed JSON slice helper
@@ -102,7 +103,7 @@ scripts/
 
 ## GreenNode API quirks
 
-- **IAM API uses camelCase**: `grantType`, `accessToken`, `expiresIn`
+- **IAM v2** uses OAuth2 form grants and snake_case token fields; keep upstream machine/user provider selection and refresh-token rotation.
 - **VKS API pagination is 0-based**: page 0 = first page
 - **`--version` conflict**: Use `--k8s-version` for Kubernetes version
 
@@ -142,8 +143,12 @@ VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`
 - **Credential env vars supported**: `GRN_CLIENT_ID`/`GRN_CLIENT_SECRET` override credentials file (highest priority)
 - **Input validation**: All cluster-id/nodegroup-id validated via `validator.ValidateID()` before URLs
 - **SSL default on**: `--no-verify-ssl` prints warning to stderr
-- **Tokens in memory only**: Never written to disk or logged
+- **Token storage**: Access tokens stay in memory; rotated user refresh tokens persist in protected profile credentials. Never log tokens.
 - **File permissions**: Credentials file created with 0600, directory 0700
+
+Use `internal/redact` for credential-shaped JSON, URL queries, headers, and declared secret path values. Sensitive response methods suppress debug/error bodies; raw `APIError.Body` remains private handling data and must not be logged. Shared transport retries only reads; writes, explicit no-retry calls, and streams are not replayed after 401 or an uncertain response. Respect `--non-interactive`: never prompt, require `--force` for confirmation, and return errors below the root exit boundary.
+
+Descriptor-driven services use `internal/operation` and independent [public contract fixtures](docs/development/contract-fixtures.md). All dry-runs run before credentials, clients, network, prompts, or output-file writes. Use `cli.BuildClient`/`NewClientWithEndpoint` for specialized/global endpoints without replacing `NewTokenProvider`; add service-specific headers only where documented. Configuration adds `portal_user_id` without changing the existing `WriteConfig` signature or auth storage.
 
 ## Building
 
@@ -230,8 +235,8 @@ Code without docs is not done.
 | `cmd/vks/helpers.go` | Client creation, output formatting, label/taint parsing |
 | `internal/config/config.go` | Config loading from ~/.greennode/, REGIONS map |
 | `internal/config/writer.go` | INI file writer with 0600 perms |
-| `internal/auth/token.go` | TokenManager — OAuth2 with IAM (camelCase) |
-| `internal/client/client.go` | HTTP client with retry (3x backoff) + 401 refresh |
+| `internal/auth/` | Machine/user IAM providers, context and timeout support |
+| `internal/client/client.go` | HTTP metadata/raw transport, bounded read-only retry and 401 refresh |
 | `internal/formatter/formatter.go` | JSON/Table/Text + JMESPath |
 | `internal/validator/validator.go` | ID format validation |
 | `scripts/install.sh` | One-liner installer: macOS/Linux (`curl \| bash`) |

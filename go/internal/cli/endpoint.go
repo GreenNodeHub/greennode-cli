@@ -7,14 +7,10 @@ import (
 	"strings"
 )
 
-// trustedEndpointDomains are the domains grn's own services live under. A
-// request to a host outside these is flagged because grn sends a reusable IAM
-// bearer token with every request (see CheckEndpoint / SEC-08).
+// trustedEndpointDomains limits reusable bearer-token exposure.
 var trustedEndpointDomains = []string{"vngcloud.vn", "greennode.ai"}
 
-// IsTrustedEndpoint reports whether endpointURL targets a host within a trusted
-// domain. An empty value means no --endpoint-url override was given (the
-// built-in region endpoint is used), which is trusted.
+// IsTrustedEndpoint accepts built-in endpoints and trusted domains.
 func IsTrustedEndpoint(endpointURL string) bool {
 	if endpointURL == "" {
 		return true
@@ -35,21 +31,18 @@ func IsTrustedEndpoint(endpointURL string) bool {
 	return false
 }
 
-// CheckEndpoint enforces the endpoint-safety policy for --endpoint-url. grn
-// authenticates against the real IAM and sends the resulting reusable bearer
-// token to whatever host --endpoint-url names, so:
-//   - trusted host (or no override): allowed silently.
-//   - untrusted host over TLS (https, cert verified): a warning is printed.
-//   - untrusted host without TLS protection (plain http, or --no-verify-ssl):
-//     blocked with an error unless allowUntrusted is set, because the token can
-//     be captured (MITM) and replayed.
-//
-// It returns a non-nil error only for the blocked case.
+// CheckEndpoint warns on untrusted TLS hosts; insecure untrusted hosts require opt-in.
 func CheckEndpoint(endpointURL string, noVerifySSL, allowUntrusted bool) error {
+	if endpointURL == "" {
+		return nil
+	}
+	u, err := url.Parse(endpointURL)
+	if err != nil || u.Hostname() == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.Fragment != "" {
+		return fmt.Errorf("endpoint must be an absolute HTTP(S) URL without user info or a fragment")
+	}
 	if IsTrustedEndpoint(endpointURL) {
 		return nil
 	}
-	u, _ := url.Parse(endpointURL)
 	host := u.Hostname()
 
 	noTLS := noVerifySSL || strings.EqualFold(u.Scheme, "http")

@@ -12,8 +12,8 @@ var VksCmd = &cobra.Command{
 	Long:  "Manage VKS clusters, node groups, and related resources.",
 	// Reject unknown subcommands (nested groups don't error by default in cobra).
 	Args: cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
@@ -33,6 +33,8 @@ func init() {
 	VksCmd.AddCommand(deleteNodegroupCmd)
 	VksCmd.AddCommand(updateNodegroupMetadataCmd)
 	VksCmd.AddCommand(listNodesCmd)
+	VksCmd.AddCommand(getNodegroupEventsCmd)
+	VksCmd.AddCommand(listNodegroupImagesCmd)
 
 	// Wait commands
 	VksCmd.AddCommand(waitCmd)
@@ -51,10 +53,20 @@ func init() {
 	VksCmd.AddCommand(listClusterVersionsCmd)
 	VksCmd.AddCommand(upgradeNodegroupVersionCmd)
 	VksCmd.AddCommand(getClusterEventsCmd)
+	VksCmd.AddCommand(getUpgradeInsightsCmd)
+	VksCmd.AddCommand(stopPOCCmd)
+	VksCmd.AddCommand(registerFleetCmd)
+	VksCmd.AddCommand(unregisterFleetCmd)
 
 	// Kubeconfig commands
 	VksCmd.AddCommand(generateKubeconfigCmd)
 	VksCmd.AddCommand(updateKubeconfigCmd)
+	VksCmd.AddCommand(acknowledgeKubeconfigWarningCmd)
+
+	// Workspace commands
+	VksCmd.AddCommand(getWorkspaceCmd)
+	VksCmd.AddCommand(createWorkspaceCmd)
+	VksCmd.AddCommand(resetWorkspaceServiceAccountCmd)
 
 	cli.RegisterService(VksCmd)
 	registerCompletions()

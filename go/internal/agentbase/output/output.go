@@ -18,13 +18,19 @@ const (
 	FormatID    Format = "id"
 )
 
-var currentFormat Format = FormatTable
+var (
+	currentFormat Format = FormatTable
+	currentQuery  string
+)
 
 // SetFormat sets the active output format. Called once from rootCmd.PersistentPreRun.
 func SetFormat(f Format) { currentFormat = f }
 
 // GetFormat returns the active output format.
 func GetFormat() Format { return currentFormat }
+
+// SetQuery sets the active JMESPath query.
+func SetQuery(query string) { currentQuery = query }
 
 // ParseFormat parses an output format string, defaulting to table.
 func ParseFormat(s string) Format {
@@ -70,6 +76,14 @@ func PrintDeletedID(id string) error {
 
 // JSON prints any value as indented JSON to stdout.
 func JSON(v interface{}) error {
+	return writeJSON(v, false)
+}
+
+func writeJSON(v any, opaque bool) error {
+	v, err := prepareJSON(v, opaque)
+	if err != nil {
+		return err
+	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)
@@ -87,6 +101,9 @@ func Table(headers []string, rows [][]string) {
 	for _, row := range rows {
 		rowIface := make([]interface{}, len(row))
 		for i, cell := range row {
+			if !showSecret && ((i < len(headers) && credentialField(headers[i])) || (len(headers) == 2 && headers[0] == "Field" && i == 1 && credentialField(row[0]))) {
+				cell = Secret(cell)
+			}
 			rowIface[i] = cell
 		}
 		_ = t.Append(rowIface...)
@@ -102,18 +119,6 @@ func Success(msg string) {
 // Successf prints a formatted success message to stdout.
 func Successf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format+"\n", args...)
-}
-
-// Error prints an error message to stderr and exits with code 1.
-func Error(msg string) {
-	fmt.Fprintln(os.Stderr, "Error:", msg)
-	os.Exit(1)
-}
-
-// Errorf prints a formatted error message to stderr and exits with code 1.
-func Errorf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
-	os.Exit(1)
 }
 
 // Warn prints a warning to stderr.

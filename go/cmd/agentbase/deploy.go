@@ -72,13 +72,16 @@ type deployClients struct {
 }
 
 func newDeployClients(cmd *cobra.Command) (*deployClients, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return &deployClients{ab: ab, provider: provider}, nil
 }

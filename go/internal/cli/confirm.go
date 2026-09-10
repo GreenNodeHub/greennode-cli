@@ -8,18 +8,33 @@ import (
 	"strings"
 )
 
-// DryRunNotice prints the standard footer shown at the end of a --dry-run
-// preview. verb is the action that would run, e.g. DryRunNotice("delete")
-// prints "Run without --dry-run to delete."
+var nonInteractive bool
+var confirmationError error
+
+// SetNonInteractive disables stdin prompts.
+func SetNonInteractive(enabled bool) {
+	nonInteractive = enabled
+	confirmationError = nil
+}
+
+// IsNonInteractive reports whether commands must fail fast instead of prompting.
+func IsNonInteractive() bool {
+	return nonInteractive
+}
+
+// ConfirmationError fails unforced non-interactive calls; interactive refusals are no-ops.
+func ConfirmationError() error {
+	return confirmationError
+}
+
+// DryRunNotice prints how to execute the previewed action.
 func DryRunNotice(verb string) {
 	fmt.Printf("\nRun without --dry-run to %s.\n", verb)
 }
 
-// PrintDryRun prints a consistent --dry-run preview for a mutating request: a
-// header, the target being changed, the request body (keys sorted for stable
-// output), and the standard footer. verb is the action (e.g. "update",
-// "upgrade", "configure").
-func PrintDryRun(verb, target string, body map[string]interface{}) {
+// PrintDryRun prints a stable, credential-redacted request preview.
+func PrintDryRun(verb, target string, body map[string]any) {
+	body = RedactJSON(body).(map[string]any)
 	fmt.Println("=== DRY RUN ===")
 	if target != "" {
 		fmt.Printf("Would %s %s:\n", verb, target)
@@ -35,12 +50,15 @@ func PrintDryRun(verb, target string, body map[string]interface{}) {
 	DryRunNotice(verb)
 }
 
-// Confirm asks the user to confirm a destructive action and reports whether to
-// proceed. It returns true immediately when force is true. The prompt is shown
-// as "<prompt> [y/N]: "; only "y" or "yes" (case-insensitive) proceeds.
+// Confirm accepts force or explicit yes; non-interactive calls never read stdin.
 func Confirm(force bool, prompt string) bool {
 	if force {
 		return true
+	}
+	if IsNonInteractive() {
+		confirmationError = fmt.Errorf("confirmation required in non-interactive mode; rerun with --force")
+		fmt.Fprintln(os.Stderr, confirmationError)
+		return false
 	}
 	fmt.Printf("\n%s [y/N]: ", prompt)
 	reader := bufio.NewReader(os.Stdin)

@@ -83,6 +83,9 @@ func TestExchangeCode_SendsCodeVerifierAndForm(t *testing.T) {
 	if v.Get("client_id") != "cid" {
 		t.Errorf("client_id=%q", v.Get("client_id"))
 	}
+	if got := r.header.Get("User-Agent"); got != "grn-cli" {
+		t.Errorf("User-Agent=%q, want grn-cli", got)
+	}
 	// VNG IAM requires Basic on EVERY token POST. With no ClientSecret (public
 	// client) the Basic username is the client_id and the password is empty.
 	user, pass, ok := basicUserPass(r.header)

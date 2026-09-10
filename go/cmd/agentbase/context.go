@@ -25,7 +25,10 @@ var contextCurrentCmd = &cobra.Command{
 	Short: "Show the active environment and resolved endpoints",
 	Long:  `Display the currently active environment (resolved from the profile's iam_env) and all agentbase API base URLs.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ab := mustLoadAgentbaseCtx(cmd)
+		ab, err := loadAgentbaseCtx(cmd)
+		if err != nil {
+			return err
+		}
 		source := "prod default (iam_env unset)"
 		if ab.shared.IamEnv != "" {
 			source = fmt.Sprintf("iam_env=%s (profile %q)", ab.shared.IamEnv, ab.shared.Profile)
@@ -55,7 +58,7 @@ var contextHeadersCmd = &cobra.Command{
 	Use:   "headers",
 	Short: "Show platform request headers reference",
 	Long:  `Display the standard X-GreenNode-AgentBase-* HTTP request headers used by the platform.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		output.Table(
 			[]string{"Header", "Description"},
 			[][]string{
@@ -68,6 +71,7 @@ var contextHeadersCmd = &cobra.Command{
 				{"X-GreenNode-AgentBase-Custom-*", "Arbitrary custom headers forwarded to the agent"},
 			},
 		)
+		return nil
 	},
 }
 
@@ -75,7 +79,7 @@ var contextDecoratorsCmd = &cobra.Command{
 	Use:   "decorators",
 	Short: "Show SDK decorator reference",
 	Long:  `Display the GreenNode AgentBase SDK decorators and their purpose.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		output.Table(
 			[]string{"Decorator", "Module", "Description"},
 			[][]string{
@@ -96,6 +100,7 @@ var contextDecoratorsCmd = &cobra.Command{
 				},
 			},
 		)
+		return nil
 	},
 }
 

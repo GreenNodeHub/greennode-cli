@@ -2,12 +2,12 @@ package server
 
 import (
 	"fmt"
+	"net"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
-
-// ── internal network interfaces ────────────────────────────────────────────────
 
 var attachInternalInterfaceCmd = &cobra.Command{
 	Use:   "attach-internal-interface",
@@ -26,8 +26,6 @@ var detachInternalInterfaceCmd = &cobra.Command{
 	RunE:  runDetachInternalInterface,
 }
 
-// ── external network interfaces ────────────────────────────────────────────────
-
 var attachExternalInterfaceCmd = &cobra.Command{
 	Use:   "attach-external-interface",
 	Short: "Attach an external network interface to a server",
@@ -43,26 +41,22 @@ var detachExternalInterfaceCmd = &cobra.Command{
 }
 
 func init() {
-	// attach-internal: server + subnet (+ optional ip)
 	fai := attachInternalInterfaceCmd.Flags()
 	fai.String("server-id", "", "Server ID (required)")
 	fai.String("subnet-id", "", "Subnet ID to create the interface on (required)")
 	fai.String("ip", "", "Private IP to request (optional; auto-assigned if omitted)")
 	markRequired(attachInternalInterfaceCmd, "server-id", "subnet-id")
 
-	// detach-internal: server + one or more interface IDs
 	fdi := detachInternalInterfaceCmd.Flags()
 	fdi.String("server-id", "", "Server ID (required)")
 	fdi.String("network-interface-id", "", "Internal network interface IDs to detach (comma-separated, required)")
 	markRequired(detachInternalInterfaceCmd, "server-id", "network-interface-id")
 
-	// attach-external: server + external interface ID
 	fae := attachExternalInterfaceCmd.Flags()
 	fae.String("server-id", "", "Server ID (required)")
 	fae.String("network-interface-id", "", "External network interface ID to attach (required)")
 	markRequired(attachExternalInterfaceCmd, "server-id", "network-interface-id")
 
-	// detach-external: server + external interface ID
 	fde := detachExternalInterfaceCmd.Flags()
 	fde.String("server-id", "", "Server ID (required)")
 	fde.String("network-interface-id", "", "External network interface ID to detach (required)")
@@ -88,14 +82,8 @@ func runAttachInternalInterface(cmd *cobra.Command, args []string) error {
 	if err := validator.ValidateID(subnetID, "subnet-id"); err != nil {
 		return err
 	}
-
-	apiClient, cfg, err := createClient(cmd)
-	if err != nil {
-		return err
-	}
-	projectID, err := getProjectID(cfg)
-	if err != nil {
-		return err
+	if ip != "" && net.ParseIP(ip) == nil {
+		return fmt.Errorf("--ip must be a valid IP address")
 	}
 
 	body := map[string]interface{}{
@@ -105,6 +93,20 @@ func runAttachInternalInterface(cmd *cobra.Command, args []string) error {
 				"ip":       nilIfEmpty(ip),
 			},
 		},
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/servers/%s/internal-network-interfaces", "<project-id>", serverID), body)
+		return nil
+	}
+
+	apiClient, cfg, err := createClient(cmd)
+	if err != nil {
+		return err
+	}
+	projectID, err := getProjectID(cfg)
+	if err != nil {
+		return err
 	}
 
 	result, err := apiClient.Post(
@@ -136,6 +138,13 @@ func runDetachInternalInterface(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	body := map[string]interface{}{"networkInterfaceIds": ids}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("DELETE", fmt.Sprintf("/v2/%s/servers/%s/internal-network-interfaces", "<project-id>", serverID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -144,8 +153,6 @@ func runDetachInternalInterface(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	body := map[string]interface{}{"networkInterfaceIds": ids}
 
 	result, err := apiClient.DeleteWithBody(
 		fmt.Sprintf("/v2/%s/servers/%s/internal-network-interfaces", projectID, serverID),
@@ -169,6 +176,13 @@ func runAttachExternalInterface(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	body := map[string]interface{}{"externalNetworkInterfaceId": interfaceID}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/servers/%s/external-network-interfaces", "<project-id>", serverID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -177,8 +191,6 @@ func runAttachExternalInterface(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	body := map[string]interface{}{"externalNetworkInterfaceId": interfaceID}
 
 	result, err := apiClient.Post(
 		fmt.Sprintf("/v2/%s/servers/%s/external-network-interfaces", projectID, serverID),
@@ -202,6 +214,13 @@ func runDetachExternalInterface(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	body := map[string]interface{}{"networkInterfaceId": interfaceID}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("DELETE", fmt.Sprintf("/v2/%s/servers/%s/external-network-interfaces", "<project-id>", serverID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -210,8 +229,6 @@ func runDetachExternalInterface(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	body := map[string]interface{}{"networkInterfaceId": interfaceID}
 
 	result, err := apiClient.DeleteWithBody(
 		fmt.Sprintf("/v2/%s/servers/%s/external-network-interfaces", projectID, serverID),

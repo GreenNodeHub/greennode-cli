@@ -13,6 +13,7 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
+	listCmd.Flags().Bool("show-secret", false, "Print returned secret material")
 	listCmd.Flags().Int("page", 1, "Page number (1-based)")
 	listCmd.Flags().Int("page-size", 50, "Number of items per page")
 	listCmd.Flags().String("name", "", "Filter by SSH key name (substring match)")
@@ -48,7 +49,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		params["name"] = filterName
 	}
 
-	result, err := apiClient.Get(fmt.Sprintf("/v2/%s/sshKeys", projectID), params)
+	result, err := requestKey(apiClient, "GET", fmt.Sprintf("/v2/%s/sshKeys", projectID), params, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list SSH keys: %w", err)
 	}

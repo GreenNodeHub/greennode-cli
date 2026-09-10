@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://agentbase.api.vngcloud.vn/memory/v3/api-docs",
+    "title": "AgentBase Memory API",
+    "version": "v1",
+    "retrieved_at": "2026-09-10",
+    "sha256": "42b108cb531e986426f7bbb4ef4dab0f2ac3ef4aa390e22128bd445d04e148ca"
+  },
+  "base_url": "https://agentbase.api.vngcloud.vn/memory",
+  "legacy_runtime_paths_supported": false,
+  "operations": [
+    {"operation_id":"list","method":"GET","path":"/memories","required_body_fields":[],"responses":{"200":{"type":"object","fields":["listData","page","pageSize","totalItem","totalPage"]}}}
+  ]
+}

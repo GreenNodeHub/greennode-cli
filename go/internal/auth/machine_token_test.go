@@ -25,8 +25,11 @@ func v2TokenHandler(t *testing.T, hits *atomic.Int32, body string) http.Handler 
 // former TokenManager cache contract (now via clientcredentials).
 func TestMachineTokenProvider_MintsAndCaches(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(v2TokenHandler(t, &hits,
-		`{"access_token":"at","token_type":"Bearer","expires_in":3600}`))
+	var userAgent string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userAgent = r.Header.Get("User-Agent")
+		v2TokenHandler(t, &hits, `{"access_token":"at","token_type":"Bearer","expires_in":3600}`).ServeHTTP(w, r)
+	}))
 	t.Cleanup(srv.Close)
 
 	p := NewMachineTokenProvider("cid", "cs", srv.URL)
@@ -38,6 +41,9 @@ func TestMachineTokenProvider_MintsAndCaches(t *testing.T) {
 	}
 	if got := hits.Load(); got != 1 {
 		t.Errorf("token server hits=%d, want 1 (second GetToken should hit cache)", got)
+	}
+	if userAgent != "grn-cli" {
+		t.Errorf("User-Agent = %q, want grn-cli", userAgent)
 	}
 }
 

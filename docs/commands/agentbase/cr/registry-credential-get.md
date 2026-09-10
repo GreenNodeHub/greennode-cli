@@ -4,10 +4,7 @@ Show the robot account (username + secret).
 
 ## Description
 
-Fetch the robot account (username + secret) used to authenticate to the
-registry for `docker login` push/pull. The secret is MASKED in table output
-(only the last 4 characters are shown); use `-o json` to reveal the full
-secret so it can be piped into `docker login`.
+Fetch the registry robot account for push/pull. Its secret is `[REDACTED]` in every format unless `--show-secret` is explicit.
 
 ## Synopsis
 
@@ -36,5 +33,5 @@ grn agentbase cr registry-credential get
 Reveal the full secret for `docker login`:
 
 ```bash
-grn agentbase cr registry-credential get -o json
+grn agentbase cr registry-credential get -o json --show-secret
 ```

@@ -3,6 +3,7 @@ package networkinterface
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -59,6 +60,17 @@ func runUpdateTags(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one tag is required (--tag or --edited-tag)")
 	}
 
+	body := map[string]interface{}{
+		"resourceId":     interfaceID,
+		"resourceType":   "NETWORK-INTERFACE",
+		"tagRequestList": tagList,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/tag/resource/%s", "<project-id>", interfaceID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -67,12 +79,6 @@ func runUpdateTags(cmd *cobra.Command, args []string) error {
 	projectID, err := getProjectID(cfg)
 	if err != nil {
 		return err
-	}
-
-	body := map[string]interface{}{
-		"resourceId":     interfaceID,
-		"resourceType":   "NETWORK-INTERFACE",
-		"tagRequestList": tagList,
 	}
 
 	result, err := apiClient.Put(fmt.Sprintf("/v2/%s/tag/resource/%s", projectID, interfaceID), body)
