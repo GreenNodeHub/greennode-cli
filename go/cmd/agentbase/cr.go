@@ -41,7 +41,10 @@ Use 'reset-secret' to rotate the robot-account secret.`,
 // the shared token provider, force-mint once so auth failures surface before the
 // first call, and point the typed client at the cr endpoint.
 func newCRClient(ctx context.Context, cmd *cobra.Command) (*crpkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err

@@ -121,18 +121,6 @@ func Successf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format+"\n", args...)
 }
 
-// Error prints an error message to stderr and exits with code 1.
-func Error(msg string) {
-	fmt.Fprintln(os.Stderr, "Error:", msg)
-	os.Exit(1)
-}
-
-// Errorf prints a formatted error message to stderr and exits with code 1.
-func Errorf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
-	os.Exit(1)
-}
-
 // Warn prints a warning to stderr.
 func Warn(msg string) {
 	fmt.Fprintln(os.Stderr, "Warning:", msg)

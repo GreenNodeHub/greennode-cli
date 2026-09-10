@@ -49,7 +49,10 @@ gateways share the ~/.greennode profile like the rest of agentbase.`,
 // surface before the first call, and point the typed client at the gateway
 // endpoint for the active env.
 func newGatewayClient(ctx context.Context, cmd *cobra.Command) (*gatewaypkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err

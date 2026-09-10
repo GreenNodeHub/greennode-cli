@@ -1167,7 +1167,10 @@ func formatTime(t *time.Time) string {
 // credential surfaces as a clear "authentication failed" error before the first
 // API call rather than mid-request.
 func newIdentityClient(ctx context.Context, cmd *cobra.Command) (*identitypkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err

@@ -72,7 +72,10 @@ type deployClients struct {
 }
 
 func newDeployClients(cmd *cobra.Command) (*deployClients, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err

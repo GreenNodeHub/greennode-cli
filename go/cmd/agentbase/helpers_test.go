@@ -86,6 +86,22 @@ func TestNewAuthProvider_MachineMissingCreds_Errors(t *testing.T) {
 	}
 }
 
+func TestLoadAgentbaseCtxReturnsEndpointErrors(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GRN_PROFILE", "")
+	cmd := &cobra.Command{}
+	cmd.Flags().String("endpoint-url", "", "")
+	cmd.Flags().Bool("no-verify-ssl", false, "")
+	cmd.Flags().Bool("allow-untrusted-endpoint", false, "")
+	if err := cmd.Flags().Set("endpoint-url", "://invalid"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := loadAgentbaseCtx(cmd); err == nil {
+		t.Fatal("loadAgentbaseCtx() error = nil, want invalid endpoint error")
+	}
+}
+
 // resolveOutputFormat is the Fix A core: an explicit --output/-o wins, else the
 // config-file output key, else the flag default. Pure (no ~/.greennode IO) so it
 // is unit-testable without touching disk; effectiveOutputFormat is the thin

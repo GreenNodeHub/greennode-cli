@@ -54,7 +54,10 @@ var catalogOpenClawCmd = &cobra.Command{
 // newCatalogClient mirrors newRuntimeClient (catalog is served by the runtime
 // service, so it uses ab.endpoints.Runtime).
 func newCatalogClient(ctx context.Context, cmd *cobra.Command) (*catalogpkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err
