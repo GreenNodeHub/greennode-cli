@@ -4,7 +4,7 @@ Probe an authorization decision for a gateway target.
 
 ## Description
 
-Probe an authorization decision — the **internal** route that agent-core-gateway
+Probe an authorization decision — the **internal** route that the gateway service
 calls per inbound request. It always returns a decision: `allow`, or `deny` with
 a `reason` (HTTP 200 in both cases).
 

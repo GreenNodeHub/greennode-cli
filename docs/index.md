@@ -6,12 +6,15 @@ The GreenNode CLI (`grn`) is a unified tool to manage your GreenNode services fr
 
 ## Quick Start
 
-```bash
-# Download binary (macOS Apple Silicon example)
-curl -L -o grn https://github.com/GreenNodeHub/greennode-cli/releases/latest/download/grn-darwin-arm64
-chmod +x grn
-sudo mv grn /usr/local/bin/
+Install with one command (macOS / Linux):
 
+```bash
+curl -fsSL https://raw.githubusercontent.com/GreenNodeHub/greennode-cli/main/scripts/install.sh | bash
+```
+
+See [Installation](installation.md) for Windows and build-from-source.
+
+```bash
 # Configure credentials
 grn configure
 

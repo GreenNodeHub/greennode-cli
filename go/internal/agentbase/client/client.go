@@ -78,30 +78,17 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 		fullURL += "?" + query.Encode()
 	}
 
-	var bodyReader io.Reader
+	var data []byte
 	if body != nil {
-		data, err := json.Marshal(body)
+		data, err = json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("failed to marshal request body: %w", err)
 		}
-		bodyReader = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, fullURL, bodyReader)
+	req, err := c.buildRequest(ctx, method, fullURL, data, headers, token)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	req.Header.Set("Accept", "application/json")
-	for k, v := range headers {
-		if k == "Authorization" || k == "Content-Type" || k == "Accept" {
-			continue
-		}
-		req.Header.Set(k, v)
+		return err
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -115,6 +102,34 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	// 401 — force-refresh the token and retry once with the new bearer, mirroring
+	// internal/client.GreennodeClient so a mid-session access-token expiry (or
+	// server-side revocation) self-heals instead of surfacing as a hard APIError.
+	// The proactive GetToken above + the provider's pre-expiry skew handle the
+	// common case; this is the reactive backstop. A refresh failure, a transport
+	// error on the retry, or a second 401 is terminal — no further refresh.
+	if resp.StatusCode == http.StatusUnauthorized {
+		token, err = c.auth.RefreshToken()
+		if err != nil {
+			return err
+		}
+		req2, err := c.buildRequest(ctx, method, fullURL, data, headers, token)
+		if err != nil {
+			return err
+		}
+		resp2, err := c.httpClient.Do(req2)
+		if err != nil {
+			return fmt.Errorf("request failed: %w", err)
+		}
+		resp2Body, err := io.ReadAll(resp2.Body)
+		resp2.Body.Close()
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %w", err)
+		}
+		resp = resp2
+		respBody = resp2Body
+	}
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return &APIError{StatusCode: resp.StatusCode, Body: string(respBody)}
 	}
@@ -126,6 +141,34 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 	}
 
 	return nil
+}
+
+// buildRequest assembles the authenticated *http.Request for a given bearer
+// token. Shared by doReq's initial attempt and its 401 retry so the retry
+// applies an identical header set — Authorization swapped for the fresh token,
+// Content-Type/Accept/extra headers preserved. data is the already-marshaled
+// JSON body (nil for bodyless requests); nil data means no Content-Type.
+func (c *Client) buildRequest(ctx context.Context, method, fullURL string, data []byte, headers map[string]string, token string) (*http.Request, error) {
+	var bodyReader io.Reader
+	if data != nil {
+		bodyReader = bytes.NewReader(data)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, fullURL, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	if data != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "application/json")
+	for k, v := range headers {
+		if k == "Authorization" || k == "Content-Type" || k == "Accept" {
+			continue
+		}
+		req.Header.Set(k, v)
+	}
+	return req, nil
 }
 
 // Get performs a GET request.

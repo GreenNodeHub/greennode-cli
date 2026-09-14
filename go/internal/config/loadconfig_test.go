@@ -13,7 +13,7 @@ func isolateConfigEnv(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	for _, k := range []string{
-		"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
+		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET",
 		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
 	} {
 		t.Setenv(k, "")
@@ -91,6 +91,29 @@ func TestLoadConfigProfileInCredsOnly(t *testing.T) {
 	}
 }
 
+// Credential env vars GRN_CLIENT_ID / GRN_CLIENT_SECRET override the credentials
+// file. Pins the renamed env var names (formerly GRN_ACCESS_KEY_ID /
+// GRN_SECRET_ACCESS_KEY) so a drift back to the old names fails this test.
+func TestLoadConfigEnvVarsOverrideFile(t *testing.T) {
+	dir := isolateConfigEnv(t)
+	writeFile(t, filepath.Join(dir, "credentials"),
+		"[default]\nclient_id = AKIA-file\nclient_secret = secret-file\n")
+
+	t.Setenv("GRN_CLIENT_ID", "AKIA-env")
+	t.Setenv("GRN_CLIENT_SECRET", "secret-env")
+
+	cfg, err := LoadConfig("default")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.ClientID != "AKIA-env" {
+		t.Errorf("client_id = %q, want AKIA-env (GRN_CLIENT_ID must override file)", cfg.ClientID)
+	}
+	if cfg.ClientSecret != "secret-env" {
+		t.Errorf("client_secret = %q, want secret-env (GRN_CLIENT_SECRET must override file)", cfg.ClientSecret)
+	}
+}
+
 // Fresh machine with no config files: not an error (preserves first-run UX);
 // returns a populated default cfg.
 func TestLoadConfigNoFiles(t *testing.T) {
@@ -113,7 +136,7 @@ func isolateLegacyConfigEnv(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	for _, k := range []string{
-		"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
+		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET",
 		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
 	} {
 		t.Setenv(k, "")
@@ -155,7 +178,7 @@ func TestLoadConfigPrefersNewDirOverLegacy(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	for _, k := range []string{
-		"GRN_PROFILE", "GRN_ACCESS_KEY_ID", "GRN_SECRET_ACCESS_KEY",
+		"GRN_PROFILE", "GRN_CLIENT_ID", "GRN_CLIENT_SECRET",
 		"GRN_DEFAULT_REGION", "GRN_DEFAULT_PROJECT_ID",
 	} {
 		t.Setenv(k, "")

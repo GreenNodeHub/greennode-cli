@@ -8,7 +8,7 @@ grn [global-options] <service> <command> [command-options]
 
 ## Environment variables
 
-Global options can also be set via environment variables. See the [Configuration Guide](../configuration.md#environment-variables) for the full list, including `GRN_ACCESS_KEY_ID` and `GRN_SECRET_ACCESS_KEY` for credential overrides.
+Global options can also be set via environment variables. See the [Configuration Guide](../configuration.md#environment-variables) for the full list, including `GRN_CLIENT_ID` and `GRN_CLIENT_SECRET` for credential overrides.
 
 ## Options
 
@@ -37,6 +37,10 @@ grn --region HAN vks list-clusters
 
 # Custom endpoint (for local testing)
 grn --endpoint-url http://localhost:8080 vks list-clusters
+
+# Custom agentbase endpoint (swaps every agentbase service endpoint host,
+# keeping each service's path: identity→…/identity, runtime→…/runtime, …)
+grn --endpoint-url https://agentbase-staging.example.com agentbase access agent-id list
 
 # Disable SSL (dev only)
 grn --no-verify-ssl vks list-clusters

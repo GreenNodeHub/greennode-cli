@@ -43,6 +43,9 @@ jobs:
           - goos: windows
             goarch: amd64
             suffix: windows-amd64.exe
+          - goos: windows
+            goarch: arm64
+            suffix: windows-arm64.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -62,11 +65,42 @@ jobs:
         # vks_only build tag until it is ready to release.
         run: go build -tags vks_only -o grn-${{ matrix.suffix }} .
 
+      - name: Version the binary filename
+        shell: bash
+        working-directory: go
+        env:
+          SUFFIX: ${{ matrix.suffix }}
+          CALL_TAG: ${{ inputs.tag }}         # workflow_call (release-please) — e.g. v1.12.0
+          REF_NAME: ${{ github.ref_name }}    # tag push (v1.12.0) or branch (main)
+          DISPATCH_VER: ${{ inputs.version }} # workflow_dispatch — e.g. 1.12.0 (no v)
+        run: |
+          set -euo pipefail
+          # Precedence mirrors the release job's TAG resolution + workflow_dispatch.
+          if [ -n "$CALL_TAG" ]; then
+            VER="${CALL_TAG#v}"
+          elif [[ "$REF_NAME" == v[0-9]* ]]; then
+            VER="${REF_NAME#v}"
+          elif [ -n "$DISPATCH_VER" ]; then
+            VER="${DISPATCH_VER#v}"
+          else
+            echo "WARN: no version source; falling back to 'dev'" >&2
+            VER="dev"
+          fi
+          BASE="${SUFFIX%.exe}"
+          EXT="${SUFFIX#"$BASE"}"   # ".exe" for windows, "" otherwise
+          mv "grn-${SUFFIX}" "grn-${BASE}-v${VER}${EXT}"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: grn-${{ matrix.suffix }}
-          path: go/grn-${{ matrix.suffix }}
+          # Glob the versioned binary produced by the rename step. Each build
+          # leg runs on its own runner, so go/grn-*-v* matches exactly that
+          # leg's single file (grn-<base>-v<ver>[.exe]) and mirrors the release
+          # job's grn-*-v* checksum glob. (A literal grn-${{ matrix.suffix }}-v*
+          # would fail for the windows rows, whose suffix includes .exe but
+          # whose versioned name puts .exe at the end.)
+          path: go/grn-*-v*
 
   release:
     needs: build
@@ -78,18 +112,26 @@ jobs:
           path: dist/
           merge-multiple: true
 
-      - name: Attach binaries to the release
+      - name: Generate SHA256SUMS
+        shell: bash
+        run: |
+          cd dist
+          # Glob only the versioned binaries (grn-*-v*), one sha256 line each.
+          sha256sum grn-*-v* > SHA256SUMS
+          echo "Generated SHA256SUMS:"
+          cat SHA256SUMS
+
+      - name: Attach binaries + SHA256SUMS to the release
         env:
           GH_TOKEN: ${{ github.token }}
-          # tag comes from the workflow_call input; otherwise the pushed tag ref.
+          # TAG resolution quirk on workflow_dispatch (yields the branch) is
+          # pre-existing and intentionally preserved here.
           TAG: ${{ inputs.tag || github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            # Release already exists (e.g. created by release-please) — attach binaries.
-            gh release upload "$TAG" dist/grn-* --clobber --repo "$REPO"
+            gh release upload "$TAG" dist/grn-* dist/SHA256SUMS --clobber --repo "$REPO"
           else
-            # Manual tag push / dispatch — create the release with generated notes.
-            gh release create "$TAG" dist/grn-* --generate-notes --repo "$REPO"
+            gh release create "$TAG" dist/grn-* dist/SHA256SUMS --generate-notes --repo "$REPO"
           fi

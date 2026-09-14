@@ -1,11 +1,11 @@
 # policy
 
-Manage Cedar authorization policy groups, policies, and decisions (the agent-core-policy service).
+Manage Cedar authorization policy groups, policies, and decisions (the policy service).
 
 A "policy group" is a container of policies owned by a user (max 20/user); each
 group holds "policies" — individual permit/forbid rules (max 10/group) compiled
 to Cedar at write time. A gateway binds a group via its `policyGroupId`, and its
-enforcement asks agent-core-policy for an allow/deny decision per inbound request.
+enforcement asks the policy service for an allow/deny decision per inbound request.
 Policy resources are **synchronous** (no `WAITING_*` FSM, so there is no `wait`).
 There are two nested resources: **policy groups** and **policies within a group**.
 

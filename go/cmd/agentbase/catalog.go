@@ -13,14 +13,13 @@ import (
 	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
-// catalogCmd groups the catalog commands. The catalog surface (compute flavors,
-// openclaw versions, and openclaw CRUD/lifecycle) is served by the
-// agent-core-runtime service under its /v1 prefix, so the client uses the same
-// base URL (ab.endpoints.Runtime) as the runtime client.
+// catalogCmd groups the marketplace commands (was `catalog`; renamed to match
+// the portal). The marketplace surface (compute flavors, openclaw versions, and
+// openclaw CRUD/lifecycle) shares the runtime client's base URL.
 var catalogCmd = &cobra.Command{
-	Use:   "catalog",
-	Short: "Browse the catalog (flavors, openclaw versions, openclaws)",
-	Long: `Browse and manage the agent-core-runtime catalog.
+	Use:   "marketplace",
+	Short: "Browse the marketplace (flavors, openclaw versions, openclaws)",
+	Long: `Browse and manage the marketplace catalog.
 
 Two groups:
 
@@ -31,7 +30,7 @@ Two groups:
   openclaw           — OpenClaw instances: list/get/create/delete + start/stop
                         and switch version.
 
-Catalog ops share the ~/.greennode profile and the runtime endpoint.`,
+Marketplace ops share the ~/.greennode profile and the runtime endpoint.`,
 }
 
 // catalogFlavorsCmd groups the flavor commands.

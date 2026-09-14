@@ -1,6 +1,6 @@
 # deploy
 
-Deploy and manage an agent as one unit. `deploy` is a **client-side orchestrator** — it has no backend of its own. It composes the `identity`, `memory`, `runtime`, and `cr` clients into a single lifecycle.
+Deploy and manage an agent as one unit. `deploy` is a **client-side orchestrator** — it has no backend of its own. It composes the `access`, `memory`, `runtime`, and `cr` clients into a single lifecycle.
 
 An **agent** is the set of resources that share a name (the join key): an identity (always), an optional memory container (stateless agents omit it), and a runtime (the container that runs the agent code). There is no cross-service foreign key — the name is what ties them together. The agent code is a container image; push it to your vCR repo and reference it in the manifest. `imageAuth: auto` resolves the pull credentials from your auto-provisioned robot account.
 

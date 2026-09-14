@@ -82,7 +82,7 @@ func runSet(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 	// agent_identity: the agentbase current-agent selection. Normally set via
-	// 'grn agentbase identity workload use|create --set-current', but exposed here
+	// 'grn agentbase access agent-id use|create --set-current', but exposed here
 	// so it is settable / clearable like any other profile key.
 	case "agent_identity":
 		if err := writer.WriteAgentIdentity(profile, value); err != nil {

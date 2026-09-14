@@ -20,7 +20,7 @@ import (
 var crCmd = &cobra.Command{
 	Use:   "cr",
 	Short: "Manage the container registry (repository, images, artifacts, robot credential)",
-	Long: `Manage the agentbase container registry (agent-core-container-registry).
+	Long: `Manage the agentbase container registry.
 
 A user's repository and robot account are auto-provisioned on first read, so
 there is no 'create' — they appear when first fetched. You can list/delete

@@ -48,6 +48,12 @@ The profile's `auth_mode` decides which credential is used at runtime:
 | `user` | PKCE refresh token | `grn login` |
 | `machine` (default) | Client ID / secret | `grn configure` |
 
+Switching back: running `grn configure` (or `grn configure set client_id` /
+`client_secret`) after `grn login` repoints the profile at machine credentials —
+it sets `auth_mode=machine` and drops the cached `refresh_token` /
+`token_expires_at` so the stale login token is not used. `iam_env` is preserved
+(it selects the environment for both modes).
+
 `grn login` mints a short-lived access token and persists only the **refresh
 token** (plus `auth_mode` and `iam_env`) to the profile's credentials file
 (`0600`). The access token is held in memory for the process only — it is never
@@ -87,15 +93,15 @@ left intact.
 
 Credentials are resolved in the following order (highest to lowest priority):
 
-1. **Environment variables**: `GRN_ACCESS_KEY_ID`, `GRN_SECRET_ACCESS_KEY`
+1. **Environment variables**: `GRN_CLIENT_ID`, `GRN_CLIENT_SECRET`
 2. **Shared credentials file**: `~/.greennode/credentials`
 
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `GRN_ACCESS_KEY_ID` | Client ID (overrides credentials file) |
-| `GRN_SECRET_ACCESS_KEY` | Client Secret (overrides credentials file) |
+| `GRN_CLIENT_ID` | Client ID (overrides credentials file) |
+| `GRN_CLIENT_SECRET` | Client Secret (overrides credentials file) |
 | `GRN_DEFAULT_REGION` | Default region |
 | `GRN_DEFAULT_PROJECT_ID` | Project ID (GreenNode project UUID) |
 | `GRN_PROFILE` | Profile name (default: "default") |
@@ -107,8 +113,8 @@ Environment variables take priority over config file values.
 
 ```bash
 # Set credentials via environment variables
-export GRN_ACCESS_KEY_ID=your-client-id
-export GRN_SECRET_ACCESS_KEY=your-client-secret
+export GRN_CLIENT_ID=your-client-id
+export GRN_CLIENT_SECRET=your-client-secret
 export GRN_DEFAULT_REGION=HCM-3
 
 # Commands will use env var credentials automatically

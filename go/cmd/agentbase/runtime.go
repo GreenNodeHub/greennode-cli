@@ -28,7 +28,7 @@ import (
 var runtimeCmd = &cobra.Command{
 	Use:   "runtime",
 	Short: "Manage agent runtimes",
-	Long: `Create and manage agent runtimes (the agent-core-runtime service).
+	Long: `Create and manage agent runtimes (the runtime service).
 
 An agent runtime is a deployable container defined by its image, command, args,
 environment, autoscaling, and flavor. Runtimes converge asynchronously:
@@ -594,7 +594,7 @@ var runtimeEndpointCmd = &cobra.Command{Use: "endpoint", Short: "Manage a runtim
 var runtimeTraceCmd = &cobra.Command{
 	Use:   "trace",
 	Short: "Query the tracing backend (raw passthrough)",
-	Long: `Query the agent-core-runtime tracing backend.
+	Long: `Query the runtime tracing backend.
 
 These are Google-AIP custom verbs that forward arbitrary query params to the
 tracing backend and return that backend's raw JSON. Use --param key=value

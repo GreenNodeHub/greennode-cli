@@ -16,9 +16,12 @@ import (
 // proves client.Do drives the Bearer header from any TokenProvider
 // implementor, not just the concrete auth providers.
 type fakeTokenProvider struct {
-	token    string
-	err      error
-	getCalls atomic.Int32
+	token        string
+	refreshToken string // returned by RefreshToken; falls back to token if empty
+	err          error
+	refreshErr   error
+	getCalls     atomic.Int32
+	refreshCalls atomic.Int32
 }
 
 func (f *fakeTokenProvider) GetToken() (string, error) {
@@ -27,7 +30,11 @@ func (f *fakeTokenProvider) GetToken() (string, error) {
 }
 
 func (f *fakeTokenProvider) RefreshToken() (string, error) {
-	return f.token, f.err
+	f.refreshCalls.Add(1)
+	if f.refreshToken != "" {
+		return f.refreshToken, f.refreshErr
+	}
+	return f.token, f.refreshErr
 }
 
 type stubResponse struct {
@@ -256,5 +263,93 @@ func TestDo_UnchangedByHeaderSeam(t *testing.T) {
 	})
 	if err := c.Do(context.Background(), http.MethodGet, "/test", nil, nil, nil); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestDo_401RefreshRetriesOnce: a 401 triggers RefreshToken + a single retry
+// with the new bearer, mirroring internal/client.GreennodeClient so a mid-session
+// access-token expiry self-heals. The initial request (Bearer stale-token) gets
+// 401; the retry (Bearer refreshed-token) gets 200. RefreshToken is called once;
+// upstream sees exactly two requests.
+func TestDo_401RefreshRetriesOnce(t *testing.T) {
+	var (
+		gotAuths []string
+		reqCount atomic.Int32
+	)
+	fp := &fakeTokenProvider{token: "stale-token", refreshToken: "refreshed-token"}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuths = append(gotAuths, r.Header.Get("Authorization"))
+		reqCount.Add(1)
+		if r.Header.Get("Authorization") == "Bearer stale-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(stubResponse{Message: "ok"})
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, fp)
+
+	var out stubResponse
+	if err := c.Get(context.Background(), "/test", nil, &out); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Message != "ok" {
+		t.Errorf("expected ok, got %s", out.Message)
+	}
+	if got := reqCount.Load(); got != 2 {
+		t.Errorf("upstream requests=%d, want 2 (initial 401 + retry)", got)
+	}
+	if got := fp.refreshCalls.Load(); got != 1 {
+		t.Errorf("RefreshToken calls=%d, want 1", got)
+	}
+	if len(gotAuths) != 2 || gotAuths[0] != "Bearer stale-token" || gotAuths[1] != "Bearer refreshed-token" {
+		t.Errorf("auth sequence=%v, want [Bearer stale-token, Bearer refreshed-token]", gotAuths)
+	}
+}
+
+// TestDo_401RefreshFailsSurfacesError: if RefreshToken errors (e.g. refresh
+// token revoked), the retry is abandoned and the error surfaces — no silent
+// fallback, no upstream retry.
+func TestDo_401RefreshFailsSurfacesError(t *testing.T) {
+	refreshErr := errors.New("login token expired or revoked — run `grn login`")
+	fp := &fakeTokenProvider{token: "stale-token", refreshErr: refreshErr}
+	var reqCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqCount.Add(1)
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, fp)
+
+	err := c.Get(context.Background(), "/test", nil, nil)
+	if !errors.Is(err, refreshErr) {
+		t.Errorf("err=%v, want refreshErr", err)
+	}
+	if got := reqCount.Load(); got != 1 {
+		t.Errorf("upstream requests=%d, want 1 (no retry after refresh failure)", got)
+	}
+}
+
+// TestDo_401RetryStill401IsTerminal: a second 401 (after the one retry) is a
+// hard APIError — the client does not refresh again.
+func TestDo_401RetryStill401IsTerminal(t *testing.T) {
+	fp := &fakeTokenProvider{token: "stale-token", refreshToken: "refreshed-token"}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, fp)
+
+	err := c.Get(context.Background(), "/test", nil, nil)
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err=%v, want *APIError", err)
+	}
+	if apiErr.StatusCode != http.StatusUnauthorized {
+		t.Errorf("status=%d, want 401", apiErr.StatusCode)
+	}
+	if got := fp.refreshCalls.Load(); got != 1 {
+		t.Errorf("RefreshToken calls=%d, want 1 (no second refresh on retry-401)", got)
 	}
 }
