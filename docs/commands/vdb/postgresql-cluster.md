@@ -97,7 +97,9 @@ Output is a key/value view of the whole object, never a fixed column set — a
 cluster carries several nested arrays. Cluster-specific fields worth knowing:
 `deployType` (`cluster`), `numberOfNodes`, and `privateRwIp` / `publicRwIp` /
 `privateRoIp` / `publicRoIp`, which replace a single instance's `ip` list — `Rw`
-is the read-write endpoint, `Ro` the read-only one.
+is the read-write endpoint, `Ro` the read-only one. A [Multi-AZ](#multi-az)
+cluster additionally carries `multiZoneInfos[]`, one entry per zone with that
+zone's subnet and endpoints.
 
 ```bash
 grn vdb postgresql cluster get --cluster-id pg-2e6f2253-9032-466f-975f-d6d6b6ec8330 \
@@ -220,7 +222,10 @@ grn vdb postgresql cluster create
 : Availability zone, e.g. `HCM03-1A`.
 
 `--subnet-ids` (string) — **required**
-: Subnet ID(s), comma-separated.
+: Subnet ID(s), comma-separated. One subnet places every node in that subnet's
+zone. Several — one per zone — spread the nodes across those zones
+(**Multi-AZ**); the subnets come from
+[`grn vdb relational catalog list-subnets`](relational-catalog.md#list-subnets).
 
 `--username` (string) — **required**
 : Master username.
@@ -259,7 +264,25 @@ and [`list-backup-policies`](postgresql-catalog.md#list-backup-policies).
     volume types listed by `grn vdb relational catalog` belong to the
     single-instance product and are rejected here.
 
+### Multi-AZ
+
+Pass one subnet per zone in `--subnet-ids` and the nodes are spread across those
+zones. Two rules are enforced before the order is placed:
+
+- Each subnet appears once — one subnet per zone, so a repeat names a zone twice.
+- At most one subnet per node — every zone you name has to receive at least one
+  node.
+
+A Multi-AZ cluster can only use the flavors and volume types that
+[`catalog list-flavors --multi-zone`](postgresql-catalog.md#list-flavors) and
+[`catalog list-volume-types --multi-zone`](postgresql-catalog.md#list-volume-types)
+list — check those before ordering. Once built, the per-zone placement of a
+Multi-AZ cluster is visible in `cluster get` as `multiZoneInfos[]`: one entry per
+zone with that zone's `subnetId`, read-write / read-only endpoints and `status`.
+
 ### Examples
+
+Single zone — every node in one subnet:
 
 ```bash
 export GRN_VDB_MASTER_PASSWORD='...'
@@ -272,6 +295,20 @@ grn vdb postgresql cluster create --dry-run \
     --volume-size 40 --number-of-nodes 3 \
     --zone-id HCM03-1A \
     --subnet-ids sub-66a5327f-1970-427d-b1a3-8eb146e94bab \
+    --username pgadmin --database-name appdb
+```
+
+Multi-AZ — one subnet per zone, nodes spread across both:
+
+```bash
+grn vdb postgresql cluster create --dry-run \
+    --name ha-analytics \
+    --datastore-version 17 \
+    --package-id pgp-... \
+    --volume-type-id pgst-... \
+    --volume-size 40 --number-of-nodes 3 \
+    --zone-id HCM03-1A \
+    --subnet-ids sub-...-HCM03-1A,sub-...-HCM03-1B \
     --username pgadmin --database-name appdb
 ```
 

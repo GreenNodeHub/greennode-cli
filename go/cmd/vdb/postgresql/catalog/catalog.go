@@ -50,12 +50,13 @@ const (
 
 // simpleList describes a lookup that needs no input beyond an optional zone.
 type simpleList struct {
-	use     string
-	short   string
-	long    string
-	path    string
-	byZone  bool // offer --zone-id, sent as ?zoneId=
-	columns []string
+	use       string
+	short     string
+	long      string
+	path      string
+	byZone    bool // offer --zone-id, sent as ?zoneId=
+	multiZone bool // offer --multi-zone, sent as ?multiZone=true — the values a Multi-AZ cluster can use
+	columns   []string
 }
 
 var simpleLists = []simpleList{
@@ -72,19 +73,26 @@ var simpleLists = []simpleList{
 		short: "List PostgreSQL Cluster flavors",
 		long: "List the flavors (vCPU/RAM packages) available to a cluster. The 'id' " +
 			"('pgp-...') is what --package-id expects on 'cluster create' and " +
-			"'cluster resize'.",
-		path:    flavorsPath,
-		byZone:  true,
-		columns: []string{"id", "name", "vcpus", "ram", "platformType", "backupSize", "status", "locateZoneId"},
+			"'cluster resize'. With --multi-zone, only the flavors a Multi-AZ cluster " +
+			"can use — the ones compatible with a create that passes several " +
+			"--subnet-ids, one per zone.",
+		path:      flavorsPath,
+		byZone:    true,
+		multiZone: true,
+		columns:   []string{"id", "name", "vcpus", "ram", "platformType", "backupSize", "status", "locateZoneId"},
 	},
 	{
 		use:   "list-volume-types",
 		short: "List PostgreSQL Cluster volume types",
 		long: "List the volume types available to a cluster, with their size limits and " +
-			"provisioned IOPS. The 'id' ('pgst-...') is what --volume-type-id expects.",
-		path:    volumeTypesPath,
-		byZone:  true,
-		columns: []string{"id", "type", "name", "minVolumeSize", "maxVolumeSize", "iops", "status", "zoneId"},
+			"provisioned IOPS. The 'id' ('pgst-...') is what --volume-type-id expects. " +
+			"With --multi-zone, only the volume types a Multi-AZ cluster can use — the " +
+			"ones compatible with a create that passes several --subnet-ids, one per " +
+			"zone.",
+		path:      volumeTypesPath,
+		byZone:    true,
+		multiZone: true,
+		columns:   []string{"id", "type", "name", "minVolumeSize", "maxVolumeSize", "iops", "status", "zoneId"},
 	},
 	{
 		use:   "list-backup-locations",
@@ -112,7 +120,7 @@ func newSimpleList(spec simpleList) *cobra.Command {
 		Long:  spec.long,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := get(cmd, spec.path, zoneQuery(cmd), spec.columns); err != nil {
+			if err := get(cmd, spec.path, catalogQuery(cmd, spec.multiZone), spec.columns); err != nil {
 				return fmt.Errorf("failed to %s: %w", strings.ReplaceAll(spec.use, "-", " "), err)
 			}
 			return nil
@@ -123,6 +131,9 @@ func newSimpleList(spec simpleList) *cobra.Command {
 		// Bound here rather than in a central function: the flag only exists on the
 		// specs that ask for it, so this is the one place it is guaranteed to be defined.
 		cmd.RegisterFlagCompletionFunc("zone-id", zoneIDCompletion()) //nolint:errcheck
+	}
+	if spec.multiZone {
+		cmd.Flags().Bool("multi-zone", false, "List only the values a Multi-AZ cluster can use (see 'cluster create --subnet-ids')")
 	}
 	return cmd
 }
@@ -156,6 +167,19 @@ func zoneQuery(cmd *cobra.Command) url.Values {
 	query := url.Values{}
 	if zoneID, _ := cmd.Flags().GetString("zone-id"); zoneID != "" {
 		query.Set("zoneId", zoneID)
+	}
+	return query
+}
+
+// catalogQuery adds the params a lookup takes beyond the zone: ?multiZone=true,
+// only when --multi-zone is set. It is sent set or absent, never false — the API
+// applies its own default when the param is missing.
+func catalogQuery(cmd *cobra.Command, multiZone bool) url.Values {
+	query := zoneQuery(cmd)
+	if multiZone {
+		if set, _ := cmd.Flags().GetBool("multi-zone"); set {
+			query.Set("multiZone", "true")
+		}
 	}
 	return query
 }

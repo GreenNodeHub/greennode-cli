@@ -34,6 +34,43 @@ func TestSimpleListsAreWired(t *testing.T) {
 		if hasZone := cmd.Flags().Lookup("zone-id") != nil; hasZone != spec.byZone {
 			t.Errorf("%q has --zone-id = %v, want %v", spec.use, hasZone, spec.byZone)
 		}
+		if hasMulti := cmd.Flags().Lookup("multi-zone") != nil; hasMulti != spec.multiZone {
+			t.Errorf("%q has --multi-zone = %v, want %v", spec.use, hasMulti, spec.multiZone)
+		}
+	}
+}
+
+// TestMultiZoneQuery: --multi-zone becomes ?multiZone=true, set only when the flag is
+// given — the API applies its own default when the param is absent, so an explicit
+// false would silently mean the same thing as true if the two ever disagreed.
+func TestMultiZoneQuery(t *testing.T) {
+	cmd := CatalogCmd
+	flavors, _, err := cmd.Find([]string{"list-flavors"})
+	if err != nil {
+		t.Fatalf("finding list-flavors: %v", err)
+	}
+
+	if err := flavors.Flags().Set("multi-zone", "true"); err != nil {
+		t.Fatalf("setting --multi-zone: %v", err)
+	}
+	defer flavors.Flags().Set("multi-zone", "false") //nolint:errcheck
+
+	query := catalogQuery(flavors, true)
+	if got := query.Get("multiZone"); got != "true" {
+		t.Errorf("multiZone = %q, want %q", got, "true")
+	}
+
+	// An unset flag sends nothing, and a spec without the flag never reads it even
+	// though the command carries one from an earlier call.
+	query = catalogQuery(flavors, false)
+	if got := query.Get("multiZone"); got != "" {
+		t.Errorf("multiZone = %q, want absent", got)
+	}
+
+	flavors.Flags().Set("multi-zone", "false") //nolint:errcheck
+	query = catalogQuery(flavors, true)
+	if got := query.Get("multiZone"); got != "" {
+		t.Errorf("multiZone = %q with the flag unset, want absent", got)
 	}
 }
 

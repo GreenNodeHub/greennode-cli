@@ -32,6 +32,11 @@ var createCmd = &cobra.Command{
 		"Every ID comes from 'grn vdb postgresql catalog' — its flavors, volume types, " +
 		"versions, config groups, backup locations and policies are cluster-specific and " +
 		"the relational ones are not interchangeable.\n\n" +
+		"Give --subnet-ids one subnet and every node lands in that subnet's zone. Give it " +
+		"several — one per zone — and the nodes are spread across those zones (Multi-AZ); " +
+		"a Multi-AZ cluster can only use the flavors and volume types that " +
+		"'catalog list-flavors --multi-zone' and 'catalog list-volume-types --multi-zone' " +
+		"list.\n\n" +
 		"The master password is read from $" + passwordEnv + " when --password is omitted, " +
 		"which keeps it out of your shell history. It is masked in --dry-run output.",
 	Args: cobra.NoArgs,
@@ -49,7 +54,8 @@ func createFlags(f *pflag.FlagSet) {
 	f.Int("volume-size", 0, "Volume size in GB (required)")
 	f.Int("number-of-nodes", 3, fmt.Sprintf("Number of nodes (%d-%d)", minNodes, maxNodes))
 	f.String("zone-id", "", "Availability zone, e.g. HCM03-1A (required)")
-	f.String("subnet-ids", "", "Subnet ID(s), comma-separated (required; see 'grn vdb relational catalog list-subnets')")
+	f.String("subnet-ids", "", "Subnet IDs, comma-separated (required; see 'grn vdb relational catalog list-subnets'). "+
+		"One subnet places all nodes in its zone; several — one per zone — spread the nodes across zones (Multi-AZ)")
 	f.String("username", "", "Master username (required)")
 	f.String("password", "", "Master password (required; defaults to $"+passwordEnv+")")
 	f.String("database-name", "", "Initial database name (required; the API accepts exactly one at creation)")
@@ -99,9 +105,12 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	nodes := body["numberOfNodes"]
-	if !cli.Confirm(force, fmt.Sprintf(
-		"Create PostgreSQL Cluster %q with %v nodes? This places a paid order.", name, nodes)) {
+	nodes, _ := body["numberOfNodes"].(int)
+	zones := 1
+	if netIDs, ok := body["netIds"].([]interface{}); ok && len(netIDs) > 0 {
+		zones = len(netIDs)
+	}
+	if !cli.Confirm(force, createPrompt(name, nodes, zones)) {
 		fmt.Println("Aborted.")
 		return nil
 	}
@@ -117,6 +126,17 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	return vdbclient.Output(cmd, result)
+}
+
+// createPrompt words the confirmation. A Multi-AZ create (several subnets, one per
+// zone) says so — node placement across zones is the one thing the order fixes and
+// nothing later can change.
+func createPrompt(name string, nodes, zones int) string {
+	if zones > 1 {
+		return fmt.Sprintf("Create PostgreSQL Cluster %q with %d nodes across %d zones (Multi-AZ)? This places a paid order.",
+			name, nodes, zones)
+	}
+	return fmt.Sprintf("Create PostgreSQL Cluster %q with %d nodes? This places a paid order.", name, nodes)
 }
 
 // createBody assembles CreatePostgreClusterRequest. Split out from runCreate so
@@ -162,6 +182,21 @@ func createBody(cmd *cobra.Command) (map[string]interface{}, error) {
 	subnets := cli.ParseCommaSeparated(subnetIDs)
 	if len(subnets) == 0 {
 		return nil, fmt.Errorf("invalid --subnet-ids: at least one subnet ID is required")
+	}
+	// Multi-AZ takes one subnet per zone, so a repeated subnet names one zone twice
+	// and more subnets than nodes leaves a zone with nothing to place in it. The API
+	// documents the one-per-zone rule but does not spell out either failure, so both
+	// are caught here where the error can name the flag.
+	seen := make(map[string]bool, len(subnets))
+	for _, subnet := range subnets {
+		if seen[subnet] {
+			return nil, fmt.Errorf("invalid --subnet-ids: %q is listed more than once — Multi-AZ takes one subnet per zone", subnet)
+		}
+		seen[subnet] = true
+	}
+	if len(subnets) > nodes {
+		return nil, fmt.Errorf("invalid --subnet-ids: %d subnets for %d nodes — a Multi-AZ cluster takes at most one subnet per node (one per zone the nodes spread across)",
+			len(subnets), nodes)
 	}
 
 	body := map[string]interface{}{

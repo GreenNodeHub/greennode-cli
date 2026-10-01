@@ -187,6 +187,10 @@ func TestCreateBodyRejectsBadInput(t *testing.T) {
 		{"zero volume size", map[string]string{"volume-size": "0"}},
 		{"no password anywhere", map[string]string{"password": ""}},
 		{"no subnet", map[string]string{"subnet-ids": ""}},
+		// Multi-AZ: one subnet per zone, so a repeated subnet names a zone twice and
+		// more subnets than nodes leaves a zone with no node to place in it.
+		{"repeated subnet", map[string]string{"subnet-ids": "sub-1, sub-1"}},
+		{"more subnets than nodes", map[string]string{"subnet-ids": "sub-1,sub-2,sub-3,sub-4"}},
 	}
 
 	for _, c := range cases {
@@ -203,6 +207,22 @@ func TestCreateBodyRejectsBadInput(t *testing.T) {
 
 		if _, err := createBody(freshCreateCmd(t, flags)); err == nil {
 			t.Errorf("%s: createBody = nil error, want a rejection", c.name)
+		}
+	}
+}
+
+// TestCreatePromptNamesZonesForMultiAZ: node placement across zones is the one thing
+// the order fixes, so a multi-subnet create must say so before it takes money.
+func TestCreatePromptNamesZonesForMultiAZ(t *testing.T) {
+	single := createPrompt("c", 3, 1)
+	if strings.Contains(single, "Multi-AZ") || strings.Contains(single, "zone") {
+		t.Errorf("single-zone prompt mentions zones: %q", single)
+	}
+
+	multi := createPrompt("c", 4, 2)
+	for _, want := range []string{"4 nodes", "across 2 zones", "Multi-AZ", "paid order"} {
+		if !strings.Contains(multi, want) {
+			t.Errorf("multi-AZ prompt %q missing %q", multi, want)
 		}
 	}
 }

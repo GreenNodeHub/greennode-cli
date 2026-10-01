@@ -45,15 +45,20 @@ Table columns: `type`, `version`, `name`, `versionName`, `licenseName`. The
 ## list-flavors
 
 ```
-grn vdb postgresql catalog list-flavors [--zone-id <value>]
+grn vdb postgresql catalog list-flavors [--zone-id <value>] [--multi-zone]
 ```
 
 Table columns: `id`, `name`, `vcpus`, `ram`, `platformType`, `backupSize`,
 `status`, `locateZoneId`. The `id` (`pgp-...`) is what `--package-id` expects on
 create, and `backupSize` is the free backup allowance that comes with the flavor.
 
+`--multi-zone` restricts the list to the flavors a Multi-AZ cluster can use — a
+create that passes several `--subnet-ids`, one per zone (see
+[Multi-AZ](postgresql-cluster.md#multi-az)).
+
 ```bash
 grn vdb postgresql catalog list-flavors --zone-id HCM03-1A --output table
+grn vdb postgresql catalog list-flavors --multi-zone --query '[].id'
 ```
 
 ---
@@ -61,12 +66,14 @@ grn vdb postgresql catalog list-flavors --zone-id HCM03-1A --output table
 ## list-volume-types
 
 ```
-grn vdb postgresql catalog list-volume-types [--zone-id <value>]
+grn vdb postgresql catalog list-volume-types [--zone-id <value>] [--multi-zone]
 ```
 
 Table columns: `id`, `type`, `name`, `minVolumeSize`, `maxVolumeSize`, `iops`,
 `status`, `zoneId`. The `id` (`pgst-...`) is what `--volume-type-id` expects;
 `minVolumeSize`/`maxVolumeSize` bound `--volume-size`.
+
+`--multi-zone` restricts the list to the volume types a Multi-AZ cluster can use.
 
 Note that cluster storage limits differ from the single-instance ones — the
 relational types allow far larger volumes.

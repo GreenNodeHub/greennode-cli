@@ -102,6 +102,19 @@ Consequences for `grn vdb postgresql` (implemented — `cmd/vdb/postgresql/`):
 - Unlike relational's `update/setting` and `update/config-group`, the pg
   equivalents **do** have a documented response (`InstanceActionResult`), so they
   are not part of the 6-endpoint blind spot below.
+- **Multi-AZ (spec update 2026-10-01): `netIds` takes one subnet per zone.** One
+  subnet places every node in its zone — the only mode before this; several subnets,
+  one per zone, spread the nodes across those zones. `cluster create` enforces the two
+  inferences client-side: no repeated subnet (a repeat names one zone twice) and at
+  most one subnet per node (every zone named has to receive a node). The flavors and
+  volume types a Multi-AZ cluster can use are a separate list — `GET /cluster/flavors`
+  and `GET /cluster/volume-types` take `?multiZone=true`, exposed as `--multi-zone` on
+  `catalog list-flavors` / `list-volume-types` and sent only when set, since the API
+  applies its own default when the param is absent. A multi-zone cluster reports its
+  per-zone placement as `multiZoneInfos[]` on the instance get/list payloads
+  (`zoneId`, `subnetId`, per-zone `privateRwIp`/`publicRwIp`/`privateRoIp`/`publicRoIp`,
+  `rwPort`/`roPort`, `status`), empty/null for single-zone clusters. None of this is
+  exercised live yet — the mapping is from the updated spec.
 - The supplied capture writes every path with a leading `/vdb`
   (`GET /vdb/vdb-relational/v1/…`). That is a **UI-only prefix, stripped by the
   console's proxy_pass** before the request reaches the API (confirmed by the
@@ -256,9 +269,12 @@ commands were exercised only with `--dry-run`.
 - **Master-password rules differ per product** (`internal/vdbclient/credential.go`):
   8–32 characters for relational, 16–128 for memorystore, and in both only letters,
   digits and `$ ^ _ < >`. MemoryStore additionally refuses a password containing BOTH
-  `<` and `>` — either alone is fine (live probe). pg is deliberately unchecked: its
-  surface already validates differently (it accepts `configGroupId: ""`, which relational
-  rejects) and its limits were never confirmed.
+  `<` and `>` — either alone is fine (live probe). pg stays deliberately unchecked
+  client-side: the spec documents its rules as of 2026-10-01 (8–32, the same charset,
+  must start with a letter and end with a letter or digit), but they are not
+  live-verified — and the start/end rule is not enforced for relational either, whose
+  live probes never covered it — so the API's own message, surfaced in full by the
+  error layer, remains the check.
 - **A rejected password comes back in the error message in plain text**
   (`Redis password [hunter2…] contains invalid character`). `enrich` takes the request
   body so it can mask any value the body carried under a sensitive key before the message
