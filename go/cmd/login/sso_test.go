@@ -1,69 +1,60 @@
 package login
 
 import (
-	"strings"
 	"testing"
 )
 
-func TestStripRedirectURI_ReplacesRedirectUriAndPreservesOthers(t *testing.T) {
-	in := "https://sso.example/ap/auth?clientId=foreign&redirectUri=https://old.example/cb&scope=openid"
-	got, err := stripRedirectURI(in, "http://127.0.0.1:54321/callback", "baked-cid")
+// TestExtractIdpHint_PullsIdpIdFromConsoleLink: the real user link is a console
+// SSO deep-link of the form
+// https://dashboard.console.vngcloud.vn/login?type=idp&idpId=<uuid>&clientId=<baked>&redirectUri=<loopback>&...
+// The SSO model no longer uses that link as the authorize URL — it extracts
+// idpId (the IdP selector) and discards the rest (host/path/redirectUri/clientId
+// are all regenerated on the canonical IAM authorize endpoint).
+func TestExtractIdpHint_PullsIdpIdFromConsoleLink(t *testing.T) {
+	in := "https://dashboard.console.vngcloud.vn/login?type=idp&idpId=b1d3f049-9376-4dc6-90b0-0d5facd6b8eb&clientId=09b427e9-3b45-437b-a3a6-bf9f7fd24185&redirectUri=http://127.0.0.1:54250/callback&codeChallenge=x&responseType=code&scope=openid&appState=y"
+	got, err := extractIdpHint(in)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	// q.Encode() percent-encodes the redirectUri value (":" -> "%3A"), so accept
-	// either the literal or encoded colon. Mirrors the brief's original robust
-	// dual-form check; the controller's corrected test only checked the literal
-	// form, which cannot pass against the mandated q.Encode() implementation.
-	if !strings.Contains(got, "127.0.0.1:54321") && !strings.Contains(got, "127.0.0.1%3A54321") {
-		t.Errorf("redirectUri not rewritten to loopback: %q", got)
-	}
-	if strings.Contains(got, "old.example") {
-		t.Errorf("old redirectUri leaked: %q", got)
-	}
-	if strings.Contains(got, "foreign") {
-		t.Errorf("link's clientId 'foreign' leaked (must be discarded): %q", got)
-	}
-	if !strings.Contains(got, "clientId=baked-cid") && !strings.Contains(got, "clientId=baked") {
-		t.Errorf("baked clientId not set: %q", got)
-	}
-	if !strings.Contains(got, "scope") {
-		t.Errorf("scope not preserved: %q", got)
+	if got != "b1d3f049-9376-4dc6-90b0-0d5facd6b8eb" {
+		t.Errorf("idpId=%q, want the UUID from the link", got)
 	}
 }
 
-func TestStripRedirectURI_DiscardsLinkClientId_UsesBaked(t *testing.T) {
-	in := "https://sso.example/ap/auth?clientId=link-client&redirectUri=https://old/cb"
-	got, err := stripRedirectURI(in, "http://127.0.0.1:1/callback", "baked-cid")
+// TestExtractIdpHint_PullsIdpIdFromPlainAuthorizeURL: a user may paste a bare
+// authorize URL that already carries idpId. Still extracted.
+func TestExtractIdpHint_PullsIdpIdFromPlainAuthorizeURL(t *testing.T) {
+	in := "https://signin.vngcloud.vn/ap/auth?idpId=abc-123"
+	got, err := extractIdpHint(in)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	if strings.Contains(got, "link-client") {
-		t.Errorf("link clientId leaked: %q", got)
-	}
-	if !strings.Contains(got, "clientId=baked") {
-		t.Errorf("baked clientId not set: %q", got)
+	if got != "abc-123" {
+		t.Errorf("idpId=%q, want abc-123", got)
 	}
 }
 
-func TestStripRedirectURI_EmptyDefaultClientId_LeavesClientIdUnset(t *testing.T) {
-	in := "https://sso.example/ap/auth?clientId=link-client&redirectUri=https://old/cb"
-	got, err := stripRedirectURI(in, "http://127.0.0.1:1/callback", "")
+// TestExtractIdpHint_EmptyWhenNoIdpId: a link without idpId yields an empty
+// hint (the caller then runs plain pkce against the canonical endpoint). No
+// error — "no hint" is a valid outcome, not a failure.
+func TestExtractIdpHint_EmptyWhenNoIdpId(t *testing.T) {
+	in := "https://dashboard.console.vngcloud.vn/login?type=idp&clientId=x&redirectUri=http://127.0.0.1:1/callback"
+	got, err := extractIdpHint(in)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	if strings.Contains(got, "link-client") {
-		t.Errorf("link clientId leaked even with empty default: %q", got)
-	}
-	if strings.Contains(got, "clientId") {
-		t.Errorf("clientId should be unset when defaultClientID is empty: %q", got)
+	if got != "" {
+		t.Errorf("idpId=%q, want empty (no idpId in link)", got)
 	}
 }
 
-func TestStripRedirectURI_ErrorsOnMalformed(t *testing.T) {
+// TestExtractIdpHint_ErrorsOnMalformed: a non-absolute / unparseable link is an
+// error (the caller surfaces it). Same absolute-URL guard the old
+// stripRedirectURI enforced.
+func TestExtractIdpHint_ErrorsOnMalformed(t *testing.T) {
 	cases := []string{"", "not a url", "https://", "://nohost"}
 	for _, in := range cases {
-		if _, err := stripRedirectURI(in, "http://127.0.0.1:1/callback", "cid"); err == nil {
+		if _, err := extractIdpHint(in); err == nil {
 			t.Errorf("expected error for %q, got nil", in)
 		}
 	}

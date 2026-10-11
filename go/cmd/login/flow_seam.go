@@ -10,12 +10,13 @@ import (
 
 // loginFlow is the slice of *loginpkg.Flow the cmd uses, behind an interface so
 // runLogin tests inject a fake flow without binding a real loopback port.
-// *loginpkg.Flow satisfies it structurally (AuthURL/RedirectURI/SetAuthorizeURL/
-// Complete/Close). Production newFlow returns loginpkg.Prepare's *Flow.
+// *loginpkg.Flow satisfies it structurally (AuthURL/RedirectURI/Complete/Close).
+// Production newFlow returns loginpkg.Prepare's *Flow. The SSO IdP hint is set
+// on cfg.IdpHint BEFORE newFlow (the flow never mutates the authorize URL), so
+// no SetAuthorizeURL method is needed on the seam.
 type loginFlow interface {
 	AuthURL() string
 	RedirectURI() string
-	SetAuthorizeURL(url string)
 	Complete(ctx context.Context) (loginpkg.Token, error)
 	Close() error
 }

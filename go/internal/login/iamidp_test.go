@@ -66,6 +66,42 @@ func TestBuildAuthorizeURL_RejectsSnakeCaseSynonyms(t *testing.T) {
 	}
 }
 
+func TestBuildAuthorizeURL_IdpHintAppendedWhenSet(t *testing.T) {
+	t.Parallel()
+	c := cfgForTest()
+	c.IdpHint = "b1d3f049-9376-4dc6-90b0-0d5facd6b8eb"
+	got := c.BuildAuthorizeURL("http://127.0.0.1:8080/callback", "ch", "st")
+	u, err := url.Parse(got)
+	if err != nil {
+		t.Fatalf("parse: %v\nurl=%s", err, got)
+	}
+	q := u.Query()
+	if got := q.Get("idpId"); got != "b1d3f049-9376-4dc6-90b0-0d5facd6b8eb" {
+		t.Errorf("idpId=%q, want the hint; url=%s", got, got)
+	}
+	// The hint must NOT change the canonical endpoint or stomp the PKCE/redirect
+	// params — it is an additive selector.
+	if q.Get("clientId") != "cli-client-id" {
+		t.Errorf("clientId changed by hint: %q", q.Get("clientId"))
+	}
+	if q.Get("redirectUri") != "http://127.0.0.1:8080/callback" {
+		t.Errorf("redirectUri changed by hint: %q", q.Get("redirectUri"))
+	}
+	if q.Get("responseType") != "code" {
+		t.Errorf("responseType changed by hint: %q", q.Get("responseType"))
+	}
+}
+
+func TestBuildAuthorizeURL_NoIdpHintWhenEmpty(t *testing.T) {
+	t.Parallel()
+	c := cfgForTest() // IdpHint zero value ""
+	got := c.BuildAuthorizeURL("http://127.0.0.1:8080/callback", "ch", "st")
+	u, _ := url.Parse(got)
+	if _, ok := u.Query()["idpId"]; ok {
+		t.Errorf("idpId must be absent when IdpHint is empty (pkce path); url=%s", got)
+	}
+}
+
 func TestAccessTokenFrom_ReturnsToken(t *testing.T) {
 	t.Parallel()
 	c := cfgForTest()

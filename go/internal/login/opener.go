@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 // errNoOpener is returned by defaultOpenBrowser when no platform opener is known.
@@ -25,7 +26,11 @@ func browserRunner() func(string) error {
 	case "windows":
 		return func(u string) error {
 			// 'start' is a cmd builtin; run through cmd /c.
-			return exec.Command("cmd", "/c", "start", "", u).Start()
+			quotedURL, err := quoteWindowsURL(u)
+			if err != nil {
+				return err
+			}
+			return exec.Command("cmd", "/c", "start", "", quotedURL).Start()
 		}
 	default: // linux / *bsd
 		return func(u string) error {
@@ -37,4 +42,14 @@ func browserRunner() func(string) error {
 			return errNoOpener
 		}
 	}
+}
+
+// quoteWindowsURL wraps a URL in double quotes for cmd.exe. Double quotes
+// prevent cmd.exe from treating URL query separators as command operators.
+// URLs should not contain embedded double quotes, so they are rejected.
+func quoteWindowsURL(rawurl string) (string, error) {
+	if strings.Contains(rawurl, `"`) {
+		return "", errors.New("login: URL contains an invalid double quote")
+	}
+	return `"` + rawurl + `"`, nil
 }

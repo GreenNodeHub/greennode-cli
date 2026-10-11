@@ -23,6 +23,13 @@ type Config struct {
 	ClientSecret string
 	// Scopes are optional OAuth scopes, e.g. ["openid"].
 	Scopes []string
+	// IdpHint is an optional identity-provider selector forwarded as the
+	// camelCase `idpId` query param on the authorize URL, so IAM can skip its
+	// provider-picker screen and send the user straight to the chosen IdP. It is
+	// a non-secret IdP identifier (a UUID/alias from a console SSO link); empty
+	// means no hint (plain pkce, no picker-skip). The SSO cmd path extracts it
+	// from a user-supplied SSO/IdP login link; the pkce path leaves it empty.
+	IdpHint string
 }
 
 // BuildAuthorizeURL renders IAM's camelCase signin URL: clientId,
@@ -46,6 +53,9 @@ func (c Config) BuildAuthorizeURL(redirectURI, codeChallenge, signedState string
 	q.Set("redirectUri", redirectURI)
 	if scope := c.ScopeString(); scope != "" {
 		q.Set("scope", scope)
+	}
+	if c.IdpHint != "" {
+		q.Set("idpId", c.IdpHint)
 	}
 	u.RawQuery = q.Encode()
 	return u.String()
