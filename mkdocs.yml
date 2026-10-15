@@ -200,6 +200,7 @@ nav:
       - code-interpreter session create: commands/agentbase/tools/code-interpreter-session-create.md
       - code-interpreter session delete: commands/agentbase/tools/code-interpreter-session-delete.md
       - code-interpreter session invoke: commands/agentbase/tools/code-interpreter-session-invoke.md
+      - code-interpreter session task-wait: commands/agentbase/tools/code-interpreter-session-task-wait.md
     - Policy:
       - Overview: commands/agentbase/policy/index.md
       - group create: commands/agentbase/policy/group-create.md

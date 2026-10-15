@@ -1,9 +1,11 @@
 package agentbase
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -57,11 +59,91 @@ func newToolsClient(ctx context.Context, cmd *cobra.Command) (*toolspkg.Client, 
 	return toolspkg.NewClient(ab.endpoints.BuiltInTools, provider), nil
 }
 
+// endUserIDPattern is the server-side X-End-User-ID constraint (1-128 chars
+// of A-Za-z0-9._:@-), mirrored client-side so a bad value fails fast with a
+// message naming the flag (the server 400s with a combined message that
+// doesn't).
+var endUserIDPattern = regexp.MustCompile(`^[A-Za-z0-9._:@-]{1,128}$`)
+
 // flagEndUserID reads the session groups' shared --end-user-id flag: the
-// optional X-End-User-ID header value for session-scoped endpoints (1-128
-// chars of A-Za-z0-9._:@-, validated server-side).
-func flagEndUserID(cmd *cobra.Command) string {
-	return flagString(cmd, "end-user-id")
+// optional X-End-User-ID header value for session-scoped endpoints. Empty is
+// valid (header omitted); anything else must match the server-side pattern.
+func flagEndUserID(cmd *cobra.Command) (string, error) {
+	v := flagString(cmd, "end-user-id")
+	if v == "" {
+		return "", nil
+	}
+	if !endUserIDPattern.MatchString(v) {
+		return "", fmt.Errorf("invalid --end-user-id %q: must be 1-128 chars of A-Za-z0-9._:@-", v)
+	}
+	return v, nil
+}
+
+// validateToolsMetadata enforces the server-side create limits client-side:
+// name max 255 chars, description max 1000 chars (the server 400s with a
+// combined message that doesn't name the offending field).
+func validateToolsMetadata(name, description string) error {
+	if len(name) > 255 {
+		return fmt.Errorf("invalid --name: must be at most 255 characters (got %d)", len(name))
+	}
+	if len(description) > 1000 {
+		return fmt.Errorf("invalid --description: must be at most 1000 characters (got %d)", len(description))
+	}
+	return nil
+}
+
+// validatePageParams enforces the server-side paging floor (page/size >= 1,
+// both 1-based) client-side. Flag defaults are 1/10, so any lower value was
+// passed explicitly — fail fast naming the field.
+func validatePageParams(page, size int) error {
+	if page < 1 {
+		return fmt.Errorf("invalid --page %d: must be >= 1 (1-based)", page)
+	}
+	if size < 1 {
+		return fmt.Errorf("invalid --size %d: must be >= 1", size)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// shared delete-safety helpers (browser + code-interpreter delete)
+// ---------------------------------------------------------------------------
+
+// printToolsDeletePreview prints the pre-delete preview shown by browser and
+// code-interpreter delete: the resource's identity, the session cascade, and
+// the irreversibility note. Everything goes to stderr so stdout stays clean
+// for -o json/id scripts.
+func printToolsDeletePreview(what, id, name, status string, sessions int, sessionsErr error) {
+	fmt.Fprintf(os.Stderr, "About to delete %s %q (id %s, status %s).\n", what, name, id, status)
+	if sessionsErr != nil {
+		fmt.Fprintln(os.Stderr, "Deleting it also deletes its sessions (count unavailable).")
+	} else {
+		fmt.Fprintf(os.Stderr, "Deleting it also deletes its %d session(s).\n", sessions)
+	}
+	fmt.Fprintln(os.Stderr, "This action is irreversible.")
+}
+
+// confirmToolsDelete asks for a y/N confirmation on stderr — stderr (unlike
+// cli.Confirm's stdout) keeps stdout clean for -o json/id scripts. Only
+// "y"/"yes" proceeds; anything else, including EOF (a non-interactive script
+// without --force), aborts — fail closed.
+func confirmToolsDelete(prompt string) bool {
+	fmt.Fprintf(os.Stderr, "%s [y/N]: ", prompt)
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	answer = strings.ToLower(strings.TrimSpace(answer))
+	return answer == "y" || answer == "yes"
+}
+
+// toolsDryRunNotice prints the --dry-run footer for tools delete commands
+// (stderr, like the rest of the delete flow).
+func toolsDryRunNotice() {
+	fmt.Fprintln(os.Stderr, "Dry run: nothing was deleted. Run without --dry-run to delete.")
+}
+
+// toolsAbortedNotice prints the declined-confirmation footer.
+func toolsAbortedNotice() {
+	fmt.Fprintln(os.Stderr, "Aborted.")
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +169,9 @@ var toolsBrowserListCmd = &cobra.Command{
 		ctx := context.Background()
 		page, _ := cmd.Flags().GetInt("page")
 		size, _ := cmd.Flags().GetInt("size")
+		if err := validatePageParams(page, size); err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
@@ -138,6 +223,9 @@ sessions (creating a session on a non-ACTIVE browser fails with 409).`,
 		if err != nil {
 			return err
 		}
+		if err := validateToolsMetadata(name, description); err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
@@ -175,14 +263,39 @@ var toolsBrowserDeleteCmd = &cobra.Command{
 	Short: "Delete a browser",
 	Long: `Delete a headless browser.
 
-Deleting a browser deletes its sessions too. There is no --force; the delete
-is immediate.`,
+Deleting a browser also deletes all its sessions (cascade). The CLI shows
+what will be deleted and asks for confirmation first: pass --force to skip
+the prompt (required in non-interactive scripts) or --dry-run to preview the
+delete without doing it.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		force, _ := cmd.Flags().GetBool("force")
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
+		}
+		b, err := client.GetBrowser(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		// Preview the cascade: count the sessions the delete removes (the
+		// cheapest page, size 1, only reads the total). A failed count
+		// degrades the preview but doesn't block the delete.
+		sessions, sessionsErr := client.ListBrowserSessions(ctx, args[0], "", 1, 1)
+		sessionCount := 0
+		if sessionsErr == nil {
+			sessionCount = sessions.TotalItem
+		}
+		printToolsDeletePreview("browser", b.ID, b.Name, b.Status, sessionCount, sessionsErr)
+		if dryRun {
+			toolsDryRunNotice()
+			return nil
+		}
+		if !force && !confirmToolsDelete("Delete this browser?") {
+			toolsAbortedNotice()
+			return nil
 		}
 		if err := client.DeleteBrowser(ctx, args[0]); err != nil {
 			return err
@@ -303,11 +416,18 @@ var toolsBrowserSessionListCmd = &cobra.Command{
 		ctx := context.Background()
 		page, _ := cmd.Flags().GetInt("page")
 		size, _ := cmd.Flags().GetInt("size")
+		if err := validatePageParams(page, size); err != nil {
+			return err
+		}
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		result, err := client.ListBrowserSessions(ctx, args[0], flagEndUserID(cmd), page, size)
+		result, err := client.ListBrowserSessions(ctx, args[0], endUserID, page, size)
 		if err != nil {
 			return err
 		}
@@ -351,11 +471,15 @@ in 'browser session get'.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		name, _ := cmd.Flags().GetString("name")
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		s, err := client.CreateBrowserSession(ctx, args[0], &toolspkg.CreateBrowserSessionRequest{Name: name}, flagEndUserID(cmd))
+		s, err := client.CreateBrowserSession(ctx, args[0], &toolspkg.CreateBrowserSessionRequest{Name: name}, endUserID)
 		if err != nil {
 			return err
 		}
@@ -371,11 +495,15 @@ var toolsBrowserSessionGetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		d, err := client.GetBrowserSession(ctx, args[0], args[1], flagEndUserID(cmd))
+		d, err := client.GetBrowserSession(ctx, args[0], args[1], endUserID)
 		if err != nil {
 			return err
 		}
@@ -394,11 +522,15 @@ The session recording only becomes downloadable after the session is deleted
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		if err := client.DeleteBrowserSession(ctx, args[0], args[1], flagEndUserID(cmd)); err != nil {
+		if err := client.DeleteBrowserSession(ctx, args[0], args[1], endUserID); err != nil {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "Browser session %q deleted.\n", args[1])
@@ -438,11 +570,15 @@ user.`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		sig, err := client.SignLiveViewStream(ctx, args[0], args[1], flagEndUserID(cmd))
+		sig, err := client.SignLiveViewStream(ctx, args[0], args[1], endUserID)
 		if err != nil {
 			return err
 		}
@@ -471,11 +607,15 @@ printed.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		outputFile, _ := cmd.Flags().GetString("output-file")
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		raw, err := client.DownloadRecording(ctx, args[0], args[1], flagEndUserID(cmd))
+		raw, err := client.DownloadRecording(ctx, args[0], args[1], endUserID)
 		if err != nil {
 			return err
 		}
@@ -519,14 +659,18 @@ resulting streams. The live-view stream is always on and cannot be toggled.`,
 		if status != "ENABLED" && status != "DISABLED" {
 			return fmt.Errorf("invalid --status %q: must be ENABLED or DISABLED", status)
 		}
+		endUserID, err := flagEndUserID(cmd)
+		if err != nil {
+			return err
+		}
 		client, err := newToolsClient(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		if err := client.UpdateBrowserStreams(ctx, args[0], args[1], status, flagEndUserID(cmd)); err != nil {
+		if err := client.UpdateBrowserStreams(ctx, args[0], args[1], status, endUserID); err != nil {
 			return err
 		}
-		d, err := client.GetBrowserSession(ctx, args[0], args[1], flagEndUserID(cmd))
+		d, err := client.GetBrowserSession(ctx, args[0], args[1], endUserID)
 		if err != nil {
 			return err
 		}
@@ -587,6 +731,9 @@ func init() {
 	toolsBrowserCmd.AddCommand(toolsBrowserCreateCmd)
 
 	toolsBrowserCmd.AddCommand(toolsBrowserGetCmd)
+
+	toolsBrowserDeleteCmd.Flags().Bool("force", false, "Skip the confirmation prompt")
+	toolsBrowserDeleteCmd.Flags().Bool("dry-run", false, "Preview what will be deleted without executing")
 	toolsBrowserCmd.AddCommand(toolsBrowserDeleteCmd)
 
 	toolsBrowserWaitCmd.Flags().Duration("timeout", 10*time.Minute, "Maximum time to wait")

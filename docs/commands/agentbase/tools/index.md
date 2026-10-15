@@ -25,7 +25,7 @@ Two resources, one shape:
 
 Sessions on both resources accept an optional **`--end-user-id`**
 (`X-End-User-ID` header): the end user on whose behalf the session acts
-(1–128 chars of `A-Za-z0-9._:@-`, validated server-side).
+(1–128 chars of `A-Za-z0-9._:@-`, validated client-side).
 
 ## Commands
 
@@ -53,6 +53,7 @@ Sessions on both resources accept an optional **`--end-user-id`**
 | [code-interpreter session create](code-interpreter-session-create.md) | Create a code interpreter session |
 | [code-interpreter session delete](code-interpreter-session-delete.md) | Delete a code interpreter session |
 | [code-interpreter session invoke](code-interpreter-session-invoke.md) | Run a tool inside a session |
+| [code-interpreter session task-wait](code-interpreter-session-task-wait.md) | Wait for an async command task |
 
 ## Lifecycle (browser and code interpreter alike)
 
@@ -63,7 +64,7 @@ grn agentbase tools browser create --name my-browser
 grn agentbase tools browser wait <id>
 # 3. use it
 grn agentbase tools browser session create <id>
-# 4. delete (also deletes sessions)
+# 4. delete (also deletes sessions; asks for confirmation — see the page)
 grn agentbase tools browser delete <id>
 ```
 
@@ -77,8 +78,10 @@ grn agentbase tools browser delete <id>
 - **Invoke is held open** server-side until the command finishes; a result
   with `isError=true` is a tool-level failure on an otherwise successful HTTP
   call — the CLI prints the result and exits non-zero.
+  **`startCommandExecution` is the async exception**: it returns a `taskId`
+  immediately — follow it with `code-interpreter session task-wait`.
 - Lists use the shared `{listData, page, pageSize, totalItem, totalPage}`
-  envelope, 1-based, `--page`/`--size`.
+  envelope, 1-based, `--page`/`--size` (validated client-side).
 
 ## Global options
 
@@ -86,5 +89,5 @@ All `grn agentbase` commands accept:
 
 - `-o, --output json|table|id` — output format (default `table`)
 - `-i, --interactive` — prompt for missing required parameters
-- The shared `grn` global options: `--profile`, `--region`, `--query`,
-  `--endpoint-url`, `--debug`
+- The shared `grn` global options: `--profile`, `--region`, `--query`
+  (JSON output only), `--endpoint-url`, `--debug`

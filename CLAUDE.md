@@ -22,8 +22,8 @@ go/
 │   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
 │   │   ├── helpers.go               # mustLoadConfig / newAuthProvider
-│   │   ├── tools.go                 # tools group: built-in browsers (+ sessions, streams, recording)
-│   │   └── tools_code_interpreter.go # tools code-interpreter + sessions + session invoke
+│   │   ├── tools.go                 # tools group: built-in browsers (+ sessions, streams, recording; delete has confirm/--force/--dry-run)
+│   │   └── tools_code_interpreter.go # tools code-interpreter + sessions + session invoke (+ async task-wait)
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list

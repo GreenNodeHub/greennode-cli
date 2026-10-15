@@ -21,9 +21,11 @@ grn agentbase tools browser create
 
 ## Options
 
-**`--name`** (string) — browser name. Required (or pass `-i` to prompt).
+**`--name`** (string) — browser name, at most 255 characters (validated
+client-side). Required (or pass `-i` to prompt).
 
-**`--description`** (string) — browser description. Optional.
+**`--description`** (string) — browser description, at most 1000
+characters (validated client-side). Optional.
 
 ## Output
 

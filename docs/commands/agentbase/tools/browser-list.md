@@ -17,9 +17,11 @@ grn agentbase tools browser list
 
 ## Options
 
-**`--page`** (integer) — page number (1-based). Default `1`.
+**`--page`** (integer) — page number (1-based, validated client-side).
+Default `1`.
 
-**`--size`** (integer) — page size. Default `10`.
+**`--size`** (integer) — page size (must be ≥ 1, validated client-side).
+Default `10`.
 
 ## Output
 

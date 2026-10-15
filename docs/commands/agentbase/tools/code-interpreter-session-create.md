@@ -29,7 +29,7 @@ grn agentbase tools code-interpreter session create <code-interpreter-id>
 **`--name`** (string) — session name. Optional (the server defaults it).
 
 **`--end-user-id`** (string) — optional end user id (the `X-End-User-ID`
-header, 1–128 chars of `A-Za-z0-9._:@-`, validated server-side).
+header, 1–128 chars of `A-Za-z0-9._:@-`, validated client-side).
 
 ## Output
 

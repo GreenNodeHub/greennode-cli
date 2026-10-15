@@ -116,7 +116,7 @@ All commands accept the common flags `-o json|table|id` (output format) and
 | [runtime](runtime/index.md) | Deploy the agent container (image/command/args/env/autoscaling) |
 | [memory](memory/index.md) | Long-term memory container (Mem0 vector store, semantic search) |
 | [marketplace](marketplace/index.md) | Runtime placement flavors + OpenClaw versions/workspaces |
-| [tools](tools/index.md) | Built-in tools: headless browsers + code interpreters (sessions, streams, invoke) |
+| [tools](tools/index.md) | Built-in tools: headless browsers + code interpreters (sessions, streams, invoke + task-wait) |
 | [policy](policy/index.md) | Cedar policy engine (policy-groups + policies + decision) |
 | [cr](cr/index.md) | VNG Cloud Container Registry wrapper (auto-provisioned repo + robot account) |
 | [deploy](deploy/index.md) | Client-side orchestrator (access + memory + runtime + cr) |
@@ -137,6 +137,10 @@ When `-o`/`--output` is not passed, the format falls back to the `output` key
 in `~/.greennode/config` (the same fallback vks/vserver use), then to `table`.
 So `grn configure set output json` governs `grn agentbase` too. (`context current`
 uses a fixed table layout and is not affected by the output format.)
+
+`grn`'s global `--query` (a JMESPath expression filtering the output) works
+with `agentbase` commands **only with `-o json`**; with `table`/`id` it fails
+fast with an error instead of being silently ignored.
 
 ---
 

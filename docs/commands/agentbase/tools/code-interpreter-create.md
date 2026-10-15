@@ -22,10 +22,11 @@ grn agentbase tools code-interpreter create
 
 ## Options
 
-**`--name`** (string) — code interpreter name. Required (or pass `-i` to
-prompt).
+**`--name`** (string) — code interpreter name, at most 255 characters
+(validated client-side). Required (or pass `-i` to prompt).
 
-**`--description`** (string) — code interpreter description. Optional.
+**`--description`** (string) — code interpreter description, at most
+1000 characters (validated client-side). Optional.
 
 ## Output
 

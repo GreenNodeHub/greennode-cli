@@ -23,11 +23,13 @@ grn agentbase tools browser session list <browser-id>
 ## Options
 
 **`--end-user-id`** (string) — optional end user id (the `X-End-User-ID`
-header, 1–128 chars of `A-Za-z0-9._:@-`, validated server-side).
+header, 1–128 chars of `A-Za-z0-9._:@-`, validated client-side).
 
-**`--page`** (integer) — page number (1-based). Default `1`.
+**`--page`** (integer) — page number (1-based, validated client-side).
+Default `1`.
 
-**`--size`** (integer) — page size. Default `10`.
+**`--size`** (integer) — page size (must be ≥ 1, validated client-side).
+Default `10`.
 
 ## Output
 

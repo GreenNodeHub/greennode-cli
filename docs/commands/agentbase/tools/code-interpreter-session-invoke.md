@@ -19,9 +19,17 @@ truth and rejects bad shapes with a 400 listing the accepted values).
 | `executeCommand` | `--command` (required) |
 | `startCommandExecution` | `--command` (required; async variant) |
 | `listFiles` | `--directory-path` (optional) |
-| `writeFiles` | `--content path=blob` (repeatable, at least one) |
+| `writeFiles` | `--content path=content` (the CLI base64-encodes it) or `--content-b64 path=<base64>` (repeatable, at least one) |
 | `readFiles` | `--path` (repeatable, at least one) |
 | `getTask` | `--task-id` (required) |
+
+`startCommandExecution` is the **async** variant: it returns a `taskId`
+(`taskStatus: submitted`) immediately instead of holding the request open.
+The CLI prints a hint pointing at
+[`session task-wait`](code-interpreter-session-task-wait.md), which polls
+`getTask` until the task finishes. `readFiles` returns file contents as
+base64 blobs in its content items; `writeFiles` is the inverse — the CLI
+base64-encodes `--content` for you.
 
 ## Synopsis
 
@@ -32,7 +40,8 @@ grn agentbase tools code-interpreter session invoke <code-interpreter-id> <sessi
     [--code <value>]
     [--command <value>]
     [--directory-path <value>]
-    [--content <path=blob>]...
+    [--content <path=content>]...
+    [--content-b64 <path=<base64>>]...
     [--path <value>]...
     [--task-id <value>]
     [--end-user-id <value>]
@@ -62,14 +71,21 @@ command to run (required).
 **`--directory-path`** (string) — `listFiles`: directory to list (optional).
 
 **`--content`** (string slice) — `writeFiles`: a file to write as
-`path=blob` (repeatable; split on the **first** `=`).
+`path=content` (repeatable; split on the **first** `=`). The content is
+**plain text — the CLI base64-encodes it** into the blob the API requires
+(use `--content-b64` for data that is already encoded).
+
+**`--content-b64`** (string slice) — `writeFiles`: a file to write as
+`path=<base64 blob>` (repeatable; split on the **first** `=`). The blob is
+passed through as-is and validated client-side, so a typo fails locally with
+a clear message instead of a server 400.
 
 **`--path`** (string slice) — `readFiles`: a file path to read (repeatable).
 
 **`--task-id`** (string) — `getTask`: the task id (required).
 
 **`--end-user-id`** (string) — optional end user id (the `X-End-User-ID`
-header).
+header), 1–128 chars of `A-Za-z0-9._:@-` (validated client-side).
 
 ## Output
 
@@ -96,11 +112,21 @@ grn agentbase tools code-interpreter session invoke ci-1 cs-1 \
 grn agentbase tools code-interpreter session invoke ci-1 cs-1 \
     --tool executeCommand --command 'uname -a'
 
-# Write then read a file
+# Write then read a file (--content takes plain text; the CLI base64-encodes it)
 grn agentbase tools code-interpreter session invoke ci-1 cs-1 \
-    --tool writeFiles --content hello.txt=SGVsbG8=
+    --tool writeFiles --content hello.txt=Hello
 grn agentbase tools code-interpreter session invoke ci-1 cs-1 \
     --tool readFiles --path hello.txt
+
+# writeFiles with pre-encoded data (--content-b64 passes the blob through)
+grn agentbase tools code-interpreter session invoke ci-1 cs-1 \
+    --tool writeFiles --content-b64 data.bin=AAECAwQ=
+
+# Start a long-running command asynchronously, then wait for it
+grn agentbase tools code-interpreter session invoke ci-1 cs-1 \
+    --tool startCommandExecution --command 'sleep 60 && echo done'
+# -> prints a taskId, then hints:
+#    grn agentbase tools code-interpreter session task-wait ci-1 cs-1 --task-id <id>
 ```
 
 ## Global options

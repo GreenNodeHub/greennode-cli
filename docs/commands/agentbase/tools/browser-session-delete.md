@@ -28,7 +28,7 @@ grn agentbase tools browser session delete <browser-id> <session-id>
 ## Options
 
 **`--end-user-id`** (string) — optional end user id (the `X-End-User-ID`
-header).
+header), 1–128 chars of `A-Za-z0-9._:@-` (validated client-side).
 
 ## Output
 
