@@ -27,9 +27,9 @@ var createCmd = &cobra.Command{
 		"A cluster has 3-10 brokers, each with its own volume of the given type and " +
 		"size. --config-group-version-id takes a config group VERSION, not a group: run " +
 		"'grn vdb kafka configuration list' and use the id of the version you want.\n\n" +
-		"Authentication is off unless --mtls-authen or --sasl-authen is passed. A " +
-		"cluster with neither is reachable by anyone who can reach its network, so at " +
-		"least one is normally wanted; users and their per-topic permissions are then " +
+		"At least one of --mtls-authen / --sasl-authen is REQUIRED: the gateway " +
+		"rejects a cluster with neither (measured live: \"Need to enable at least " +
+		"one authentication mode\"). Users and their per-topic permissions are " +
 		"managed with 'grn vdb kafka user'.",
 	Args: cobra.NoArgs,
 	RunE: runCreate,
@@ -97,27 +97,37 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	subnetID, _ := f.GetString("subnet-id")
 	mtls, _ := f.GetBool("mtls-authen")
 	sasl, _ := f.GetBool("sasl-authen")
+	// The gateway's own validator refuses both modes off — measured live, a bare
+	// `bad_request: Need to enable at least one authentication mode` that names no
+	// field — so the combination is rejected here, where the error can name the flags.
+	if !mtls && !sasl {
+		return fmt.Errorf("enable at least one authentication mode: --mtls-authen or --sasl-authen")
+	}
 	configGroupVersionID, _ := f.GetString("config-group-version-id")
 	encryptionVolume, _ := f.GetBool("encryption-volume")
 
-	body := map[string]interface{}{
-		"name":             name,
-		"kafkaVersion":     kafkaVersion,
-		"serverFlavorId":   flavorID,
-		"kafkaBrokerCount": brokerCount,
-		"kafkaStorageType": volumeType,
-		"kafkaStorageSize": volumeSize,
-		"vserverProjectId": vserverProjectID(cmd),
-		"networkId":        networkID,
-		"subnetId":         subnetID,
-		"mtlsAuthen":       mtls,
-		"saslAuthen":       sasl,
-		"encryptionVolume": encryptionVolume,
+	projectID, err := vserverProjectID(cmd)
+	if err != nil {
+		return err
 	}
-	// Omitted rather than sent empty: an empty string is a value the API may read as
-	// "this version", and there is no live evidence it treats "" as "none" here.
-	if configGroupVersionID != "" {
-		body["configGroupVersionId"] = configGroupVersionID
+
+	// configGroupVersionId is always sent, "" meaning "no config group" — confirmed
+	// against the live API (via the MCP repo): the empty string is read as none, not
+	// as a malformed version id.
+	body := map[string]interface{}{
+		"name":                 name,
+		"kafkaVersion":         kafkaVersion,
+		"serverFlavorId":       flavorID,
+		"kafkaBrokerCount":     brokerCount,
+		"kafkaStorageType":     volumeType,
+		"kafkaStorageSize":     volumeSize,
+		"vserverProjectId":     projectID,
+		"networkId":            networkID,
+		"subnetId":             subnetID,
+		"mtlsAuthen":           mtls,
+		"saslAuthen":           sasl,
+		"encryptionVolume":     encryptionVolume,
+		"configGroupVersionId": configGroupVersionID,
 	}
 
 	dryRun, _ := f.GetBool("dry-run")
@@ -152,15 +162,22 @@ func runCreate(cmd *cobra.Command, args []string) error {
 // vserverProjectID falls back to the profile's project_id. The API needs the field
 // and the CLI already knows it, so making the user retype it would be busywork —
 // the same reason relational's resize-storage reads the instance for its current
-// values.
-func vserverProjectID(cmd *cobra.Command) string {
+// values. When neither the flag nor the profile supplies one there is no request
+// to build, so say that instead of sending an empty string the API would blame
+// elsewhere.
+func vserverProjectID(cmd *cobra.Command) (string, error) {
 	if explicit, _ := cmd.Flags().GetString("vserver-project-id"); explicit != "" {
-		return explicit
+		return explicit, nil
 	}
 	profile, _ := cmd.Flags().GetString("profile")
 	cfg, err := config.LoadConfig(profile)
-	if err != nil || cfg == nil {
-		return ""
+	if err != nil {
+		return "", err
 	}
-	return cfg.ProjectID
+	if cfg.ProjectID != "" {
+		return cfg.ProjectID, nil
+	}
+	return "", fmt.Errorf("vserverProjectId was not supplied and the configured profile has no " +
+		"project_id. Pass --vserver-project-id ('pro-…') or set project_id in " +
+		"~/.greennode/config (or the GRN_DEFAULT_PROJECT_ID environment variable).")
 }

@@ -71,7 +71,7 @@ var generateCredsCmd = &cobra.Command{
 		"off until it is given the new ones, which are read with 'user get-creds'.\n\n" +
 		"The API returns no usable body here, so this command reports the outcome and " +
 		"leaves fetching the new values to 'user get-creds' — that way the secret is " +
-		"printed only when it is asked for.",
+		"written out only when it is asked for.",
 	Args: cobra.NoArgs,
 	RunE: runGenerateCreds,
 }
@@ -143,7 +143,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	for _, permission := range permissions {
 		list, _ := cmd.Flags().GetString(permission.listFlag)
 		all, _ := cmd.Flags().GetBool(permission.allFlag)
-		body[permission.listField] = cli.ParseCommaSeparated(list)
+		body[permission.listField] = topicNames(list)
 		body[permission.allField] = all
 	}
 
@@ -192,7 +192,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	for _, permission := range permissions {
 		if cmd.Flags().Changed(permission.listFlag) {
 			list, _ := cmd.Flags().GetString(permission.listFlag)
-			body[permission.listField] = cli.ParseCommaSeparated(list)
+			body[permission.listField] = topicNames(list)
 		} else {
 			body[permission.listField] = stringList(current[permission.listField])
 		}
@@ -325,4 +325,15 @@ func stringList(value interface{}) []string {
 		}
 	}
 	return out
+}
+
+// topicNames parses a --*-topics flag into a NON-nil slice. An unset flag must be
+// sent as [] and not as null: the API rejects null for these array fields —
+// measured live, creating a user without topic permissions answers 400 bad_request.
+func topicNames(flagValue string) []string {
+	names := cli.ParseCommaSeparated(flagValue)
+	if names == nil {
+		return []string{}
+	}
+	return names
 }

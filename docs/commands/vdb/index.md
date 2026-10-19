@@ -11,7 +11,7 @@ command tree keeps them apart:
 
 | Group | Product | Status |
 |-------|---------|--------|
-| [relational](relational-instance.md) | Relational Database (MySQL, PostgreSQL, MariaDB) | In progress |
+| [relational](relational-instance.md) | Relational Database (MySQL, PostgreSQL, MariaDB) | Available |
 | [postgresql](postgresql-cluster.md) | PostgreSQL Cluster (2–10 nodes) | Available |
 | [memorystore](memorystore-instance.md) | MemoryStore (Redis) | Available |
 | [kafka](kafka-cluster.md) | Kafka | Available |

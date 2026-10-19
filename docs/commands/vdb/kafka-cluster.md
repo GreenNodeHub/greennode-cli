@@ -133,11 +133,14 @@ grn vdb kafka cluster create
 `--broker-count` is 3–10, checked before the order is placed.
 
 `--vserver-project-id` defaults to the profile's `project_id`, so it rarely needs
-passing. `--network-id` and `--subnet-id` complete from the **relational** catalog —
+passing; if neither is set the command errors before placing the order — set
+`project_id` in `~/.greennode/config` (or `GRN_DEFAULT_PROJECT_ID`) or pass the flag.
+`--network-id` and `--subnet-id` complete from the **relational** catalog —
 Kafka has no networks endpoint and both are project-wide.
 
-Authentication is off unless `--mtls-authen` or `--sasl-authen` is given. A cluster with
-neither accepts anyone who can reach its network.
+**At least one of `--mtls-authen` / `--sasl-authen` is required.** The API rejects a
+cluster with neither (`Need to enable at least one authentication mode`), and the CLI
+enforces it before the order is placed.
 
 ---
 

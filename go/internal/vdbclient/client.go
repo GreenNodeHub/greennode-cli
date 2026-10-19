@@ -80,6 +80,16 @@ func (c *Client) Request(method, path string, params map[string]string, body int
 	return result, enrich(err, body)
 }
 
+// Raw is Request without the JSON parse, returning the response body as a string.
+// It exists for `kafka user get-creds`, whose success response is a ZIP archive of
+// the mTLS credential material — not a JSON document (measured live 2026-10-19;
+// before 2026-08-17 the same endpoint answered a bare JSON array of strings, so a
+// caller must be ready for either). Errors are enriched exactly as elsewhere.
+func (c *Client) Raw(method, path string, params map[string]string) (string, error) {
+	body, err := c.GreennodeClient.RequestRaw(method, path, params, nil)
+	return body, enrich(err, nil)
+}
+
 // NoContent sends a request and DISCARDS the response body, reporting only whether
 // it succeeded.
 //

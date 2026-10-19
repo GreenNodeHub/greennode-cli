@@ -211,6 +211,24 @@ Consequences encoded in the code:
   `minKafkaBrokers` 3 / `maxKafkaBrokers` 10, `maxTopicPartitions` 2048,
   `minTopicRetentionHours` 1 / `maxTopicRetentionHours` 2160,
   `secGroupRulePorts` `[9092,9094,9096,9194,9196]`.
+- **`cluster create` requires an authentication mode and a resolvable project.** The
+  gateway's own validator refuses `mtlsAuthen`/`saslAuthen` both false — measured
+  live, a bare `bad_request: Need to enable at least one authentication mode` that
+  names no field — so the CLI rejects the combination where the error can name the
+  flags. `vserverProjectId` is resolved from `--vserver-project-id` or the profile's
+  `project_id` (`GRN_DEFAULT_PROJECT_ID`); when neither is set the command errors
+  naming both sources rather than sending `""`, which the API would blame elsewhere.
+  A user's topic-name lists are likewise always sent as `[]`, never `null`: the API
+  rejects null for those array fields (measured live — 400 creating a user with no
+  topic permissions), which is why `topicNames` exists next to `stringList`.
+- **`user get-creds` answers with a ZIP archive, not JSON** (live, 2026-10-19): an
+  mTLS user gets `<user-id>/mtls/{ca.crt, ca.p12, ca.password, user.crt, user.key,
+  user.p12, user.password, config.properties}`. On 2026-08-17 the same endpoint
+  answered a bare JSON array of strings — the API changed shape in between — so
+  `runGetCreds` reads via `vdbclient.Client.Raw` and branches on the `PK` magic:
+  ZIP → written to `--output-file` (default `kafka-creds-<user-id>.zip`, 0600),
+  anything else → parsed as JSON and printed. Do not route this endpoint through
+  `Get`, which JSON-parses and dies on the archive.
 - **`serverFlavorId` takes `flavorId`, `kafkaStorageType` takes `kafkaUuid`** — both
   verified live against a running cluster. Not the numeric `id`, and not the display
   `type` (`kafka.Gen2-NVMe2-IOPS3000`). Relational Database is the opposite on both counts.
@@ -243,6 +261,12 @@ Live-verified 2026-08-17 on HCM-3: every read command, every completer, and the 
 topic write path (create → get → update → delete, including the busy-status refusals).
 The cluster-level order flows (create, the three resizes) and the destructive cluster
 commands were exercised only with `--dry-run`.
+
+Re-verified live 2026-10-19 on HCM-3, on a freshly created ACTIVE cluster:
+`user create` (the API accepts `[]` for the topic-name lists and 400s on `null`), the
+full `get-creds` ZIP path above, and `user delete`. A `get-creds` while the user is
+still `CREATING` answers HTTP 400 with an empty message — poll `user get` for `ACTIVE`
+first.
 
 ## API quirks
 

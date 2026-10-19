@@ -17,7 +17,7 @@ start with `user-`.
 |---------|-------------|
 | [list](#list) | List the users of a cluster |
 | [get](#get) | Show one user and its permissions |
-| [get-creds](#get-creds) | Show a user's credentials (**secret**) |
+| [get-creds](#get-creds) | Read a user's credentials — written to a ZIP file (**secret**) |
 | [create](#create) | Create a user |
 | [update](#update) | Replace a user's permissions |
 | [delete](#delete) | Delete a user |
@@ -72,12 +72,18 @@ Printed as key/value: a user nests four arrays.
 
 ```
 grn vdb kafka user get-creds --cluster-id <value> --user-id <value>
+    [--output-file <path>]
 ```
 
+The answer for an mTLS user is a **ZIP archive** of the credential material
+(`ca.crt`, `ca.p12`, `user.crt`, `user.key`, `user.p12`, `user.password`,
+`ca.password`, `config.properties` under `<user-id>/mtls/`), so it cannot be
+printed: the CLI writes it to `--output-file`, defaulting to
+`kafka-creds-<user-id>.zip` in the current directory, with `0600` permissions.
+
 !!! danger "The output is secret"
-    This returns the credential material itself, as a bare array of strings. Do not
-    paste it into a ticket or a shared log; redirect it to a file with restrictive
-    permissions if it has to be kept.
+    The archive carries private keys and passwords. Do not paste it into a ticket
+    or a shared log, and mind where the default file lands.
 
 ---
 
@@ -142,8 +148,8 @@ grn vdb kafka user generate-creds --cluster-id <value> --user-id <value>
     Every client still using them is cut off until it is given the new ones.
 
 The API returns no usable body, so the command reports the outcome and leaves fetching
-the new values to [get-creds](#get-creds) — that way the secret is printed only when it
-is asked for.
+the new values to [get-creds](#get-creds) — that way the secret is written out only when
+it is asked for.
 
 (The API operation is `regenerateUserAuthenCredential`; the CLI spells it
 `generate-creds`, since `regenerate` is not one of the canonical verbs.)
