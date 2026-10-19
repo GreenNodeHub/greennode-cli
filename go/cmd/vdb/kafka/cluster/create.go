@@ -114,6 +114,12 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	// configGroupVersionId is always sent, "" meaning "no config group" — confirmed
 	// against the live API (via the MCP repo): the empty string is read as none, not
 	// as a malformed version id.
+	//
+	// tags is always sent as an empty map, and MUST be: the backend's validation
+	// calls getTags().size() on every auto-payment create, so an absent field is a
+	// bare HTTP 500 (measured live, 2026-10-19) — the dropped tagging feature left
+	// the call behind. There is no way to set a non-empty value: no flag, and the
+	// request schema has no tags property.
 	body := map[string]interface{}{
 		"name":                 name,
 		"kafkaVersion":         kafkaVersion,
@@ -128,6 +134,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		"saslAuthen":           sasl,
 		"encryptionVolume":     encryptionVolume,
 		"configGroupVersionId": configGroupVersionID,
+		"tags":                 map[string]interface{}{},
 	}
 
 	dryRun, _ := f.GetBool("dry-run")

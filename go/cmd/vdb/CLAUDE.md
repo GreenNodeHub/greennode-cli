@@ -221,6 +221,16 @@ Consequences encoded in the code:
   A user's topic-name lists are likewise always sent as `[]`, never `null`: the API
   rejects null for those array fields (measured live — 400 creating a user with no
   topic permissions), which is why `topicNames` exists next to `stringList`.
+- **`tags` must be sent as an empty map — an absent field is a bare 500.** The Kafka
+  backend was designed to carry user tags on a cluster (`Map<String,String>`); the
+  feature was dropped, but the validation code still calls `getTags().size()`, so a
+  create whose `tags` field is absent dies as a bare `HTTP 500 Internal Server Error`
+  — measured live 2026-10-19 on the auto-payment (`IAM_USER`) flow, which validates
+  immediately; the checkout (`ROOT_USER`) flow accepts the order first and would fail
+  later, at payment. `cluster create` therefore always sends `"tags": {}`. There is
+  still no way to set a non-empty value — no flag, and the request schema has no
+  `tags` property — while `KafkaCluster` responses carry the (empty) map. Do not
+  "clean up" the field away.
 - **`user get-creds` answers with a ZIP archive, not JSON** (live, 2026-10-19): an
   mTLS user gets `<user-id>/mtls/{ca.crt, ca.p12, ca.password, user.crt, user.key,
   user.p12, user.password, config.properties}`. On 2026-08-17 the same endpoint
@@ -246,7 +256,11 @@ Consequences encoded in the code:
   retention field that is null on the topic and unset on the command line — sending 0
   would be an invalid value, not an absence.
 - **Statuses are their own vocabulary**: `WAITING_CREATING`, `CREATING`, `ACTIVE`,
-  `WAITING_UPDATING`, `UPDATING`, `DELETING`. Operations are refused while a resource is
+  `WAITING_UPDATING`, `UPDATING`, `DELETING` — and the create path adds its own
+  pipeline, observed live 2026-10-19: `WAITING_WORKSPACE_CREATING` →
+  `WORKSPACE_CREATING` → `INFRA_CREATING` → `NODES_CREATING` →
+  `WAITING_CLUSTER_CREATING` → `CLUSTER_CREATING` → `ACTIVE`, ~8 minutes end to end.
+  Operations are refused while a resource is
   busy, with a clear message (`Cluster … is not active`, `Topic … does not have
   appropriate status`) — so anything scripted must poll.
 - **`createdAt` differs by endpoint, as elsewhere in vDB**: listings return a localized
