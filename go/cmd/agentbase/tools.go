@@ -38,10 +38,10 @@ Two groups:
 
 Both resources create asynchronously (CREATING → ACTIVE|FAILED): run
 ` + "`wait`" + ` after create before attaching sessions (creating a session on a
-non-ACTIVE resource fails with 409). The service is dev-only today; prod
-endpoints are placeholders until it ships there.
+non-ACTIVE resource fails with 409). The service is dev-only today; the prod
+endpoint awaits go-live.
 
-tools commands share the ~/.greennode profile and the agent-core-built-in-tools
+tools commands share the ~/.greennode profile and the built-in tools
 endpoint (see 'grn agentbase context current').`,
 }
 

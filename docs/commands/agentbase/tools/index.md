@@ -2,11 +2,12 @@
 
 Manage the **AgentBase built-in tools**: platform-managed headless **browsers**
 and **code interpreters** that agents invoke as tools. The group covers the
-`agent-core-built-in-tools` service (its own endpoint — see
+`agent-core-built-in-tools` service (served at `/built-in-tools` — see
 `grn agentbase context current`).
 
-> **Environment note:** the service is **dev-only today**. Prod endpoints are
-> placeholders until it ships there; select dev with
+> **Environment note:** the service is **dev-only today**. The prod endpoint
+> (`https://agentbase.api.vngcloud.vn/built-in-tools`) follows the shared
+> agentbase host pattern and awaits go-live; select dev with
 > `grn configure set iam_env dev` (machine) or `grn login --iam-env dev`
 > (user).
 

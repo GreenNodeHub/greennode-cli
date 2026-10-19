@@ -43,7 +43,7 @@ var endpointsByEnv = map[Env]Endpoints{
 		Gateway:      "https://agentbase.api-dev.vngcloud.tech/gateway",
 		Policy:       "https://agentbase.api-dev.vngcloud.tech/policy",
 		Cr:           "https://agentbase.api-dev.vngcloud.tech/cr",
-		BuiltInTools: "https://pub-iamapis.api-dev.vngcloud.tech/agent-core-built-in-tools",
+		BuiltInTools: "https://pub-iamapis.api-dev.vngcloud.tech/built-in-tools",
 		OAuth2Token:  "https://pub-iamapis.api-dev.vngcloud.tech/accounts-api/v2/auth/token",
 	},
 	EnvProd: {
@@ -53,7 +53,7 @@ var endpointsByEnv = map[Env]Endpoints{
 		Gateway:      "https://agentbase.api.vngcloud.vn/gateway",
 		Policy:       "https://agentbase.api.vngcloud.vn/policy",
 		Cr:           "https://agentbase.api.vngcloud.vn/cr",
-		BuiltInTools: "https://agent-core-built-in-tools.api.vngcloud.vn", // placeholder until the real prod URL lands (dev-only service today)
+		BuiltInTools: "https://agentbase.api.vngcloud.vn/built-in-tools", // shared agentbase host pattern; service is dev-only today (prod pending go-live)
 		OAuth2Token:  "https://iam.api.vngcloud.vn/accounts-api/v2/auth/token",
 	},
 }

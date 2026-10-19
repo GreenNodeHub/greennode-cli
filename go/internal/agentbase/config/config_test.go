@@ -11,7 +11,7 @@ func TestDevEndpoints(t *testing.T) {
 	if eps.Identity == EndpointsForEnv(EnvProd).Identity {
 		t.Error("dev and prod identity endpoints should differ")
 	}
-	if got, want := eps.BuiltInTools, "https://pub-iamapis.api-dev.vngcloud.tech/agent-core-built-in-tools"; got != want {
+	if got, want := eps.BuiltInTools, "https://pub-iamapis.api-dev.vngcloud.tech/built-in-tools"; got != want {
 		t.Errorf("dev BuiltInTools = %q, want %q", got, want)
 	}
 }
@@ -22,8 +22,8 @@ func TestProdEndpoints(t *testing.T) {
 	if eps.Identity == "" || eps.Runtime == "" || eps.Gateway == "" || eps.BuiltInTools == "" {
 		t.Error("prod endpoints should not be empty")
 	}
-	if got, want := eps.BuiltInTools, "https://agent-core-built-in-tools.api.vngcloud.vn"; got != want {
-		t.Errorf("prod BuiltInTools = %q, want %q (placeholder)", got, want)
+	if got, want := eps.BuiltInTools, "https://agentbase.api.vngcloud.vn/built-in-tools"; got != want {
+		t.Errorf("prod BuiltInTools = %q, want %q", got, want)
 	}
 }
 
