@@ -107,7 +107,11 @@ grn --profile staging vks list-clusters
 
 For more configuration options, see the [Configuration Guide](https://greennodehub.github.io/greennode-cli/configuration/).
 
+For automation, `--non-interactive` prevents prompts; destructive confirmations also require `--force`. Use `configure set` for scripted setup. Shared transport preserves profile auth, supports cancellation, rejects redirects, and never retries writes. AgentBase also avoids replaying writes and credential/provisioning reads. Numeric `portal_user_id`, where required, is separate from `project_id`.
+
 ### Basic Commands
+
+Additional services cover IAM management, backups, container registries, databases, load balancers, monitoring, logs, storage, and speech APIs. See the [service references](docs/index.md#additional-services) for commands, regions, and safety limits. Existing `login`, `logout`, and AgentBase OAuth2/token commands remain available.
 
 The GreenNode CLI uses a multi-part command structure:
 
@@ -144,6 +148,13 @@ grn --version
 - `create-cluster` — Create a new VKS cluster
 - `update-cluster` — Update a VKS cluster
 - `delete-cluster` — Delete a VKS cluster
+- `get-upgrade-insights` — Get cluster upgrade insights
+- `stop-poc` — End cluster proof-of-concept mode
+
+**Fleet Management**
+
+- `register-fleet` — Register a cluster with fleet management
+- `unregister-fleet` — Remove a cluster's fleet association
 
 **Node Group**
 
@@ -155,6 +166,8 @@ grn --version
 - `upgrade-nodegroup-version` — Upgrade the Kubernetes version of a node group
 - `list-nodes` — List nodes in a node group
 - `delete-nodegroup` — Delete a node group
+- `get-nodegroup-events` — Get node-group events
+- `list-nodegroup-images` — List node-group images
 
 **Versions**
 
@@ -177,10 +190,17 @@ grn --version
 
 - `generate-kubeconfig` — Request generation of a cluster kubeconfig
 - `update-kubeconfig` — Fetch and merge the cluster kubeconfig into your kubeconfig file
+- `acknowledge-kubeconfig-warning` — Acknowledge a kubeconfig renewal warning
 
 **Quota**
 
 - `get-quota` — Get VKS quota limits and current usage
+
+**Workspace**
+
+- `get-workspace` — Get the current VKS workspace
+- `create-workspace` — Create a VKS workspace
+- `reset-workspace-service-account` — Reset the workspace service account
 
 **Waiter**
 

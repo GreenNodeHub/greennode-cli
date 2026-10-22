@@ -6,8 +6,7 @@ Get the API key for an agent identity.
 
 Retrieve the API key assigned to a specific agent identity from a static API key provider.
 
-This returns the secret API key value. Use `-o json` (or `-o id`) to reveal the full
-value; the default `table` output is for human inspection.
+The key is `[REDACTED]` in every format unless `--show-secret` is explicit.
 
 ## Synopsis
 
@@ -43,5 +42,5 @@ grn agentbase access outbound-auth static get-key my-apikey-provider my-agent
 Reveal the full API key value (use with care — this prints the secret):
 
 ```bash
-grn agentbase access outbound-auth static get-key my-apikey-provider my-agent -o json
+grn agentbase access outbound-auth static get-key my-apikey-provider my-agent -o json --show-secret
 ```

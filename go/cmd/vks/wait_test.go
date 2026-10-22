@@ -2,6 +2,7 @@ package vks
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/greennodehub/greennode-cli/internal/client"
@@ -62,5 +63,48 @@ func TestEvaluateDeleted(t *testing.T) {
 			t.Errorf("%s: done=%v failed=%v fatal=%v, want done=%v failed=%v fatal=%v",
 				tc.name, done, failed, fatal != nil, tc.wantDone, tc.wantFail, tc.wantFatal)
 		}
+	}
+}
+
+func TestRunWaiterReturnsExitCode255(t *testing.T) {
+	tests := []struct {
+		name string
+		eval evaluator
+		want string
+	}{
+		{
+			name: "fatal",
+			eval: func(interface{}, error) (bool, bool, string, error) {
+				return false, false, "", errors.New("forbidden")
+			},
+			want: "waiting for fixture",
+		},
+		{
+			name: "terminal status",
+			eval: func(interface{}, error) (bool, bool, string, error) {
+				return false, true, "FAILED", nil
+			},
+			want: "reached FAILED",
+		},
+		{
+			name: "timeout",
+			eval: func(interface{}, error) (bool, bool, string, error) {
+				return false, false, "CREATING", nil
+			},
+			want: "timed out",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := runWaiter("fixture", "done", func() (interface{}, error) { return nil, nil }, tc.eval, 0, 1)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want text %q", err, tc.want)
+			}
+			var coded interface{ ExitCode() int }
+			if !errors.As(err, &coded) || coded.ExitCode() != 255 {
+				t.Fatalf("error = %T %v, want exit code 255", err, err)
+			}
+		})
 	}
 }

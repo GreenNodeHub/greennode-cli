@@ -130,3 +130,16 @@ func TestEveryCommandHasShortHelp(t *testing.T) {
 		}
 	}
 }
+
+func TestAllCommandHandlersUseRunE(t *testing.T) {
+	var walk func(*cobra.Command)
+	walk = func(command *cobra.Command) {
+		if command.Run != nil {
+			t.Errorf("command %q uses Run; use RunE so errors can reach the root execution boundary", command.CommandPath())
+		}
+		for _, child := range command.Commands() {
+			walk(child)
+		}
+	}
+	walk(rootCmd)
+}

@@ -1,0 +1,1321 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://docs.api.greennode.ai/service-docs/vserver.html",
+    "title": "Api Documentation",
+    "version": "1.0",
+    "retrieved": "2026-09-10",
+    "sha256": "c85f828ca9b61abbee668cc2d6fd020b8ec161a88df8962c3c9eeb43cdad3bc7"
+  },
+  "servers": [
+    {
+      "url": "https://hcm-3.api.vngcloud.vn/vserver/vserver-gateway"
+    },
+    {
+      "url": "https://han-1.api.vngcloud.vn/vserver/vserver-gateway"
+    }
+  ],
+  "components": {
+    "requestBodies": {
+      "addAddressPairUsingPOSTCreatereq": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "internalNetworkInterfaceId"
+              ],
+              "properties": {
+                "cidr": {
+                  "type": "string"
+                },
+                "internalNetworkInterfaceId": {
+                  "type": "string"
+                }
+              },
+              "title": "CreatePrivateAddressPairRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "attachWanIPUsingPUTAttachdetachwaniprequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "networkInterfaceId": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagRequest"
+                  }
+                },
+                "zoneId": {
+                  "type": "string"
+                }
+              },
+              "title": "AttachDetachWanIPRequest"
+            }
+          }
+        },
+        "required": true
+      }
+    },
+    "schemas": {
+      "AclPolicyRule": {
+        "type": "object",
+        "required": []
+      },
+      "AddressPairDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppCategoryDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppInstanceDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppLicenseDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppPackageDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppTemplateDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppVendorDto": {
+        "type": "object",
+        "required": []
+      },
+      "AppVersionDto": {
+        "type": "object",
+        "required": []
+      },
+      "AttachDetachWanIPRequest": {
+        "type": "object",
+        "required": []
+      },
+      "AttachExternalNetworkInterfaceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "AttachNetworkInterfaceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "AttachNetworkInterfaceWithWanIpRequest": {
+        "type": "object",
+        "required": []
+      },
+      "AttachSubnetRequest": {
+        "type": "object",
+        "required": []
+      },
+      "AttachVolumeRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ChangePackageInterconnectRequest": {
+        "type": "object",
+        "required": [
+          "packageId"
+        ]
+      },
+      "ChangeRoutesRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ChangeSecGroupRequest": {
+        "type": "object",
+        "required": [
+          "serverId"
+        ]
+      },
+      "ChangeTypeVolumeRequest": {
+        "type": "object",
+        "required": []
+      },
+      "Code": {
+        "type": "object",
+        "required": []
+      },
+      "CompleteMigrationRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigVolumeRestore": {
+        "type": "object",
+        "required": []
+      },
+      "CreateDhcpOptionRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "CreateInterconnectRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "packageId",
+          "typeId"
+        ]
+      },
+      "CreateInterconnectionRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "networkId",
+          "subnets"
+        ]
+      },
+      "CreateNetworkAclRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "vpc"
+        ]
+      },
+      "CreateNetworkInterfaceRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "CreateNetworkRequest": {
+        "type": "object",
+        "required": [
+          "cidr",
+          "name"
+        ]
+      },
+      "CreatePrivateAddressPairRequest": {
+        "type": "object",
+        "required": [
+          "internalNetworkInterfaceId"
+        ]
+      },
+      "CreatePublicAddressPairRequest": {
+        "type": "object",
+        "required": [
+          "networkInterfaceId"
+        ]
+      },
+      "CreatePublicVipRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "CreateRouteTableRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "networkId"
+        ]
+      },
+      "CreateSSHKeyRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "CreateSecondarySubnetRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateSecurityGroupRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "CreateSecurityGroupRuleRequest": {
+        "type": "object",
+        "required": [
+          "direction",
+          "etherType",
+          "portRangeMax",
+          "portRangeMin",
+          "protocol",
+          "remoteIpPrefix"
+        ]
+      },
+      "CreateServerGroupRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "policyId"
+        ]
+      },
+      "CreateServerRequest": {
+        "type": "object",
+        "required": [
+          "encryptionVolume",
+          "flavorId",
+          "imageId",
+          "name",
+          "networkId",
+          "rootDiskSize",
+          "rootDiskTypeId",
+          "subnetId"
+        ]
+      },
+      "CreateSnapshotServerNowRequest": {
+        "type": "object",
+        "required": [
+          "description",
+          "name"
+        ]
+      },
+      "CreateSnapshotServerRequest": {
+        "type": "object",
+        "required": [
+          "description"
+        ]
+      },
+      "CreateSnapshotVolumeNowRequest": {
+        "type": "object",
+        "required": [
+          "description",
+          "name"
+        ]
+      },
+      "CreateSubnetRequest": {
+        "type": "object",
+        "required": [
+          "cidr",
+          "name"
+        ]
+      },
+      "CreateUserImageRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "CreateVirtualIpAddressRequest": {
+        "type": "object",
+        "required": [
+          "mode",
+          "name",
+          "subnetId"
+        ]
+      },
+      "CreateVolumeRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "size",
+          "volumeTypeId"
+        ]
+      },
+      "DataResponse": {
+        "type": "object",
+        "required": []
+      },
+      "DeletePersistentVolumeBackendRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteServerRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DetachExternalNetworkInterfaceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DetachNetworkInterfaceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DetachNetworkInterfaceWithWanIpRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DetachVolumeRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DhcpOptionDto": {
+        "type": "object",
+        "required": []
+      },
+      "EditSecurityGroupRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "ElasticIpDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ElasticOfNetworkDto": {
+        "type": "object",
+        "required": []
+      },
+      "Family": {
+        "type": "object",
+        "required": []
+      },
+      "FamilyCondition": {
+        "type": "object",
+        "required": []
+      },
+      "Flavor": {
+        "type": "object",
+        "required": []
+      },
+      "FlavorResponse": {
+        "type": "object",
+        "required": []
+      },
+      "FlavorZone": {
+        "type": "object",
+        "required": []
+      },
+      "FlavorZoneResponse": {
+        "type": "object",
+        "required": []
+      },
+      "Image": {
+        "type": "object",
+        "required": []
+      },
+      "ImportSSHKeyRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "InterconnectConnectionDto": {
+        "type": "object",
+        "required": []
+      },
+      "InterconnectDto": {
+        "type": "object",
+        "required": []
+      },
+      "InterconnectPackageDto": {
+        "type": "object",
+        "required": []
+      },
+      "InterconnectTypeDto": {
+        "type": "object",
+        "required": []
+      },
+      "InterfaceNetworkInterface": {
+        "type": "object",
+        "required": []
+      },
+      "InterfaceNetworkInterfaceEntity": {
+        "type": "object",
+        "required": []
+      },
+      "InterfacePublicIpEntity": {
+        "type": "object",
+        "required": []
+      },
+      "InterfacePublicSubnetDto": {
+        "type": "object",
+        "required": []
+      },
+      "InterfacePublicSubnetEntity": {
+        "type": "object",
+        "required": []
+      },
+      "InternalInterface": {
+        "type": "object",
+        "required": []
+      },
+      "JSONObject": {
+        "type": "object",
+        "required": []
+      },
+      "MigrateServerRequest": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkAclDetailDto": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkAclDto": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkAclModel": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkAclPolicyRuleDto": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkDto": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkInterfaceDto": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkInterfaceElastic": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkRequest": {
+        "type": "object",
+        "required": []
+      },
+      "OSImage": {
+        "type": "object",
+        "required": []
+      },
+      "OSImageBaseResponse": {
+        "type": "object",
+        "required": []
+      },
+      "PackageLimit": {
+        "type": "object",
+        "required": []
+      },
+      "PeeringDto": {
+        "type": "object",
+        "required": []
+      },
+      "PersistentVolumeDto": {
+        "type": "object",
+        "required": []
+      },
+      "PingInterconnectRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ProjectInfo": {
+        "type": "object",
+        "required": []
+      },
+      "ProjectResponse": {
+        "type": "object",
+        "required": []
+      },
+      "QuotaUsedDto": {
+        "type": "object",
+        "required": []
+      },
+      "RegionDto": {
+        "type": "object",
+        "required": []
+      },
+      "RenameNetworkInterfaceRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "RenameServerRequest": {
+        "type": "object",
+        "required": [
+          "newName"
+        ]
+      },
+      "RenameVolumeRequest": {
+        "type": "object",
+        "required": [
+          "newName"
+        ]
+      },
+      "ResizeServerRequest": {
+        "type": "object",
+        "required": [
+          "flavorId",
+          "serverId"
+        ]
+      },
+      "ResizeVolumeRequest": {
+        "type": "object",
+        "required": [
+          "newSize",
+          "newVolumeTypeId"
+        ]
+      },
+      "ResourceItemDto": {
+        "type": "object",
+        "required": []
+      },
+      "RollbackServerRequest": {
+        "type": "object",
+        "required": []
+      },
+      "RollbackVolumeRequest": {
+        "type": "object",
+        "required": []
+      },
+      "RouteRequest": {
+        "type": "object",
+        "required": [
+          "destinationCidrBlock",
+          "target"
+        ]
+      },
+      "RouteTableDto": {
+        "type": "object",
+        "required": []
+      },
+      "RoutesDto": {
+        "type": "object",
+        "required": []
+      },
+      "SSHKeyDto": {
+        "type": "object",
+        "required": []
+      },
+      "SecGroup": {
+        "type": "object",
+        "required": []
+      },
+      "SecGroupRuleDetail": {
+        "type": "object",
+        "required": []
+      },
+      "SecgroupDto": {
+        "type": "object",
+        "required": []
+      },
+      "SecgroupEntity": {
+        "type": "object",
+        "required": []
+      },
+      "SecgroupRuleEntity": {
+        "type": "object",
+        "required": []
+      },
+      "SecgroupruleDto": {
+        "type": "object",
+        "required": []
+      },
+      "SecondarySubnetDto": {
+        "type": "object",
+        "required": []
+      },
+      "SecurityGroupRulesSampleEntity": {
+        "type": "object",
+        "required": []
+      },
+      "Server": {
+        "type": "object",
+        "required": []
+      },
+      "ServerAction": {
+        "type": "object",
+        "required": []
+      },
+      "ServerGroupDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ServerGroupDto": {
+        "type": "object",
+        "required": []
+      },
+      "ServerGroupPolicy": {
+        "type": "object",
+        "required": []
+      },
+      "ServerMigrationHistoryDto": {
+        "type": "object",
+        "required": []
+      },
+      "ServerNetworkInterfaceDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ServerOfSecgroupDto": {
+        "type": "object",
+        "required": []
+      },
+      "ServerSecGroup": {
+        "type": "object",
+        "required": []
+      },
+      "ServerSecGroupDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ServerSnapshot": {
+        "type": "object",
+        "required": []
+      },
+      "ServerSnapshotDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ServerSnapshotDetailV2": {
+        "type": "object",
+        "required": []
+      },
+      "SharedSnapshotServer": {
+        "type": "object",
+        "required": []
+      },
+      "SnapshotConfig": {
+        "type": "object",
+        "required": []
+      },
+      "SnapshotServerPoint": {
+        "type": "object",
+        "required": []
+      },
+      "SnapshotVolume": {
+        "type": "object",
+        "required": []
+      },
+      "SnapshotVolumePoint": {
+        "type": "object",
+        "required": []
+      },
+      "SubnetDto": {
+        "type": "object",
+        "required": []
+      },
+      "TagDto": {
+        "type": "object",
+        "required": []
+      },
+      "TagEntity": {
+        "type": "object",
+        "required": []
+      },
+      "TagRequest": {
+        "type": "object",
+        "required": []
+      },
+      "TypeItemCondition": {
+        "type": "object",
+        "required": []
+      },
+      "TypesItem": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateInterconnectRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateNetworkAclRulesRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateNetworkAclSubnetsRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateNetworkDhcpOptionRequest": {
+        "type": "object",
+        "required": [
+          "dhcpOptionId"
+        ]
+      },
+      "UpdateNetworkRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "UpdatePolicySnapshotServerRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdatePolicySnapshotVolumeRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateSecurityGroupRuleRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateServerGroupRequestV2": {
+        "type": "object",
+        "required": [
+          "name",
+          "serverGroupId"
+        ]
+      },
+      "UpdateSubnetRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateSubnetsInterconnectionRequest": {
+        "type": "object",
+        "required": [
+          "subnets"
+        ]
+      },
+      "UpdateTagRequest": {
+        "type": "object",
+        "required": [
+          "resourceId",
+          "resourceType"
+        ]
+      },
+      "UpdateVirtualIpAddressRequest": {
+        "type": "object",
+        "required": [
+          "mode"
+        ]
+      },
+      "UpdatedAclPolicyRule": {
+        "type": "object",
+        "required": []
+      },
+      "UserImage": {
+        "type": "object",
+        "required": []
+      },
+      "VipDto": {
+        "type": "object",
+        "required": []
+      },
+      "VirtualIpAddressNetworkEntity": {
+        "type": "object",
+        "required": []
+      },
+      "VirtualSubnetNetworkInterfaceEntity": {
+        "type": "object",
+        "required": []
+      },
+      "Volume": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeAction": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeResponse": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeSnapshot": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeSnapshotDetail": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeType": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeTypeResponse": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeTypeZone": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeTypeZoneResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WanIpDto": {
+        "type": "object",
+        "required": []
+      },
+      "Zone": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_AddressPairDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_DhcpOptionDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_InterconnectConnectionDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_InterconnectDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_InterfaceNetworkInterface_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_JSONObject_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_AddressPairDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_NetworkAclPolicyRuleDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_NetworkInterfaceDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_QuotaUsedDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_RegionDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_RoutesDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_SecgroupruleDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_SecurityGroupRulesSampleEntity_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_ServerAction_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_ServerGroupPolicy_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_ServerOfSecgroupDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_List_Zone_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_NetworkAclDetailDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_NetworkAclDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_NetworkAclModel_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_NetworkDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_NetworkInterfaceElastic_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_RouteTableDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SSHKeyDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SecgroupDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SecgroupEntity_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SecgroupRuleEntity_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SecgroupruleDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SecondarySubnetDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_ServerGroupDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_ServerNetworkInterfaceDetail_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_ServerSecGroupDetail_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_Server_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_SubnetDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_VipDto_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_VirtualIpAddressNetworkEntity_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_VirtualSubnetNetworkInterfaceEntity_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_Volume_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_Zone_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_boolean_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_object_": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponse_string_": {
+        "type": "object",
+        "required": []
+      },
+      "ListResponse_SnapshotServerPoint_": {
+        "type": "object",
+        "required": []
+      },
+      "ListResponse_SnapshotVolumePoint_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_DhcpOptionDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_ElasticIpDetail_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_InterconnectConnectionDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_InterconnectDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_NetworkAclDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_NetworkDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_NetworkInterfaceElastic_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_PeeringDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_PersistentVolumeDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_RouteTableDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_SSHKeyDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_SecgroupDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_ServerGroupDetail_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_ServerMigrationHistoryDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_Server_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_TagEntity_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_UserImage_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_VipDto_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_Volume_": {
+        "type": "object",
+        "required": []
+      },
+      "Paging_WanIpDto_": {
+        "type": "object",
+        "required": []
+      }
+    }
+  },
+ "operations": [
+  {"operation_id":"listAppCategoryUsingGET","method":"GET","path":"/v1/app-category","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/AppCategoryDto"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getAppInstanceUsingGET","method":"GET","path":"/v1/app-instance/{appInstanceUuid}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"appInstanceUuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/AppInstanceDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getAppPackageDetailUsingGET","method":"GET","path":"/v1/app-package/{appCategoryId}/{appPackageId}/{appVersionUuid}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"appCategoryId","in":"path","required":true,"schema":{"type":"string"}},{"name":"appPackageId","in":"path","required":true,"schema":{"type":"string"}},{"name":"appVersionUuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/AppPackageDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getAppTemplateUsingGET","method":"GET","path":"/v1/app-template/{appTemplateId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"appTemplateId","in":"path","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/AppTemplateDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"migrateMpUsingPOST","method":"POST","path":"/v1/mp-migrate","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"all","in":"query","required":true,"schema":{"type":"boolean"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"object"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listProjectUsingGET","method":"GET","path":"/v1/projects","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ProjectResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getProjectUsingGET","method":"GET","path":"/v1/projects/{project_id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ProjectResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listZoneUsingGET","method":"GET","path":"/v1/{projectId}/zones","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_Zone_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getZoneUsingGET","method":"GET","path":"/v1/{projectId}/zones/{zoneId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Zone_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listCodeUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/codes","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Code"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listCustomUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/customs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/FlavorZone"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listCustomSupportClusterUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/customs/clusters/master/{master}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"master","in":"path","required":true,"schema":{"type":"boolean"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/FlavorZone"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listFamilyUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/families","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Family"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listFamilySupportClusterUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/families/clusters","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Family"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listFlavorZoneUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/product","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"product","in":"path","required":true,"schema":{"type":"string"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/FlavorZoneResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listFlavorZoneUsingGET_1","method":"GET","path":"/v1/{project_id}/flavor_zones/product/{product}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"product","in":"path","required":true,"schema":{"type":"string"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/FlavorZoneResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getFlavorZoneUsingGET","method":"GET","path":"/v1/{project_id}/flavor_zones/{flavor_zone_id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"flavor_zone_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/FlavorZoneResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listFlavorCustomUsingGET","method":"GET","path":"/v1/{project_id}/flavors/customs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Flavor"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listFlavorCustomSupportClusterUsingGET","method":"GET","path":"/v1/{project_id}/flavors/customs/clusters","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Flavor"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listFlavorByFamilyAndPlatformUsingGET","method":"GET","path":"/v1/{project_id}/flavors/families/{familyKey}/platforms/{platformKey}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"familyKey","in":"path","required":true,"schema":{"type":"string"}},{"name":"platformKey","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Flavor"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listFlavorByFamilyAndPlatformSupportClusterUsingGET","method":"GET","path":"/v1/{project_id}/flavors/families/{familyKey}/platforms/{platformKey}/clusters/master/{master}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"familyKey","in":"path","required":true,"schema":{"type":"string"}},{"name":"master","in":"path","required":true,"schema":{"type":"boolean"}},{"name":"platformKey","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Flavor"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getFlavorUsingGET","method":"GET","path":"/v1/{project_id}/flavors/{flavor_id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"flavor_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/FlavorResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listServerMigrationHistoryUsingGET","method":"GET","path":"/v1/{project_id}/histories/server-migration","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"query","required":false,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"status","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_ServerMigrationHistoryDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listGPUImageUsingGET","method":"GET","path":"/v1/{project_id}/images/gpu","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/OSImageBaseResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listOSImageUsingGET","method":"GET","path":"/v1/{project_id}/images/os","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/OSImageBaseResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listOSImageDefaultUsingGET","method":"GET","path":"/v1/{project_id}/images/os_default","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"401":{},"500":{}},"response_example":"fixture-001"},
+  {"operation_id":"getVolumeTypeDefaultIdUsingGET","method":"GET","path":"/v1/{project_id}/volume_default_id","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"401":{},"500":{}},"response_example":"fixture-001"},
+  {"operation_id":"listVolumeTypeZoneUsingGET","method":"GET","path":"/v1/{project_id}/volume_type_zones","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeTypeZoneResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getVolumeTypeZoneUsingGET","method":"GET","path":"/v1/{project_id}/volume_type_zones/{volume_type_zone_id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"volume_type_zone_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeTypeZoneResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listAllVolumeTypeUsingGET","method":"GET","path":"/v1/{project_id}/volume_types","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeTypeResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getVolumeTypeUsingGET","method":"GET","path":"/v1/{project_id}/volume_types/{volume_type_id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"volume_type_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeTypeResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listFlavorUsingGET","method":"GET","path":"/v1/{project_id}/{flavor_zone_id}/flavors","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"flavor_zone_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/FlavorResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listVolumeTypeUsingGET","method":"GET","path":"/v1/{project_id}/{volume_type_zone_id}/volume_types","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"project_id","in":"path","required":true,"schema":{"type":"string"}},{"name":"volume_type_zone_id","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeTypeResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listProtocolUsingGET","method":"GET","path":"/v2/protocols","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_JSONObject_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getListWithPagingUsingGET","method":"GET","path":"/v2/{projectId}/dhcp_option","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_DhcpOptionDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createUsingPOST","method":"POST","path":"/v2/{projectId}/dhcp_option","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"dnsServers":{"type":"array","items":{"type":"string"}},"mtu":{"type":"integer","format":"int32"},"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateDhcpOptionRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_DhcpOptionDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"getUsingGET","method":"GET","path":"/v2/{projectId}/dhcp_option/{id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DhcpOptionDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteUsingDELETE","method":"DELETE","path":"/v2/{projectId}/dhcp_option/{id}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listElasticIpUsingGET","method":"GET","path":"/v2/{projectId}/elastic-ips","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_ElasticIpDetail_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listUsingGET","method":"GET","path":"/v2/{projectId}/interconnects","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_InterconnectDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createUsingPOST_1","method":"POST","path":"/v2/{projectId}/interconnects","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","packageId","typeId"],"properties":{"circuitId":{"type":"integer","format":"int32"},"enableGw2":{"type":"boolean"},"name":{"type":"string"},"packageId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"typeId":{"type":"string"},"zoneId":{"type":"string"}},"title":"CreateInterconnectRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","packageId":"fixture-001","typeId":"fixture-001"},"response_example":{}},
+  {"operation_id":"getTypesUsingGET","method":"GET","path":"/v2/{projectId}/interconnects/circuit-types","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/InterconnectTypeDto"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listPackagesUsingGET","method":"GET","path":"/v2/{projectId}/interconnects/packages","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/InterconnectPackageDto"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getUsingGET_1","method":"GET","path":"/v2/{projectId}/interconnects/{interconnectId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateUsingPUT","method":"PUT","path":"/v2/{projectId}/interconnects/{interconnectId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"enableGw2":{"type":"boolean"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateInterconnectRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectDto_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"deleteUsingDELETE_1","method":"DELETE","path":"/v2/{projectId}/interconnects/{interconnectId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"changePackageUsingPUT","method":"PUT","path":"/v2/{projectId}/interconnects/{interconnectId}/change-package","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["packageId"],"properties":{"packageId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"ChangePackageInterconnectRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse"}}}},"401":{},"500":{}},"request_example":{"packageId":"fixture-001"},"response_example":{}},
+  {"operation_id":"listConnectionUsingGET","method":"GET","path":"/v2/{projectId}/interconnects/{interconnectId}/connections","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_InterconnectConnectionDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createConnectionUsingPOST","method":"POST","path":"/v2/{projectId}/interconnects/{interconnectId}/connections","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","networkId","subnets"],"properties":{"name":{"type":"string"},"networkId":{"type":"string"},"subnets":{"type":"array","items":{"type":"string"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateInterconnectionRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectConnectionDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","networkId":"fixture-001","subnets":[]},"response_example":{}},
+  {"operation_id":"getConnectionUsingGET","method":"GET","path":"/v2/{projectId}/interconnects/{interconnectId}/connections/{interconnectionId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"interconnectionId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectConnectionDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateSubnetsUsingPUT","method":"PUT","path":"/v2/{projectId}/interconnects/{interconnectId}/connections/{interconnectionId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"interconnectionId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["subnets"],"properties":{"subnets":{"type":"array","items":{"type":"string"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateSubnetsInterconnectionRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectConnectionDto_"}}}},"401":{},"500":{}},"request_example":{"subnets":[]},"response_example":{}},
+  {"operation_id":"deleteConnectionUsingDELETE","method":"DELETE","path":"/v2/{projectId}/interconnects/{interconnectId}/connections/{interconnectionId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"interconnectionId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterconnectConnectionDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"pingUsingPUT","method":"PUT","path":"/v2/{projectId}/interconnects/{interconnectId}/ping","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interconnectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"gwNumber":{"type":"integer","format":"int32"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"PingInterconnectRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_string_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"createNetworkAclUsingPOST","method":"POST","path":"/v2/{projectId}/network-acl","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","vpc"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"vpc":{"type":"string"},"zoneId":{"type":"string"}},"title":"CreateNetworkAclRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkAclDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","vpc":"fixture-001"},"response_example":{}},
+  {"operation_id":"getNetworkAclsUsingGET","method":"GET","path":"/v2/{projectId}/network-acl/list","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":true,"schema":{"type":"string","default":"1"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":true,"schema":{"type":"string","default":"10"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_NetworkAclDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateRulesUsingPUT","method":"PUT","path":"/v2/{projectId}/network-acl/{aclId}/rules","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"aclId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"aclId":{"type":"string"},"detailAclRuleList":{"type":"array","items":{"$ref":"#/components/schemas/UpdatedAclPolicyRule"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateNetworkAclRulesRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkAclModel_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"deleteNetworkAclUsingDELETE","method":"DELETE","path":"/v2/{projectId}/network-acl/{networkAclUuid}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkAclUuid","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getNetworkAclUsingGET","method":"GET","path":"/v2/{projectId}/network-acl/{uuid}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"uuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkAclDetailDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getNetworkAclPolicyRulesUsingGET","method":"GET","path":"/v2/{projectId}/network-acl/{uuid}/rules","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"uuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_NetworkAclPolicyRuleDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateAssociatedSubnetsUsingPUT","method":"PUT","path":"/v2/{projectId}/network-acl/{uuid}/subnets","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"uuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"aclId":{"type":"string"},"subnetUuids":{"type":"array","items":{"type":"string"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateNetworkAclSubnetsRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkAclDto_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"listNetworkInterfaceElasticUsingGET","method":"GET","path":"/v2/{projectId}/network-interfaces-elastic","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"dhcpOptionIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"encryptionTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"ids","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"isCache","in":"query","required":false,"schema":{"type":"boolean"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"names","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"newTag.key","in":"query","required":false,"schema":{"type":"string"}},{"name":"newTag.value","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"privateIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"projectId","in":"query","required":false,"schema":{"type":"string"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"publicIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"resourceIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"serverIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"status","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"subnetIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tagIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tags[0].key","in":"query","required":false,"schema":{"type":"string"}},{"name":"tags[0].value","in":"query","required":false,"schema":{"type":"string"}},{"name":"volumeTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"vpcIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_NetworkInterfaceElastic_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createNetworkInterfaceElasticUsingPOST","method":"POST","path":"/v2/{projectId}/network-interfaces-elastic","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"floatingIpId":{"type":"string"},"name":{"type":"string"},"securityGroupIds":{"type":"array","items":{"type":"string"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateNetworkInterfaceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkInterfaceElastic_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"getNetworkInterfaceElasticUsingGET","method":"GET","path":"/v2/{projectId}/network-interfaces-elastic/{networkInterfaceId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkInterfaceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkInterfaceElastic_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteNetworkInterfaceElasticUsingDELETE","method":"DELETE","path":"/v2/{projectId}/network-interfaces-elastic/{networkInterfaceId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkInterfaceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"renameNetworkInterfaceElasticUsingPUT","method":"PUT","path":"/v2/{projectId}/network-interfaces-elastic/{networkInterfaceId}/rename","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkInterfaceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"RenameNetworkInterfaceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkInterfaceElastic_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"listNetworkUsingGET","method":"GET","path":"/v2/{projectId}/networks","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"dhcpOptionIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"encryptionTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"ids","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"isCache","in":"query","required":false,"schema":{"type":"boolean"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"names","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"newTag.key","in":"query","required":false,"schema":{"type":"string"}},{"name":"newTag.value","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"privateIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"projectId","in":"query","required":false,"schema":{"type":"string"}},{"name":"publicIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"resourceIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"serverIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"status","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"subnetIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tagIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tags[0].key","in":"query","required":false,"schema":{"type":"string"}},{"name":"tags[0].value","in":"query","required":false,"schema":{"type":"string"}},{"name":"volumeTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"vpcIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_NetworkDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createNetworkUsingPOST","method":"POST","path":"/v2/{projectId}/networks","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["cidr","name"],"properties":{"cidr":{"type":"string"},"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateNetworkRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkDto_"}}}},"401":{},"500":{}},"request_example":{"cidr":"fixture-001","name":"fixture-001"},"response_example":{}},
+  {"operation_id":"listNetworkActiveUsingGET","method":"GET","path":"/v2/{projectId}/networks/active","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_NetworkDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getNetworkUsingGET","method":"GET","path":"/v2/{projectId}/networks/{networkId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/NetworkDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteNetworkUsingDELETE","method":"DELETE","path":"/v2/{projectId}/networks/{networkId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"editNetworkUsingPATCH","method":"PATCH","path":"/v2/{projectId}/networks/{networkId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateNetworkRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkDto_"}}}}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"enableDnsUsingPATCH","method":"PATCH","path":"/v2/{projectId}/networks/{networkId}/enableDns","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkDto_"}}}}},"response_example":{}},
+  {"operation_id":"listSubnetOfNetworkUsingGET","method":"GET","path":"/v2/{projectId}/networks/{networkId}/subnets","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/SubnetDto"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"createSubnetUsingPOST","method":"POST","path":"/v2/{projectId}/networks/{networkId}/subnets","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["cidr","name"],"properties":{"cidr":{"type":"string"},"name":{"type":"string"},"secondarySubnetRequests":{"type":"array","items":{"$ref":"#/components/schemas/CreateSecondarySubnetRequest"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateSubnetRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SubnetDto_"}}}},"401":{},"500":{}},"request_example":{"cidr":"fixture-001","name":"fixture-001"},"response_example":{}},
+  {"operation_id":"getSubnetUsingGET","method":"GET","path":"/v2/{projectId}/networks/{networkId}/subnets/{subnetId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/SubnetDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteSubnetUsingDELETE","method":"DELETE","path":"/v2/{projectId}/networks/{networkId}/subnets/{subnetId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"editSubnetUsingPATCH","method":"PATCH","path":"/v2/{projectId}/networks/{networkId}/subnets/{subnetId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"secondarySubnetRequests":{"type":"array","items":{"$ref":"#/components/schemas/CreateSecondarySubnetRequest"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateSubnetRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SubnetDto_"}}}}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"createSecondarySubnetUsingPOST","method":"POST","path":"/v2/{projectId}/networks/{networkId}/subnets/{subnetId}/secondary-subnets","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"cidr":{"type":"string"},"name":{"type":"string"},"uuid":{"type":"string"}},"title":"CreateSecondarySubnetRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SecondarySubnetDto_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"deleteSecondarySubnetUsingDELETE","method":"DELETE","path":"/v2/{projectId}/networks/{networkId}/subnets/{subnetId}/secondary-subnets/{secondarySubnetId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secondarySubnetId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"editNetworkDhcpOptionUsingPATCH","method":"PATCH","path":"/v2/{projectId}/networks/{networkId}/updateDhcpOption","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"networkId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["dhcpOptionId"],"properties":{"dhcpOptionId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateNetworkDhcpOptionRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_NetworkDto_"}}}}},"request_example":{"dhcpOptionId":"fixture-001"},"response_example":{}},
+  {"operation_id":"listPeeringWithPagingUsingGET","method":"GET","path":"/v2/{projectId}/peering","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":true,"schema":{"type":"string","default":"1"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":true,"schema":{"type":"string","default":"10"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_PeeringDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deletePeeringUsingDELETE","method":"DELETE","path":"/v2/{projectId}/peering/{peeringId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"peeringId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listPersistentVolumeUsingGET","method":"GET","path":"/v2/{projectId}/persistent-volumes","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_PersistentVolumeDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deletePersistentVolumeUsingDELETE","method":"DELETE","path":"/v2/{projectId}/persistent-volumes/{pvId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"pvId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"forceDelete":{"type":"boolean"},"persistentVolumeId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"DeletePersistentVolumeBackendRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"createPublicVirtualIpAddressUsingPOST","method":"POST","path":"/v2/{projectId}/public-vips","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","type"],"properties":{"ipAddress":{"type":"string"},"mode":{"type":"string"},"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"type":{"type":"string","enum":["public-vm","public-mkp"]},"zoneId":{"type":"string"}},"title":"CreatePublicVipRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","type":"public-vm"},"response_example":{}},
+  {"operation_id":"listExternalNetworkInterfaceUsingGET","method":"GET","path":"/v2/{projectId}/public-vips/externalNetworkInterfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_NetworkInterfaceDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deletePublicVirtualIpAddressUsingDELETE","method":"DELETE","path":"/v2/{projectId}/public-vips/{publicVipId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"publicVipId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"createPublicAddressPairUsingPOST","method":"POST","path":"/v2/{projectId}/public-vips/{virtualIpAddressId}/addressPairs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["networkInterfaceId"],"properties":{"networkInterfaceId":{"type":"string"}},"title":"CreatePublicAddressPairRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_AddressPairDto_"}}}},"401":{},"500":{}},"request_example":{"networkInterfaceId":"fixture-001"},"response_example":{}},
+  {"operation_id":"deletePublicAddressPairUsingDELETE","method":"DELETE","path":"/v2/{projectId}/public-vips/{virtualIpAddressId}/addressPairs/{addressPairId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"addressPairId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listQuotaUsedUsingGET","method":"GET","path":"/v2/{projectId}/quotas/quotaUsed","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_QuotaUsedDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getALlRegionUsingGET","method":"GET","path":"/v2/{projectId}/region","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_RegionDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listQuotaUsedUsingGET_1","method":"GET","path":"/v2/{projectId}/region/{regionId}/users/validation","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"regionId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_boolean_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listRouteTableUsingGET","method":"GET","path":"/v2/{projectId}/route-table","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":true,"schema":{"type":"string","default":"1"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":true,"schema":{"type":"string","default":"10"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_RouteTableDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createRouteTableUsingPOST","method":"POST","path":"/v2/{projectId}/route-table","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","networkId"],"properties":{"name":{"type":"string"},"networkId":{"type":"string"},"routes":{"type":"array","items":{"$ref":"#/components/schemas/RouteRequest"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateRouteTableRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","networkId":"fixture-001"},"response_example":{}},
+  {"operation_id":"listRouteFromRouteTableIdUsingGET","method":"GET","path":"/v2/{projectId}/route-table/route/{routeTableId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"routeTableId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_RoutesDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteRouteTableUsingDELETE","method":"DELETE","path":"/v2/{projectId}/route-table/{routeId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"routeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getRouteTableUsingGET","method":"GET","path":"/v2/{projectId}/route-table/{uuid}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"uuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_RouteTableDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateRouteTableDetailUsingPUT","method":"PUT","path":"/v2/{projectId}/route-table/{uuid}/routes","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"uuid","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"routes":{"type":"array","items":{"$ref":"#/components/schemas/RouteRequest"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"ChangeRoutesRequest"}}},"required":true},"responses":{"200":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"getAlllistSecgroupUsingGET","method":"GET","path":"/v2/{projectId}/secgroups","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"dhcpOptionIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"encryptionTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"ids","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"isCache","in":"query","required":false,"schema":{"type":"boolean"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"names","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"newTag.key","in":"query","required":false,"schema":{"type":"string"}},{"name":"newTag.value","in":"query","required":false,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"privateIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"projectId","in":"query","required":false,"schema":{"type":"string"}},{"name":"publicIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"resourceIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"serverIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"status","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"subnetIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tagIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tags[0].key","in":"query","required":false,"schema":{"type":"string"}},{"name":"tags[0].value","in":"query","required":false,"schema":{"type":"string"}},{"name":"volumeTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"vpcIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_SecgroupDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createSecgroupUsingPOST","method":"POST","path":"/v2/{projectId}/secgroups","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateSecurityGroupRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SecgroupEntity_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"getSecgroupUsingGET","method":"GET","path":"/v2/{projectId}/secgroups/{secgroupId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SecgroupDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateSecgroupUsingPUT","method":"PUT","path":"/v2/{projectId}/secgroups/{secgroupId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"EditSecurityGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SecgroupDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"deleteSecgroupUsingDELETE","method":"DELETE","path":"/v2/{projectId}/secgroups/{secgroupId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getListSecgroupRuleBySecgroupUsingGET","method":"GET","path":"/v2/{projectId}/secgroups/{secgroupId}/secGroupRules","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_SecgroupruleDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createSecgroupRuleUsingPOST","method":"POST","path":"/v2/{projectId}/secgroups/{secgroupId}/secgroupRules","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["direction","etherType","portRangeMax","portRangeMin","protocol","remoteIpPrefix"],"properties":{"direction":{"type":"string"},"etherType":{"type":"string"},"portRangeMax":{"type":"integer","format":"int32"},"portRangeMin":{"type":"integer","format":"int32"},"protocol":{"type":"string"},"remoteIpPrefix":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateSecurityGroupRuleRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SecgroupRuleEntity_"}}}},"401":{},"500":{}},"request_example":{"direction":"fixture-001","etherType":"fixture-001","portRangeMax":1,"portRangeMin":1,"protocol":"fixture-001","remoteIpPrefix":"fixture-001"},"response_example":{}},
+  {"operation_id":"getSecGroupRuleSamplesUsingGET","method":"GET","path":"/v2/{projectId}/secgroups/{secgroupId}/secgroupRules/samples","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_SecurityGroupRulesSampleEntity_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getSecgroupRuleUsingGET","method":"GET","path":"/v2/{projectId}/secgroups/{secgroupId}/secgroupRules/{secgroupRuleId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupRuleId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_SecgroupruleDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateUsingPUT_1","method":"PUT","path":"/v2/{projectId}/secgroups/{secgroupId}/secgroupRules/{secgroupRuleId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupRuleId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateSecurityGroupRuleRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SecgroupruleDto_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"deleteSecgroupRuleUsingDELETE","method":"DELETE","path":"/v2/{projectId}/secgroups/{secgroupId}/secgroupRules/{secgroupRuleId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupRuleId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getListServerBySecgroupUsingGET","method":"GET","path":"/v2/{projectId}/secgroups/{secgroupId}/servers","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secgroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_ServerOfSecgroupDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getListServerGroupUsingGET","method":"GET","path":"/v2/{projectId}/serverGroups","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_ServerGroupDetail_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createServerGroupUsingPOST","method":"POST","path":"/v2/{projectId}/serverGroups","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","policyId"],"properties":{"name":{"type":"string"},"policyId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateServerGroupRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_ServerGroupDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","policyId":"fixture-001"},"response_example":{}},
+  {"operation_id":"listServerGroupPolicyUsingGET","method":"GET","path":"/v2/{projectId}/serverGroups/policies","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_ServerGroupPolicy_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getServerGroupUsingGET","method":"GET","path":"/v2/{projectId}/serverGroups/{serverGroupId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverGroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_ServerGroupDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateServerGroupUsingPUT","method":"PUT","path":"/v2/{projectId}/serverGroups/{serverGroupId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverGroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","serverGroupId"],"properties":{"name":{"type":"string"},"serverGroupId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateServerGroupRequestV2"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_ServerGroupDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","serverGroupId":"fixture-001"},"response_example":{}},
+  {"operation_id":"deleteServerGroupUsingDELETE","method":"DELETE","path":"/v2/{projectId}/serverGroups/{serverGroupId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverGroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listServerUsingGET","method":"GET","path":"/v2/{projectId}/servers","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"dhcpOptionIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"encryptionTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"ids","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"isCache","in":"query","required":false,"schema":{"type":"boolean"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"names","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"newTag.key","in":"query","required":false,"schema":{"type":"string"}},{"name":"newTag.value","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"privateIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"projectId","in":"query","required":false,"schema":{"type":"string"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"publicIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"resourceIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"serverIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"status","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"subnetIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tagIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tags[0].key","in":"query","required":false,"schema":{"type":"string"}},{"name":"tags[0].value","in":"query","required":false,"schema":{"type":"string"}},{"name":"volumeTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"vpcIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_Server_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createServerUsingPOST","method":"POST","path":"/v2/{projectId}/servers","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["encryptionVolume","flavorId","imageId","name","networkId","rootDiskSize","rootDiskTypeId","subnetId"],"properties":{"attachFloating":{"type":"boolean"},"backupInstancePointId":{"type":"string"},"configVolumeRestores":{"type":"array","items":{"$ref":"#/components/schemas/ConfigVolumeRestore"}},"createdFrom":{"type":"string"},"dataDiskEncryptionType":{"type":"string"},"dataDiskName":{"type":"string"},"dataDiskSize":{"type":"integer","format":"int32"},"dataDiskTypeId":{"type":"string"},"enableBackup":{"type":"boolean"},"encryptionVolume":{"type":"boolean"},"expirePassword":{"type":"boolean"},"externalNetworkInterfaceId":{"type":"string"},"flavorId":{"type":"string"},"hostGroupId":{"type":"string"},"imageId":{"type":"string"},"name":{"type":"string"},"networkId":{"type":"string"},"networks":{"type":"array","items":{"$ref":"#/components/schemas/NetworkRequest"}},"osLicence":{"type":"boolean"},"poolName":{"type":"string"},"product":{"type":"string"},"rootDiskEncryptionType":{"type":"string"},"rootDiskSize":{"type":"integer","format":"int32"},"rootDiskTypeId":{"type":"string"},"securityGroup":{"type":"array","items":{"type":"string"}},"serverGroupId":{"type":"string"},"snapshotInstancePointId":{"type":"string"},"sshKeyId":{"type":"string"},"subnetId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"type":{"type":"string"},"userData":{"type":"string"},"userDataBase64Encoded":{"type":"boolean"},"userName":{"type":"string"},"userPassword":{"type":"string"},"zoneId":{"type":"string"}},"title":"CreateServerRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{"encryptionVolume":true,"flavorId":"fixture-001","imageId":"fixture-001","name":"fixture-001","networkId":"fixture-001","rootDiskSize":1,"rootDiskTypeId":"fixture-001","subnetId":"fixture-001"},"response_example":{}},
+  {"operation_id":"getExternalNetworkInterfaceUsingGET","method":"GET","path":"/v2/{projectId}/servers/external-network-interfaces/{interfaceNetworkInterfaceId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"interfaceNetworkInterfaceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterfaceNetworkInterface_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listServerBySubnetUsingGET","method":"GET","path":"/v2/{projectId}/servers/subnets/{subnetId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Server"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getServerUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Server_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteServerUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"deleteAllVolume":{"type":"boolean"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"DeleteServerRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"listActionUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/actions","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_ServerAction_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"completeMigratingUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/complete-migrating","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"title":"CompleteMigrationRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"getConsoleLogUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/console-log","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_string_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getConsoleUrlUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/console-url","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_string_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"attachExternalNetworkInterfaceUsingPOST","method":"POST","path":"/v2/{projectId}/servers/{serverId}/external-network-interfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"externalNetworkInterfaceId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"AttachExternalNetworkInterfaceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterfaceNetworkInterface_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"detachExternalNetworkInterfaceUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}/external-network-interfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"networkInterfaceId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"DetachExternalNetworkInterfaceRequest"}}},"required":true},"responses":{"204":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"attachNetworkInterfaceUsingPOST","method":"POST","path":"/v2/{projectId}/servers/{serverId}/internal-network-interfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"subnetRequests":{"type":"array","items":{"$ref":"#/components/schemas/AttachSubnetRequest"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"AttachNetworkInterfaceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"detachNetworkInterfaceUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}/internal-network-interfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"networkInterfaceIds":{"type":"array","items":{"type":"string"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"DetachNetworkInterfaceRequest"}}},"required":true},"responses":{"204":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"attachNetworkInterfaceWithWanIpUsingPOST","method":"POST","path":"/v2/{projectId}/servers/{serverId}/internal-network-interfaces-floating","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"ip":{"type":"string"},"serverId":{"type":"string"},"subnetId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"wanIpId":{"type":"string"},"zoneId":{"type":"string"}},"title":"AttachNetworkInterfaceWithWanIpRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_InterfaceNetworkInterface_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"detachNetworkInterfaceWithWanIpUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}/internal-network-interfaces-floating","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"networkInterfaceId":{"type":"string"},"serverId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"DetachNetworkInterfaceWithWanIpRequest"}}},"required":true},"responses":{"204":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"migrateUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/migrate","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"action":{"type":"string"},"confirmMigrate":{"type":"boolean"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"MigrateServerRequest"}}},"required":true},"responses":{"204":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"listNetworkInterfaceUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/network-interfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_ServerNetworkInterfaceDetail_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"rebootServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/reboot","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"renameServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/rename","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["newName"],"properties":{"newName":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"RenameServerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Server_"}}}},"401":{},"500":{}},"request_example":{"newName":"fixture-001"},"response_example":{}},
+  {"operation_id":"resizeServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/resize","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["flavorId","serverId"],"properties":{"flavorId":{"type":"string"},"hostGroupId":{"type":"string"},"serverId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"ResizeServerRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{"flavorId":"fixture-001","serverId":"fixture-001"},"response_example":{}},
+  {"operation_id":"listSecGroupUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/sec-groups","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_ServerSecGroupDetail_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createSnapshotServerUsingPOST","method":"POST","path":"/v2/{projectId}/servers/{serverId}/server-snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["description"],"properties":{"enableSnapshot":{"type":"boolean"},"name":{"type":"string"},"snapshotPolicyId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"volumeIds":{"type":"array","items":{"type":"string"}},"zoneId":{"type":"string"}},"title":"CreateSnapshotServerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ServerSnapshotDetailV2"}}}},"401":{},"500":{}},"request_example":{"description":"fixture-001"},"response_example":{}},
+  {"operation_id":"deleteSnapshotServerUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}/server-snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"disableAutoSnapshotServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/server-snapshots/disable-auto","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ServerSnapshotDetailV2"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"enableAutoSnapshotServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/server-snapshots/enable-auto","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ServerSnapshotDetailV2"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updatePolicySnapshotServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/server-snapshots/policy","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"snapshotPolicyId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdatePolicySnapshotServerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ServerSnapshotDetailV2"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"listSharedSnapshotServerUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/server-snapshots/shared","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/SharedSnapshotServer"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"revokeSharedSnapshotServerUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}/server-snapshots/shared/{sharedSnapshotId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"sharedSnapshotId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listSnapshotServerUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ListResponse_SnapshotServerPoint_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createSnapshotServerNowUsingPOST","method":"POST","path":"/v2/{projectId}/servers/{serverId}/snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["description","name"],"properties":{"isPermanently":{"type":"boolean"},"name":{"type":"string"},"retainedDays":{"type":"integer","format":"int32"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateSnapshotServerNowRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ServerSnapshotDetail"}}}},"401":{},"500":{}},"request_example":{"description":"fixture-001","name":"fixture-001"},"response_example":{}},
+  {"operation_id":"getSnapshotServerDetailUsingGET","method":"GET","path":"/v2/{projectId}/servers/{serverId}/snapshots/detail","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ServerSnapshotDetailV2"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"rollbackServerBySnapshotUsingPOST","method":"POST","path":"/v2/{projectId}/servers/{serverId}/snapshots/rollback/{snapshotServerPointId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"snapshotServerPointId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"restartServerWhenRevertCompleted":{"type":"boolean"},"serverId":{"type":"string"},"snapshotServerPointId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"RollbackServerRequest"}}},"required":true},"responses":{"200":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"deleteSnapshotPointUsingDELETE","method":"DELETE","path":"/v2/{projectId}/servers/{serverId}/snapshots/{snapshotServerPointId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"snapshotServerPointId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"startServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/start","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"startMigratingUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/start-migrating","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"stopServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/stop","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateSecGroupServerUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/update-sec-group","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["serverId"],"properties":{"securityGroup":{"type":"array","items":{"type":"string"}},"serverId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"ChangeSecGroupRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{"serverId":"fixture-001"},"response_example":{}},
+  {"operation_id":"attachWanIPUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/wan-ips/{wanIpId}/attach","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"wanIpId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"$ref":"#/components/requestBodies/attachWanIPUsingPUTAttachdetachwaniprequest"},"responses":{"204":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"detachWanIPUsingPUT","method":"PUT","path":"/v2/{projectId}/servers/{serverId}/wan-ips/{wanIpId}/detach","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"wanIpId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"$ref":"#/components/requestBodies/attachWanIPUsingPUTAttachdetachwaniprequest"},"responses":{"204":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"getListSecgroupWithPagingUsingGET_1","method":"GET","path":"/v2/{projectId}/sshKeys","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":true,"schema":{"type":"string","default":"1"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":true,"schema":{"type":"string","default":"10"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_SSHKeyDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createSSHKeyUsingPOST","method":"POST","path":"/v2/{projectId}/sshKeys","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateSSHKeyRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SSHKeyDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"importSSHKeyUsingPOST","method":"POST","path":"/v2/{projectId}/sshKeys/import","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"pubKey":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"ImportSSHKeyRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SSHKeyDto_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"getSSHKeyUsingGET","method":"GET","path":"/v2/{projectId}/sshKeys/{sshKeyId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"sshKeyId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_SSHKeyDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteSSHKeyUsingDELETE","method":"DELETE","path":"/v2/{projectId}/sshKeys/{sshKeyId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"sshKeyId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listTagUsingGET","method":"GET","path":"/v2/{projectId}/tag","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_TagEntity_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getTagQuotaUsingGET","method":"GET","path":"/v2/{projectId}/tag/quota","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/QuotaUsedDto"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"listTagByResourceIdUsingGET","method":"GET","path":"/v2/{projectId}/tag/resource/{resourceId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"resourceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/TagDto"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"updateTagUsingPUT","method":"PUT","path":"/v2/{projectId}/tag/resource/{resourceId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"resourceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["resourceId","resourceType"],"properties":{"resourceId":{"type":"string"},"resourceType":{"type":"string"},"tagRequestList":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdateTagRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/TagDto"}}}}},"401":{},"500":{}},"request_example":{"resourceId":"fixture-001","resourceType":"fixture-001"},"response_example":[]},
+  {"operation_id":"listTagKeyUsingGET","method":"GET","path":"/v2/{projectId}/tag/tag-key","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"type":"string"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getTagValueUsingGET","method":"GET","path":"/v2/{projectId}/tag/tag-key/{tagKey}/tag-value","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"tagKey","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"type":"string"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getResourceByTagUsingGET","method":"GET","path":"/v2/{projectId}/tag/{tagId}/resource-types/{resource-types}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"tagId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/ResourceItemDto"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"listImageUsingGET","method":"GET","path":"/v2/{projectId}/user-images","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_UserImage_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createImageUsingPOST","method":"POST","path":"/v2/{projectId}/user-images/servers/{serverId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateUserImageRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001"},"response_example":{}},
+  {"operation_id":"listImageByIdUsingGET","method":"GET","path":"/v2/{projectId}/user-images/{imageId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"imageId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserImage"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteImageUsingDELETE","method":"DELETE","path":"/v2/{projectId}/user-images/{imageId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"imageId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"deleteAddressPairUsingDELETE","method":"DELETE","path":"/v2/{projectId}/virtual-subnets/addressPairs/{addressPairId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"addressPairId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getListAddressPairUsingGET_1","method":"GET","path":"/v2/{projectId}/virtual-subnets/{secondarySubnetId}/addressPairs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secondarySubnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_AddressPairDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"addAddressPairUsingPOST","method":"POST","path":"/v2/{projectId}/virtual-subnets/{secondarySubnetId}/addressPairs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secondarySubnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"$ref":"#/components/requestBodies/addAddressPairUsingPOSTCreatereq"},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_VirtualSubnetNetworkInterfaceEntity_"}}}},"401":{},"500":{}},"request_example":{"internalNetworkInterfaceId":"fixture-001"},"response_example":{}},
+  {"operation_id":"getListVirtualIpAddressWithPagingUsingGET","method":"GET","path":"/v2/{projectId}/virtualIpAddress","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"name","in":"query","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":true,"schema":{"type":"string","default":"1"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":true,"schema":{"type":"string","default":"10"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_VipDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createPrivateVirtualIpAddressUsingPOST","method":"POST","path":"/v2/{projectId}/virtualIpAddress","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["mode","name","subnetId"],"properties":{"ipAddress":{"type":"string"},"mode":{"type":"string","enum":["Active/Active","Active/Passive"]},"name":{"type":"string"},"subnetId":{"type":"string"}},"title":"CreateVirtualIpAddressRequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_VipDto_"}}}},"401":{},"500":{}},"request_example":{"mode":"Active/Active","name":"fixture-001","subnetId":"fixture-001"},"response_example":{}},
+  {"operation_id":"listInternalNetworkInterfaceUsingGET","method":"GET","path":"/v2/{projectId}/virtualIpAddress/internalNetworkInterfaces","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"query","required":false,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_NetworkInterfaceDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getVirtualIpAddressUsingGET","method":"GET","path":"/v2/{projectId}/virtualIpAddress/{vipId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"vipId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_VipDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updateVirtualIpAddressUsingPUT","method":"PUT","path":"/v2/{projectId}/virtualIpAddress/{virtualIpAddressId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["mode"],"properties":{"mode":{"type":"string","enum":["Active/Active","Active/Passive"]},"name":{"type":"string"}},"title":"UpdateVirtualIpAddressRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_VipDto_"}}}},"401":{},"500":{}},"request_example":{"mode":"Active/Active"},"response_example":{}},
+  {"operation_id":"deletePrivateVirtualIpAddressUsingDELETE","method":"DELETE","path":"/v2/{projectId}/virtualIpAddress/{virtualIpAddressId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getListAddressPairUsingGET","method":"GET","path":"/v2/{projectId}/virtualIpAddress/{virtualIpAddressId}/addressPairs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_List_AddressPairDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createPrivateAddressPairUsingPOST","method":"POST","path":"/v2/{projectId}/virtualIpAddress/{virtualIpAddressId}/addressPairs","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"$ref":"#/components/requestBodies/addAddressPairUsingPOSTCreatereq"},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_VirtualIpAddressNetworkEntity_"}}}},"401":{},"500":{}},"request_example":{"internalNetworkInterfaceId":"fixture-001"},"response_example":{}},
+  {"operation_id":"getSpecificAddressPairUsingGET","method":"GET","path":"/v2/{projectId}/virtualIpAddress/{virtualIpAddressId}/addressPairs/{addressPairId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"addressPairId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_AddressPairDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deletePrivateAddressPairUsingDELETE","method":"DELETE","path":"/v2/{projectId}/virtualIpAddress/{virtualIpAddressId}/addressPairs/{addressPairId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"addressPairId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"virtualIpAddressId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"listVolumeUsingGET","method":"GET","path":"/v2/{projectId}/volumes","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"dhcpOptionIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"encryptionTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"ids","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"isCache","in":"query","required":false,"schema":{"type":"boolean"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"names","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"newTag.key","in":"query","required":false,"schema":{"type":"string"}},{"name":"newTag.value","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"privateIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"projectId","in":"query","required":false,"schema":{"type":"string"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"publicIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"resourceIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"serverIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"status","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"subnetIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tagIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tags[0].key","in":"query","required":false,"schema":{"type":"string"}},{"name":"tags[0].value","in":"query","required":false,"schema":{"type":"string"}},{"name":"volumeTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"vpcIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_Volume_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createVolumeUsingPOST","method":"POST","path":"/v2/{projectId}/volumes","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["name","size","volumeTypeId"],"properties":{"configVolumeRestore":{"$ref":"#/components/schemas/ConfigVolumeRestore"},"createdFrom":{"type":"string"},"encryptionType":{"type":"string"},"imageId":{"type":"string"},"multiAttach":{"type":"boolean"},"name":{"type":"string"},"persistentVolume":{"type":"boolean"},"poolName":{"type":"string"},"size":{"type":"integer","format":"int32"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"volumeTypeId":{"type":"string"},"zoneId":{"type":"string"}},"title":"CreateVolumeRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_object_"}}}},"401":{},"500":{}},"request_example":{"name":"fixture-001","size":1,"volumeTypeId":"fixture-001"},"response_example":{}},
+  {"operation_id":"getVolumeByInstanceIdUsingGET","method":"GET","path":"/v2/{projectId}/volumes/servers/{serverId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getBootVolumeByInstanceIdUsingGET","method":"GET","path":"/v2/{projectId}/volumes/servers/{serverId}/boot","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeResponse"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getVolumeUsingGET","method":"GET","path":"/v2/{projectId}/volumes/{volumeId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteVolumeUsingDELETE","method":"DELETE","path":"/v2/{projectId}/volumes/{volumeId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"changeTypeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/change-device-type","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"action":{"type":"string"},"confirmMigrate":{"type":"boolean"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"volumeTypeId":{"type":"string"},"zoneId":{"type":"string"}},"title":"ChangeTypeVolumeRequest"}}},"required":true},"responses":{"204":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"listVolumeHistoryUsingGET","method":"GET","path":"/v2/{projectId}/volumes/{volumeId}/history","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/VolumeAction"}}}}},"401":{},"500":{}},"response_example":[]},
+  {"operation_id":"getVolumeMappingUsingGET","method":"GET","path":"/v2/{projectId}/volumes/{volumeId}/mapping","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Volume"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"renameVolumeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/rename","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["newName"],"properties":{"newName":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"RenameVolumeRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"request_example":{"newName":"fixture-001"},"response_example":{}},
+  {"operation_id":"resizeVolumeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/resize","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["newSize","newVolumeTypeId"],"properties":{"newSize":{"type":"integer","format":"int32"},"newVolumeTypeId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"ResizeVolumeRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"request_example":{"newSize":1,"newVolumeTypeId":"fixture-001"},"response_example":{}},
+  {"operation_id":"attachVolumeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/servers/{serverId}/attach","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"persistentVolume":{"type":"boolean"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"AttachVolumeRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"detachVolumeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/servers/{serverId}/detach","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"persistentVolume":{"type":"boolean"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"DetachVolumeRequest"}}},"required":true},"responses":{"202":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponse_Volume_"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"listSnapshotVolumeUsingGET","method":"GET","path":"/v2/{projectId}/volumes/{volumeId}/snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ListResponse_SnapshotVolumePoint_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"createSnapshotVolumeNowUsingPOST","method":"POST","path":"/v2/{projectId}/volumes/{volumeId}/snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","required":["description","name"],"properties":{"isPermanently":{"type":"boolean"},"name":{"type":"string"},"retainedDays":{"type":"integer","format":"int32"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"CreateSnapshotVolumeNowRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/VolumeSnapshotDetail"}}}},"401":{},"500":{}},"request_example":{"description":"fixture-001","name":"fixture-001"},"response_example":{}},
+  {"operation_id":"rollbackVolumeBySnapshotUsingPOST","method":"POST","path":"/v2/{projectId}/volumes/{volumeId}/snapshots/rollback/{snapshotVolumePointId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"snapshotVolumePointId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"restartServerWhenRevertCompleted":{"type":"boolean"},"snapshotVolumePointId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"volumeId":{"type":"string"},"zoneId":{"type":"string"}},"title":"RollbackVolumeRequest"}}},"required":true},"responses":{"200":{},"401":{},"500":{}},"request_example":{},"response_example":null},
+  {"operation_id":"deleteSnapshotPointUsingDELETE_1","method":"DELETE","path":"/v2/{projectId}/volumes/{volumeId}/snapshots/{snapshotVolumePointId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"snapshotVolumePointId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"deleteSnapshotVolumeUsingDELETE","method":"DELETE","path":"/v2/{projectId}/volumes/{volumeId}/volume-snapshots","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{},"401":{},"500":{}},"response_example":null},
+  {"operation_id":"getSnapshotVolumeDetailUsingGET","method":"GET","path":"/v2/{projectId}/volumes/{volumeId}/volume-snapshots/detail","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/SnapshotVolume"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"updatePolicySnapshotVolumeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/volume-snapshots/policy","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"object","properties":{"snapshotPolicyId":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"zoneId":{"type":"string"}},"title":"UpdatePolicySnapshotVolumeRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/SnapshotVolume"}}}},"401":{},"500":{}},"request_example":{},"response_example":{}},
+  {"operation_id":"disableAutoSnapshotServerUsingPUT_1","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/volume-snapshots/servers/{serverId}/disable-auto","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/SnapshotVolume"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"enableAutoSnapshotVolumeUsingPUT","method":"PUT","path":"/v2/{projectId}/volumes/{volumeId}/volume-snapshots/servers/{serverId}/enable-auto","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"serverId","in":"path","required":true,"schema":{"type":"string"}},{"name":"volumeId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/SnapshotVolume"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"getListWanIpWithPagingUsingGET","method":"GET","path":"/v2/{projectId}/wanIps","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"dhcpOptionIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"encryptionTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"ids","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"isCache","in":"query","required":false,"schema":{"type":"boolean"}},{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"names","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"newTag.key","in":"query","required":false,"schema":{"type":"string"}},{"name":"newTag.value","in":"query","required":false,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"privateIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"projectId","in":"query","required":false,"schema":{"type":"string"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"publicIps","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"resourceIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"serverIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"status","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"subnetIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tagIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"tags[0].key","in":"query","required":false,"schema":{"type":"string"}},{"name":"tags[0].value","in":"query","required":false,"schema":{"type":"string"}},{"name":"volumeTypes","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"vpcIds","in":"query","required":false,"explode":true,"schema":{"type":"array","items":{"type":"string"}}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/Paging_WanIpDto_"}}}},"401":{},"500":{}},"response_example":{}},
+  {"operation_id":"deleteWanIpUsingDELETE","method":"DELETE","path":"/v2/{projectId}/wanIps/{wanIpId}","parameters":[{"name":"Authorization","in":"header","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"wanIpId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{},"401":{},"500":{}},"response_example":null}
+ ]
+}

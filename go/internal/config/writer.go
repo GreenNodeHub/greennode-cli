@@ -24,15 +24,7 @@ func (w *ConfigFileWriter) ensureDir() error {
 	return os.MkdirAll(w.configDir, 0700)
 }
 
-// WriteCredentials writes client_id and client_secret for the given profile and
-// switches the profile to machine auth mode (auth_mode=machine), clearing any
-// prior PKCE login token (refresh_token, token_expires_at). This is the
-// symmetric inverse of WriteLoginToken (which sets auth_mode=user + a
-// refresh_token): running `grn configure` or `grn configure set
-// client_id/client_secret` after `grn login` repoints the profile at machine
-// credentials — without this, the stale auth_mode=user left NewTokenProvider
-// selecting LoginTokenProvider and ignoring the just-configured machine creds.
-// iam_env is preserved (it selects the environment for both auth modes).
+// WriteCredentials selects machine auth and clears login tokens, preserving iam_env.
 func (w *ConfigFileWriter) WriteCredentials(profile, clientID, clientSecret string) error {
 	if err := w.ensureDir(); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -51,19 +43,14 @@ func (w *ConfigFileWriter) WriteCredentials(profile, clientID, clientSecret stri
 	section.Key("client_id").SetValue(clientID)
 	section.Key("client_secret").SetValue(clientSecret)
 	section.Key("auth_mode").SetValue("machine")
-	// Drop any prior PKCE login token — it is not active under machine mode.
-	// iam_env is intentionally preserved: it selects the environment for both
-	// auth modes (machine client_credentials + user refresh both resolve the
-	// IAM token URL from it).
+	// Clear inactive login tokens; preserve iam_env.
 	section.DeleteKey("refresh_token")
 	section.DeleteKey("token_expires_at")
 
 	return w.save(cfg, filePath)
 }
 
-// WriteConfig writes region, output, and project_id for the given profile.
-// An empty projectID is written as an empty key to explicitly clear any
-// previously-saved value.
+// WriteConfig saves region, output, and project; empty project explicitly clears it.
 func (w *ConfigFileWriter) WriteConfig(profile, region, output, projectID string) error {
 	if err := w.ensureDir(); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -91,30 +78,13 @@ func (w *ConfigFileWriter) WriteConfig(profile, region, output, projectID string
 	return w.save(cfg, filePath)
 }
 
-// loginTokenKeys are the per-section keys WriteLoginToken writes and
-// ClearLoginToken removes. refresh_token is secret-at-rest (0600, masked in
-// configure list/get); auth_mode/iam_env are non-secret refresh context;
-// token_expires_at is a non-secret RFC3339 timestamp. The OAuth client_id is
-// NOT persisted here — it is a public identifier baked into source
-// (internal/login's per-env presets) and resolved from iam_env at refresh, so
-// storing it in the credentials INI is redundant. ClearLoginToken still deletes
-// a legacy login_client_id key if one is present from an older CLI version.
+// loginTokenKeys stores refresh credentials and context, never access tokens.
 var loginTokenKeys = []string{"refresh_token", "token_expires_at", "auth_mode", "iam_env"}
 
-// loginTokenKeysLegacy lists credential-section keys older CLI versions wrote
-// that the current version no longer writes but should still clear on logout
-// (so a logout fully removes a prior login). login_client_id was dropped from
-// the persisted set because it is a public id already in source.
+// loginTokenKeysLegacy clears obsolete keys on logout.
 var loginTokenKeysLegacy = []string{"login_client_id"}
 
-// WriteLoginToken persists a PKCE login result into the per-profile credentials
-// INI: it folds the refresh token + non-secret refresh context into the same
-// section that may already hold machine client_id/client_secret (auth-only
-// merge — one identity file per profile). Mirrors WriteCredentials: it
-// loadOrCreate's the file (preserving other keys/sections) and NewSection is
-// idempotent (returns the existing section without wiping its keys). An empty
-// refreshToken is a no-op so a stale empty value can never erase a prior good
-// token; the caller (cmd/login) also skips the call on partial success.
+// WriteLoginToken preserves other profile keys; empty tokens never overwrite existing ones.
 func (w *ConfigFileWriter) WriteLoginToken(profile, refreshToken string, expiresAt time.Time, authMode, iamEnv string) error {
 	if refreshToken == "" {
 		return nil
@@ -141,9 +111,7 @@ func (w *ConfigFileWriter) WriteLoginToken(profile, refreshToken string, expires
 	return w.save(cfg, filePath)
 }
 
-// ClearLoginToken removes the login keys from a profile's credentials section
-// (logout). It leaves machine client_id/client_secret intact and is idempotent:
-// a missing file, missing section, or already-cleared section is not an error.
+// ClearLoginToken removes login keys idempotently, preserving machine credentials.
 func (w *ConfigFileWriter) ClearLoginToken(profile string) error {
 	filePath := filepath.Join(w.configDir, "credentials")
 	if _, err := os.Stat(filePath); err != nil {
@@ -170,15 +138,7 @@ func (w *ConfigFileWriter) ClearLoginToken(profile string) error {
 	return w.save(cfg, filePath)
 }
 
-// WriteAgentIdentity persists the agentbase "current agent" selection for the
-// given profile into the shared credentials INI (the `agent_identity` key). It
-// replaces agentbase's former .greennode.json SaveAgentIdentity so the current
-// agent is read from the same profile every other service uses. Single-key
-// write: loadOrCreate preserves every other key/section, NewSection is
-// idempotent (returns the existing section without wiping its keys), and save
-// is the same atomic 0600 rename used by WriteLoginToken. An empty name clears
-// the key (explicit unset) rather than being a no-op, so `agent-id use` can
-// distinguish "select none" from "no change".
+// WriteAgentIdentity updates one profile key; empty explicitly clears it.
 func (w *ConfigFileWriter) WriteAgentIdentity(profile, name string) error {
 	if err := w.ensureDir(); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -199,15 +159,7 @@ func (w *ConfigFileWriter) WriteAgentIdentity(profile, name string) error {
 	return w.save(cfg, filePath)
 }
 
-// WriteIamEnv persists the dev/prod iam_env selector for the given profile into
-// the shared credentials INI. It is the machine-mode counterpart to `grn login
-// --iam-env` (which writes iam_env via WriteLoginToken): `grn agentbase context
-// switch <env>` repoints a machine profile's env here so all three services
-// (vks/vserver/agentbase) resolve the v2 token URL + endpoints from one key.
-// Same single-key + idempotent-section + atomic-0600-save contract as
-// WriteAgentIdentity. Callers validate env BEFORE calling (switch on a user
-// profile is refused at the command layer — iam_env is bound to the login token
-// there).
+// WriteIamEnv updates the profile environment; callers validate token compatibility.
 func (w *ConfigFileWriter) WriteIamEnv(profile, env string) error {
 	if err := w.ensureDir(); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -231,16 +183,13 @@ func (w *ConfigFileWriter) WriteIamEnv(profile, env string) error {
 func (w *ConfigFileWriter) loadOrCreate(filePath string) (*ini.File, error) {
 	if _, err := os.Stat(filePath); err == nil {
 		return ini.Load(filePath)
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
 	return ini.Empty(), nil
 }
 
-// save writes the INI atomically: serialize to a same-directory temp file,
-// chmod 0600, then rename over the target. Same-dir rename is atomic on POSIX
-// and never crosses filesystems, so a crash mid-write cannot truncate the
-// existing file — important now that `credentials` holds a refresh_token. The
-// rename also re-asserts 0600 on an existing file whose perms may have drifted
-// (the old O_TRUNC path could not tighten perms on an existing file).
+// save atomically replaces INI files with mode 0600.
 func (w *ConfigFileWriter) save(cfg *ini.File, filePath string) error {
 	dir := filepath.Dir(filePath)
 	tmp, err := os.CreateTemp(dir, ".cfg-*")

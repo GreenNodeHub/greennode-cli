@@ -31,6 +31,11 @@ func runDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("DELETE", fmt.Sprintf("/v2/%s/dhcp_option/%s", "<project-id>", dhcpID), nil)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err

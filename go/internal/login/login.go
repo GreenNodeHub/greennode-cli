@@ -29,17 +29,6 @@ func dbg(format string, args ...any) {
 	}
 }
 
-// truncBody caps a response body for the debug trace so a large non-2xx body is
-// never dumped in full (the transport already bounds it to 1 MiB; this is a
-// further 512 B cap for the human-facing trace).
-func truncBody(b []byte) string {
-	const max = 512
-	if len(b) <= max {
-		return string(b)
-	}
-	return string(b[:max]) + "…(truncated)"
-}
-
 // Token is the full in-memory result of Login: the live access token plus the
 // refresh fields. Login mints and returns it; persisting the refresh token is
 // the CALLER's job (the library is stdlib-only and profile/INI-agnostic). The
@@ -117,24 +106,24 @@ func Login(ctx context.Context, cfg Config) (Token, error) {
 		return Token{}, fmt.Errorf("login: token exchange: %w", err)
 	}
 	if errE != nil {
-		dbg("exchange non_2xx status=%d body=%s", errE.Status, truncBody(errE.RawBody))
+		dbg("exchange non_2xx status=%d body=[REDACTED]", errE.Status)
 		return Token{}, fmt.Errorf("login: token exchange: %w", errE)
 	}
 	dbg("exchange http_ok status=2xx body_len=%d", len(resp.Raw))
 
 	accessToken, err := cfg.AccessTokenFrom(resp.Raw)
 	if err != nil {
-		return Token{}, fmt.Errorf("login: %w", err)
+		return Token{}, errors.New("login: token response is invalid")
 	}
 
 	tok, refreshToken, err := decodeTokenBody(resp.Raw, accessToken)
 	if err != nil {
 		// access_token parsed fine but refresh/expires decode failed — partial.
-		dbg("decode failed err=%v", err)
-		return Token{AccessToken: accessToken, TokenType: "Bearer"}, fmt.Errorf("login: token body decode: %w", err)
+		dbg("token body decode failed")
+		return Token{AccessToken: accessToken, TokenType: "Bearer"}, errors.New("login: token body decode failed")
 	}
-	dbg("decoded access_token_len=%d token_type=%s refresh_present=%t expires_at=%s",
-		len(tok.AccessToken), tok.TokenType, refreshToken != "", tok.ExpiresAt.Format(time.RFC3339))
+	dbg("decoded access_token_len=%d refresh_present=%t expires_at=%s",
+		len(tok.AccessToken), refreshToken != "", tok.ExpiresAt.Format(time.RFC3339))
 
 	if refreshToken == "" {
 		// Partial success: access token is valid but IAM returned no refresh

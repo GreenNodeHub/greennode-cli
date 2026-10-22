@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
@@ -51,8 +50,7 @@ func runGenerateKubeconfig(cmd *cobra.Command, args []string) error {
 		fmt.Sprintf("/v1/clusters/%s/kubeconfig", clusterID), body,
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	fmt.Printf("Kubeconfig generation requested for cluster %s (expires in %d days).\n", clusterID, expirationDays)

@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
@@ -32,8 +31,7 @@ func runGetCluster(cmd *cobra.Command, args []string) error {
 
 	result, err := apiClient.Get(fmt.Sprintf("/v1/clusters/%s", clusterID), nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)

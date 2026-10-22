@@ -32,7 +32,7 @@ The signature command is 'search' — semantic search over a memory's long-term
 facts:
 
     grn agentbase memory create --file mem.yaml
-    grn agentbase memory search <id> --namespace /strategies/SEMANTIC/actors/alice --query "dark mode"
+    grn agentbase memory search <id> --namespace /strategies/SEMANTIC/actors/fixture-actor --query "fixture query"
 
 Creation requires at least one long-term-memory strategy (name/type/namespace
 template); for anything beyond the simple single-strategy path, generate a
@@ -47,13 +47,16 @@ Memories share the ~/.greennode profile like the rest of agentbase.`,
 // select the shared token provider, force-mint once so auth failures surface
 // before the first call, and point the typed client at the memory endpoint.
 func newMemoryClient(ctx context.Context, cmd *cobra.Command) (*memorypkg.Client, error) {
-	ab := mustLoadAgentbaseCtx(cmd)
+	ab, err := loadAgentbaseCtx(cmd)
+	if err != nil {
+		return nil, err
+	}
 	provider, err := newAuthProvider(ab)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := provider.GetToken(); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		return nil, authenticationError(err)
 	}
 	return memorypkg.NewClient(ab.endpoints.Memory, provider), nil
 }

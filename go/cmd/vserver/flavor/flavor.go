@@ -10,8 +10,8 @@ var FlavorCmd = &cobra.Command{
 	Short: "Manage vServer flavors",
 	Long:  "List and inspect available vServer flavors.",
 	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

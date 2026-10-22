@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -47,8 +46,7 @@ func runListClusters(cmd *cobra.Command, args []string) error {
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)

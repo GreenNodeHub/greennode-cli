@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
@@ -81,8 +80,7 @@ func runUpdateNodegroupMetadata(cmd *cobra.Command, args []string) error {
 		fmt.Sprintf("/v1/clusters/%s/node-groups/%s/metadata", clusterID, nodegroupID), body,
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)

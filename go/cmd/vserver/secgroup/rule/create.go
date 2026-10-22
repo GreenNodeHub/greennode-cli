@@ -2,8 +2,10 @@ package rule
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +19,6 @@ var createCmd = &cobra.Command{
 func init() {
 	f := createCmd.Flags()
 
-	// Required
 	f.String("secgroup-id", "", "Security group ID (required)")
 	f.String("direction", "", "Traffic direction: ingress or egress (required)")
 	f.String("protocol", "", "Protocol: tcp, udp, icmp, or any (required)")
@@ -74,15 +75,22 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	if portMinSet && portMaxSet && portMin > portMax {
 		return fmt.Errorf("--port-range-min (%d) must be ≤ --port-range-max (%d)", portMin, portMax)
 	}
-
-	apiClient, cfg, err := createClient(cmd)
-	if err != nil {
-		return err
+	if etherType != "IPv4" && etherType != "IPv6" {
+		return fmt.Errorf("--ether-type must be IPv4 or IPv6")
 	}
-
-	projectID, err := getProjectID(cfg)
-	if err != nil {
-		return err
+	if remoteIP != "" {
+		ip, _, err := net.ParseCIDR(remoteIP)
+		if err != nil || (ip.To4() != nil) != (etherType == "IPv4") {
+			return fmt.Errorf("--remote-ip-prefix must match --ether-type")
+		}
+	}
+	if remoteGroupID != "" {
+		if err := validator.ValidateID(remoteGroupID, "remote-group-id"); err != nil {
+			return err
+		}
+	}
+	if portMinSet && (portMin < 0 || portMin > 65535) || portMaxSet && (portMax < 0 || portMax > 65535) {
+		return fmt.Errorf("port ranges must be between 0 and 65535")
 	}
 
 	body := map[string]interface{}{
@@ -94,12 +102,26 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		"description":    nilIfEmpty(description),
 	}
 
-	// Only include port range fields when explicitly set by the user
 	if portMinSet {
 		body["portRangeMin"] = portMin
 	}
 	if portMaxSet {
 		body["portRangeMax"] = portMax
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/secgroups/%s/secgroupRules", "<project-id>", secgroupID), body)
+		return nil
+	}
+
+	apiClient, cfg, err := createClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := getProjectID(cfg)
+	if err != nil {
+		return err
 	}
 
 	result, err := apiClient.Post(fmt.Sprintf("/v2/%s/secgroups/%s/secgroupRules", projectID, secgroupID), body)

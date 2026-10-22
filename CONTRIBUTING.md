@@ -105,7 +105,9 @@ built binaries.
 
 1. Create `go/cmd/<service>/` directory
 2. Create parent command with `cobra.Command`
-3. Register in `go/cmd/root.go`: `rootCmd.AddCommand(serviceCmd)`
+3. Self-register with `cli.RegisterService` and blank-import the package from the command registration file.
+
+Use the shared client builders and, for descriptor-driven services, `internal/operation`. Keep endpoint and request/response facts in independently sourced [public contract fixtures](docs/development/contract-fixtures.md). Test offline dry-run, non-interactive refusal, read-only retries, sensitive output, and compatibility with existing machine/user profiles. See [architecture](docs/development/architecture.md) for the shared interfaces.
 
 ## Code Style
 

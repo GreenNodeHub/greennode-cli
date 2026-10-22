@@ -2,7 +2,7 @@
 
 ## Dry-run
 
-All create, update, and delete commands support `--dry-run`:
+Commands that expose `--dry-run` preview their action without performing the mutation:
 
 ```bash
 # Validate create parameters without calling API
@@ -29,20 +29,13 @@ Validates parameters offline:
 
 ### Delete dry-run
 
-Fetches and displays resources that will be deleted:
+Validates identifiers and displays the request target without loading credentials or fetching the resource:
 
 ```
-=== DRY RUN: The following resources will be deleted ===
-
-Cluster:
-  ID:      k8s-xxxxx
-  Name:    my-cluster
-  Status:  ACTIVE
-  Version: v1.30.10
-  Nodes:   3
-
-Node groups (1):
-  - default (ID: ng-xxxxx, nodes: 3)
+=== DRY RUN ===
+Would delete VKS cluster k8s-xxxxx:
+  method: DELETE
+  path: /v1/clusters/k8s-xxxxx
 
 Run without --dry-run to delete.
 ```
@@ -65,3 +58,9 @@ Use `--force` to skip the confirmation prompt (for scripting):
 ```bash
 grn vks delete-cluster --cluster-id k8s-xxxxx --force
 ```
+
+## Non-interactive automation
+
+Add `--non-interactive` to prevent prompts. A destructive confirmation without `--force` returns a failure exit status and leaves stdin untouched. `configure` and browser `login` refuse this mode; use `configure set` for scripted configuration. AgentBase's `--interactive` does not override `--non-interactive`. Placement-group creation requires an explicit `--policy-id` in this mode.
+
+Every dry-run is fully offline: it validates inputs and prints a redacted preview before configuration, client construction, network requests, confirmation, or output-file writes. Check each command's help for supported safety flags.

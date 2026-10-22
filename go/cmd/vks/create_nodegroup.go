@@ -2,8 +2,8 @@ package vks
 
 import (
 	"fmt"
-	"os"
 	"regexp"
+	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
@@ -146,8 +146,7 @@ func runCreateNodegroup(cmd *cobra.Command, args []string) error {
 		fmt.Sprintf("/v1/clusters/%s/node-groups", clusterID), body,
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)
@@ -155,29 +154,25 @@ func runCreateNodegroup(cmd *cobra.Command, args []string) error {
 
 func validateCreateNodegroup(name string, diskSize, numNodes int) error {
 	ngNameRE := regexp.MustCompile(`^[a-z0-9][a-z0-9-]{3,13}[a-z0-9]$`)
-	var errors []string
+	var validationErrors []string
 
 	if !ngNameRE.MatchString(name) {
-		errors = append(errors, fmt.Sprintf(
+		validationErrors = append(validationErrors, fmt.Sprintf(
 			"Node group name '%s' is invalid. Must be 5-15 chars, lowercase alphanumeric and hyphens.", name))
 	}
 	if diskSize < 20 || diskSize > 5000 {
-		errors = append(errors, fmt.Sprintf("Disk size %d out of range (20-5000 GiB)", diskSize))
+		validationErrors = append(validationErrors, fmt.Sprintf("Disk size %d out of range (20-5000 GiB)", diskSize))
 	}
 	if numNodes < 0 || numNodes > 10 {
-		errors = append(errors, fmt.Sprintf("Number of nodes %d out of range (0-10)", numNodes))
+		validationErrors = append(validationErrors, fmt.Sprintf("Number of nodes %d out of range (0-10)", numNodes))
+	}
+
+	if len(validationErrors) > 0 {
+		return fmt.Errorf("dry-run validation failed:\n  - %s", strings.Join(validationErrors, "\n  - "))
 	}
 
 	fmt.Println("=== DRY RUN: Validation results ===")
 	fmt.Println()
-	if len(errors) > 0 {
-		fmt.Printf("Found %d error(s):\n", len(errors))
-		for _, e := range errors {
-			fmt.Printf("  - %s\n", e)
-		}
-		os.Exit(1)
-	}
-
 	fmt.Println("All parameters are valid. Run without --dry-run to create.")
 	return nil
 }

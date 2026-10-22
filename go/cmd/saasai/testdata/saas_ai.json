@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source": {
+    "id": "saas_ai",
+    "url": "https://docs.api.greennode.ai/service-docs/saas-ai.html",
+    "title": "AI Speech Text API",
+    "version": "1.0.0",
+    "retrieved": "2026-09-10",
+    "sha256": "c5453a1f5b510bee67aedf32289323c3fbd7c96cad41c428b33ad180ad9e227c"
+  },
+  "servers": [
+    {
+      "url": "https://ai-speech-text.api.vngcloud.vn/speech-api"
+    }
+  ],
+  "operations": [
+    {"method":"POST","path":"/api/v1/texttospeech/sync","parameters":[],"request_body":{"required":false,"content":{"application/json":{"schema":{"type":"object","properties":{"input":{"type":"string"},"speed":{"type":"number","minimum":0.8,"maximum":1.2},"speaker_id":{"type":"integer","enum":[0,1,2,3]},"encode_type":{"type":"integer","enum":[0,1]}}}}}},"responses":{"200":{"content":{"audio/mpeg":{"schema":{"type":"string","format":"binary"}}}}}},
+    {"method":"POST","path":"/api/v1/speechtotext/sync","parameters":[],"request_body":{"required":false,"content":{"multipart/form-data":{"schema":{"type":"object","properties":{"encoding_type":{"type":"string","enum":["wav","mp3"]},"audio_file":{"type":"string","format":"binary"}}}}}},"responses":{"200":{"content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string"},"audio_file":{"type":"string"},"encode_type":{"type":"string"},"billed_duration":{"type":"integer"},"transcript":{"type":"string"}}}}}}}}
+  ]
+}

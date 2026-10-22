@@ -3,6 +3,7 @@ package dhcp
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -43,13 +44,17 @@ func runAssociateVpc(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("either --dhcp-option-id (to associate) or --detach (to remove) is required")
 	}
 
-	// An empty body removes the association; a body with dhcpOptionId sets it.
 	body := map[string]interface{}{}
 	if !detach {
 		if err := validator.ValidateID(dhcpOptionID, "dhcp-option-id"); err != nil {
 			return err
 		}
 		body["dhcpOptionId"] = dhcpOptionID
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PATCH", fmt.Sprintf("/v2/%s/networks/%s/updateDhcpOption", "<project-id>", vpcID), body)
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)

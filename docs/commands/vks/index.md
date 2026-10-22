@@ -17,6 +17,15 @@ grn vks <command> [options]
 | [create-cluster](create-cluster.md) | Create a new VKS cluster |
 | [update-cluster](update-cluster.md) | Update a VKS cluster |
 | [delete-cluster](delete-cluster.md) | Delete a VKS cluster |
+| [get-upgrade-insights](get-upgrade-insights.md) | Get cluster upgrade insights |
+| [stop-poc](stop-poc.md) | End cluster proof-of-concept mode |
+
+### Fleet Management
+
+| Command | Description |
+|---------|-------------|
+| [register-fleet](register-fleet.md) | Register a cluster with fleet management |
+| [unregister-fleet](unregister-fleet.md) | Remove a cluster's fleet association |
 
 ### Node Group
 
@@ -30,6 +39,8 @@ grn vks <command> [options]
 | [upgrade-nodegroup-version](upgrade-nodegroup-version.md) | Upgrade the Kubernetes version of a node group |
 | [list-nodes](list-nodes.md) | List nodes in a node group |
 | [delete-nodegroup](delete-nodegroup.md) | Delete a node group |
+| [get-nodegroup-events](get-nodegroup-events.md) | Get node-group events |
+| [list-nodegroup-images](list-nodegroup-images.md) | List node-group images |
 
 ### Versions
 
@@ -62,12 +73,21 @@ grn vks <command> [options]
 |---------|-------------|
 | [generate-kubeconfig](generate-kubeconfig.md) | Request generation of a cluster kubeconfig |
 | [update-kubeconfig](update-kubeconfig.md) | Fetch and merge the cluster kubeconfig into your kubeconfig file |
+| [acknowledge-kubeconfig-warning](acknowledge-kubeconfig-warning.md) | Acknowledge a kubeconfig renewal warning |
 
 ### Quota
 
 | Command | Description |
 |---------|-------------|
 | [get-quota](get-quota.md) | Get VKS quota limits and current usage |
+
+### Workspace
+
+| Command | Description |
+|---------|-------------|
+| [get-workspace](get-workspace.md) | Get the current VKS workspace |
+| [create-workspace](create-workspace.md) | Create a VKS workspace |
+| [reset-workspace-service-account](reset-workspace-service-account.md) | Reset the workspace service account |
 
 ### Waiter
 

@@ -61,9 +61,7 @@ func TestSetRegionOnNonExistentProfile(t *testing.T) {
 }
 
 // On a fresh machine (no config files at all) `configure list` must not panic
-// and renders unset defaults — matching `aws configure list`. (A profile that
-// is missing while config files DO exist exits non-zero via os.Exit, which is
-// covered by the binary-level checks rather than here.)
+// and renders unset defaults — matching `aws configure list`.
 func TestListOnFreshMachineNoFiles(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
@@ -77,9 +75,8 @@ func TestListOnFreshMachineNoFiles(t *testing.T) {
 // `configure set iam_env <dev|prod>` is the replacement for the dropped
 // `agentbase context switch` on a MACHINE profile: it writes iam_env to the
 // shared credentials INI so all three services (vks/vserver/agentbase) resolve
-// env from it. (The user-profile refusal and the invalid-value rejection use
-// os.Exit, so they are not unit-testable here — same convention as the other
-// error paths in runSet.)
+// env from it. User-profile refusal and invalid values return normal command
+// errors and remain directly unit-testable.
 func TestSetIamEnv_MachineProfileWrites(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

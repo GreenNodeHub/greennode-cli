@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://docs.api.greennode.ai/service-docs/vlb-api.html",
+    "title": "VLB Service API",
+    "version": "1.0.0",
+    "retrieved": "2026-09-10",
+    "sha256": "bdb42a8de6b1ed10a46dab7a438113e35f7766f21f58e0453af725c548cb1ab8"
+  },
+  "servers": [
+    {
+      "url": "https://hcm-3.api.vngcloud.vn/vserver/vlb-gateway"
+    },
+    {
+      "url": "https://han-1.api.vngcloud.vn/vserver/vlb-gateway"
+    }
+  ],
+  "security": [
+    {
+      "Authorization": []
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ResizeLoadBalancerRequest": {
+        "type": "object",
+        "required": [
+          "packageId"
+        ]
+      },
+      "NetworkingConfig": {
+        "type": "object",
+        "required": [
+          "subnets"
+        ]
+      },
+      "ScaleConfigRequest": {
+        "type": "object",
+        "required": [
+          "networking",
+          "scaling"
+        ]
+      },
+      "ScalingConfig": {
+        "type": "object",
+        "required": [
+          "maxSize"
+        ]
+      },
+      "UpdateHMonitorRequest": {
+        "type": "object",
+        "required": [
+          "healthyThreshold",
+          "interval",
+          "timeout",
+          "unhealthyThreshold"
+        ]
+      },
+      "UpdatePoolRequest": {
+        "type": "object",
+        "required": [
+          "algorithm"
+        ]
+      },
+      "ChangeMembersRequest": {
+        "type": "object",
+        "required": [
+          "members"
+        ]
+      },
+      "MemberRequest": {
+        "type": "object",
+        "required": [
+          "backup",
+          "ipAddress",
+          "port"
+        ]
+      },
+      "Header": {
+        "type": "object",
+        "required": [
+          "headerName",
+          "headerValue"
+        ]
+      },
+      "UpdateListenerRequest": {
+        "type": "object",
+        "required": [
+          "timeoutClient",
+          "timeoutConnection",
+          "timeoutMember"
+        ]
+      },
+      "ReorderPoliciesRequest": {
+        "type": "object",
+        "required": [
+          "policies"
+        ]
+      },
+      "ReorderPolicyRequest": {
+        "type": "object",
+        "required": [
+          "policyId",
+          "position"
+        ]
+      },
+      "L7RuleRequest": {
+        "type": "object",
+        "required": [
+          "compareType",
+          "ruleType",
+          "ruleValue"
+        ]
+      },
+      "UpdateL7PolicyRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ]
+      },
+      "UpdateBandwidthPackageRequest": {
+        "type": "object",
+        "required": [
+          "bandWidthPackageId"
+        ]
+      },
+      "LoadBalancerBandwidthDto": {
+        "type": "object",
+        "required": []
+      },
+      "CreateHMonitorRequest": {
+        "type": "object",
+        "required": [
+          "healthCheckProtocol"
+        ]
+      },
+      "CreateLoadBalancerRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "packageId",
+          "scheme",
+          "subnetId",
+          "type"
+        ]
+      },
+      "LbListener": {
+        "type": "object",
+        "required": [
+          "listenerName",
+          "listenerProtocol"
+        ]
+      },
+      "LbPool": {
+        "type": "object",
+        "required": [
+          "algorithm",
+          "poolName",
+          "poolProtocol"
+        ]
+      },
+      "TagRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreatePoolRequest": {
+        "type": "object",
+        "required": [
+          "algorithm",
+          "healthMonitor",
+          "poolName",
+          "poolProtocol"
+        ]
+      },
+      "CreateListenerRequest": {
+        "type": "object",
+        "required": [
+          "listenerName",
+          "listenerProtocol",
+          "listenerProtocolPort",
+          "timeoutClient",
+          "timeoutConnection",
+          "timeoutMember"
+        ]
+      },
+      "CreateL7PolicyRequest": {
+        "type": "object",
+        "required": [
+          "action",
+          "name"
+        ]
+      },
+      "Certificates": {
+        "type": "object",
+        "required": [
+          "defaultCertificateId",
+          "listenerId"
+        ]
+      },
+      "CloneLoadBalancerRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "packageId"
+        ]
+      },
+      "ImportCARequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "CADto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseCADto": {
+        "type": "object",
+        "required": []
+      },
+      "FilterRequest": {
+        "type": "object",
+        "required": []
+      },
+      "LoadBalancerDto": {
+        "type": "object",
+        "required": []
+      },
+      "NodeInfo": {
+        "type": "object",
+        "required": []
+      },
+      "PackageInfo": {
+        "type": "object",
+        "required": []
+      },
+      "PagingLoadBalancerDto": {
+        "type": "object",
+        "required": []
+      },
+      "Zone": {
+        "type": "object",
+        "required": []
+      },
+      "PageRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseLoadBalancerDto": {
+        "type": "object",
+        "required": []
+      },
+      "ScaleHistoryDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseListPoolDto": {
+        "type": "object",
+        "required": []
+      },
+      "HMonitorDto": {
+        "type": "object",
+        "required": []
+      },
+      "PoolDto": {
+        "type": "object",
+        "required": []
+      },
+      "PoolMemberDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponsePoolDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseListPoolMemberDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseHMonitorDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseListListenerDto": {
+        "type": "object",
+        "required": []
+      },
+      "ListenerDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseListenerDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseListL7PolicyDto": {
+        "type": "object",
+        "required": []
+      },
+      "L7PolicyDto": {
+        "type": "object",
+        "required": []
+      },
+      "L7RuleDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseL7PolicyDto": {
+        "type": "object",
+        "required": []
+      },
+      "LBCloneMetadataDto": {
+        "type": "object",
+        "required": []
+      },
+      "LoadBalancerPackageDto": {
+        "type": "object",
+        "required": []
+      },
+      "PagingLoadBalancerPackageDto": {
+        "type": "object",
+        "required": []
+      },
+      "DataResponseListString": {
+        "type": "object",
+        "required": []
+      },
+      "PagingCADto": {
+        "type": "object",
+        "required": []
+      }
+    }
+  },
+  "operations": [
+    {"operation_id":"resizeLoadBalancer","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/resize","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizeLoadBalancerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}}},"request_example":{"packageId":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"haConfiguration","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/rebalancing","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ScaleConfigRequest"}}},"required":true},"responses":{"202":{}},"request_example":{"networking":{"subnets":[]},"scaling":{"maxSize":1}},"response_example":null},
+    {"operation_id":"getPool","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"poolId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponsePoolDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updatePool","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"poolId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdatePoolRequest"}}},"required":true},"responses":{"200":{}},"request_example":{"algorithm":"ROUND_ROBIN"},"response_example":null},
+    {"operation_id":"deletePool","method":"DELETE","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"poolId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{}},"response_example":null},
+    {"operation_id":"getMembersFromPool","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}/members","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"poolId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseListPoolMemberDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"changesMembers","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}/members","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"poolId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ChangeMembersRequest"}}},"required":true},"responses":{"200":{}},"request_example":{"members":[]},"response_example":null},
+    {"operation_id":"getListener","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseListenerDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateListener","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateListenerRequest"}}},"required":true},"responses":{"200":{}},"request_example":{"timeoutClient":1,"timeoutConnection":1,"timeoutMember":1},"response_example":null},
+    {"operation_id":"deleteListener","method":"DELETE","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{}},"response_example":null},
+    {"operation_id":"reorderPolicies","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/reorderL7Policies","parameters":[{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ReorderPoliciesRequest"}}},"required":true},"responses":{"200":{}},"request_example":{"policies":[]},"response_example":null},
+    {"operation_id":"updateL7Policy","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies/{policyId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"policyId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateL7PolicyRequest"}}},"required":true},"responses":{"200":{}},"request_example":{"action":"REDIRECT_TO_POOL"},"response_example":null},
+    {"operation_id":"deletePolicy","method":"DELETE","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies/{policyId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"policyId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{}},"response_example":null},
+    {"operation_id":"updateLoadBalancerBandwidth","method":"PUT","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/bandwidth","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateBandwidthPackageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/LoadBalancerBandwidthDto"}}}}},"request_example":{"bandWidthPackageId":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListLoadBalancer","method":"GET","path":"/v2/{projectId}/loadBalancers","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"filter","in":"query","required":true,"schema":{"type":"object","properties":{"ids":{"type":"array","items":{"type":"string"}},"names":{"type":"array","items":{"type":"string"}},"name":{"type":"string"},"tags":{"type":"array","items":{"$ref":"#/components/schemas/TagRequest"}},"newTag":{"$ref":"#/components/schemas/TagRequest"},"tagIds":{"type":"array","items":{"type":"string"}},"projectId":{"type":"string"},"isCache":{"type":"boolean"},"privateIps":{"type":"array","items":{"type":"string"}},"publicIps":{"type":"array","items":{"type":"string"}},"subnetIds":{"type":"array","items":{"type":"string"}},"vpcIds":{"type":"array","items":{"type":"string"}},"serverIds":{"type":"array","items":{"type":"string"}},"encryptionTypes":{"type":"array","items":{"type":"string"}},"volumeTypes":{"type":"array","items":{"type":"string"}},"status":{"type":"array","items":{"type":"string"}},"resourceIds":{"type":"array","items":{"type":"string"}},"dhcpOptionIds":{"type":"array","items":{"type":"string"}},"zoneId":{"type":"string"}}}},{"name":"pageRequest","in":"query","required":true,"schema":{"type":"object","properties":{"page":{"type":"integer","format":"int32"},"size":{"type":"integer","format":"int32"}}}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/PagingLoadBalancerDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createLoadBalancer","method":"POST","path":"/v2/{projectId}/loadBalancers","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateLoadBalancerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}}},"request_example":{"name":"fixture-001","packageId":"fixture-001","scheme":"Internet","subnetId":"fixture-001","type":"Layer 4"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListPools","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseListPoolDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createPool","method":"POST","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreatePoolRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}}},"request_example":{"algorithm":"ROUND_ROBIN","healthMonitor":{"healthCheckProtocol":"TCP"},"poolName":"fixture-001","poolProtocol":"HTTP"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListListenersByLoadBalancer","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseListListenerDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createListener","method":"POST","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateListenerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}}},"request_example":{"listenerName":"fixture-001","listenerProtocol":"HTTP","listenerProtocolPort":1,"timeoutClient":1,"timeoutConnection":1,"timeoutMember":1},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListL7Policies","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseListL7PolicyDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createPolicy","method":"POST","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateL7PolicyRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}}},"request_example":{"action":"REDIRECT_TO_POOL","name":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"cloneLoadBalancer","method":"POST","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/clone","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CloneLoadBalancerRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"object","additionalProperties":{"type":"string"}}}}}},"request_example":{"name":"fixture-001","packageId":"fixture-001"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getAllListCertificateAuthority","method":"GET","path":"/v2/{projectId}/cas","parameters":[{"name":"name","in":"query","required":false,"schema":{"type":"string"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"page","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"size","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/PagingCADto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"importCA","method":"POST","path":"/v2/{projectId}/cas","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ImportCARequest"}}},"required":true},"responses":{"201":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseCADto"}}}}},"request_example":{"name":"fixture-001","type":"CA"},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getLoadBalancer","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseLoadBalancerDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteLoadBalancer","method":"DELETE","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"202":{}},"response_example":null},
+    {"operation_id":"listByLoadBalancer","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/scale-history","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/ScaleHistoryDto"}}}}}},"response_example":[]},
+    {"operation_id":"getHealthMonitorFromPool","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/pools/{poolId}/healthMonitor","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"poolId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseHMonitorDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getL7Policy","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/listeners/{listenerId}/l7policies/{l7PolicyId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"listenerId","in":"path","required":true,"schema":{"type":"string"}},{"name":"l7PolicyId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseL7PolicyDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getCloneInfo","method":"GET","path":"/v2/{projectId}/loadBalancers/{loadBalancerId}/cloneMetadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"loadBalancerId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/LBCloneMetadataDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getLoadBalancerBySubnetId","method":"GET","path":"/v2/{projectId}/loadBalancers/subnet/{subnetId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"subnetId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/LoadBalancerDto"}}}}}},"response_example":[]},
+    {"operation_id":"getPackagesActive","method":"GET","path":"/v2/{projectId}/loadBalancers/packages","parameters":[{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}},{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/PagingLoadBalancerPackageDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getHeaders","method":"GET","path":"/v2/{projectId}/loadBalancers/headers","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/DataResponseListString"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getAllPackages","method":"GET","path":"/v2/{projectId}/loadBalancers/all_packages","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/PagingLoadBalancerPackageDto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getCertificateAuthorityById","method":"GET","path":"/v2/{projectId}/cas/{caId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"caId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/CADto"}}}}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteCertificateAuthority","method":"DELETE","path":"/v2/{projectId}/cas/{caId}","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"caId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"204":{}},"response_example":null}
+  ]
+}

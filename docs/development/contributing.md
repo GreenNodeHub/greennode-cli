@@ -37,6 +37,8 @@ full steps (parent command + `cli.RegisterService`, blank-import in
 
 ## Running tests
 
+New descriptor-driven services use `internal/operation` and the shared profile-aware client builders. Add independently sourced [public contract fixtures](contract-fixtures.md) and test offline safety, response-status handling, and credential redaction alongside the existing service regressions.
+
 ```bash
 cd go
 go test ./...

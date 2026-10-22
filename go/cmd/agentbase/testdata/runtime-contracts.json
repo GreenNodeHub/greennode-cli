@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://agentbase.api.vngcloud.vn/runtime/v3/api-docs",
+    "title": "AgentBase Runtime API",
+    "version": "v1",
+    "retrieved_at": "2026-09-10",
+    "sha256": "7b7c71f750abc80aa05d26bac2d7c60d3924f6dc819db36a566f103e37ce4464"
+  },
+  "base_url": "https://agentbase.api.vngcloud.vn/runtime",
+  "legacy_runtime_paths_supported": true,
+  "operations": [
+    {"operation_id":"list_1","method":"GET","path":"/v1/agent-runtimes","required_body_fields":[],"responses":{"200":{"type":"object","fields":["listData","page","pageSize","totalItem","totalPage"]}}},
+    {"operation_id":"get_1","method":"GET","path":"/v1/openclaws/{id}","required_body_fields":[],"responses":{"200":{"type":"object","fields":["createdAt","flavorId","gatewayToken","greenNodeApiKeyName","id","name","poc","status","updatedAt","url","versionId"]}}}
+  ]
+}

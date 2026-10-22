@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
@@ -40,6 +39,19 @@ func runDeleteNodegroup(cmd *cobra.Command, args []string) error {
 	if err := validator.ValidateID(nodegroupID, "nodegroup-id"); err != nil {
 		return err
 	}
+	path := fmt.Sprintf("/v1/clusters/%s/node-groups/%s", clusterID, nodegroupID)
+	var paramsArg map[string]string
+	if forceDelete {
+		paramsArg = map[string]string{"forceDelete": "true"}
+	}
+	if dryRun {
+		fields := map[string]any{"method": "DELETE", "path": path}
+		if paramsArg != nil {
+			fields["query"] = paramsArg
+		}
+		cli.PrintDryRun("delete", "VKS node group "+nodegroupID, fields)
+		return nil
+	}
 
 	apiClient, err := createClient(cmd)
 	if err != nil {
@@ -48,7 +60,7 @@ func runDeleteNodegroup(cmd *cobra.Command, args []string) error {
 
 	// Fetch nodegroup info for preview
 	ng, err := apiClient.Get(
-		fmt.Sprintf("/v1/clusters/%s/node-groups/%s", clusterID, nodegroupID), nil,
+		path, nil,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to fetch node group: %w", err)
@@ -64,32 +76,16 @@ func runDeleteNodegroup(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("This action is irreversible.")
 
-	if dryRun {
-		cli.DryRunNotice("delete")
-		return nil
-	}
-
 	if !cli.Confirm(force, "Are you sure you want to delete this node group?") {
 		fmt.Println("Aborted.")
 		return nil
 	}
 
-	params := map[string]string{}
-	if forceDelete {
-		params["forceDelete"] = "true"
-	}
-
-	var paramsArg map[string]string
-	if len(params) > 0 {
-		paramsArg = params
-	}
-
 	result, err := apiClient.Delete(
-		fmt.Sprintf("/v1/clusters/%s/node-groups/%s", clusterID, nodegroupID), paramsArg,
+		path, paramsArg,
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)

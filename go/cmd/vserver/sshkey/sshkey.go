@@ -9,8 +9,8 @@ var SSHKeyCmd = &cobra.Command{
 	Use:   "sshkey",
 	Short: "Manage SSH keys",
 	Long:  "List and delete SSH keys.",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,15 +11,26 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+// ErrProfileNotFound identifies an absent persisted profile.
+var ErrProfileNotFound = errors.New("profile not found")
+
 // REGIONS maps region names to service endpoints.
 var REGIONS = map[string]map[string]string{
 	"HCM-3": {
-		"vks_endpoint":     "https://vks.api.vngcloud.vn",
-		"vserver_endpoint": "https://hcm-3.api.vngcloud.vn/vserver/vserver-gateway",
+		"vks_endpoint":      "https://vks.api.vngcloud.vn",
+		"vserver_endpoint":  "https://hcm-3.api.vngcloud.vn/vserver/vserver-gateway",
+		"vbackup_endpoint":  "https://hcm-3.api.vngcloud.vn/vbackup-gateway",
+		"vlb_endpoint":      "https://hcm-3.api.vngcloud.vn/vserver/vlb-gateway",
+		"vstorage_endpoint": "https://hcm03-api.vstorage.vngcloud.vn",
 	},
 	"HAN": {
-		"vks_endpoint":     "https://vks-han-1.api.vngcloud.vn",
-		"vserver_endpoint": "https://han-1.api.vngcloud.vn/vserver/vserver-gateway",
+		"vks_endpoint":      "https://vks-han-1.api.vngcloud.vn",
+		"vserver_endpoint":  "https://han-1.api.vngcloud.vn/vserver/vserver-gateway",
+		"vlb_endpoint":      "https://han-1.api.vngcloud.vn/vserver/vlb-gateway",
+		"vstorage_endpoint": "https://han02-api.vstorage.vngcloud.vn",
+	},
+	"HCM-4": {
+		"vstorage_endpoint": "https://hcm04-api.vstorage.vngcloud.vn",
 	},
 }
 
@@ -30,29 +42,16 @@ type Config struct {
 	Output       string
 	Profile      string
 	ProjectID    string
+	PortalUserID string
 	Regions      map[string]map[string]string
 
-	// Login (user) identity — present on profiles created by `grn login`. These
-	// live in the per-profile `credentials` INI alongside the machine
-	// client_id/client_secret (auth-only merge: one identity file per profile).
-	// AuthMode is "user" for a PKCE login, "machine" (or empty) for an
-	// access-key pair. RefreshToken is secret-at-rest (0600, masked in
-	// configure list/get); the access token is NEVER persisted — only the
-	// refresh token is. IamEnv is non-secret refresh context the usage slice
-	// needs to resolve the /v2 token URL and the baked-in client_id at refresh
-	// (the client_id itself is NOT persisted — it is a public id already in
-	// source, resolved from iam_env via internal/login.ClientIDForEnv).
+	// Store refresh tokens, never access tokens, in profile credentials.
 	AuthMode       string
 	RefreshToken   string
 	TokenExpiresAt time.Time
 	IamEnv         string
 
-	// AgentIdentity is the agentbase "current agent" the user selected with
-	// `grn agentbase identity workload use <name>` (or `create --set-current`).
-	// Non-secret (a user-chosen agent name), persisted per-profile in the shared
-	// credentials INI so agentbase reads it from the same profile every other
-	// service uses — agentbase no longer keeps its own .greennode.json. Written
-	// by config.WriteAgentIdentity; empty means no current agent is selected.
+	// AgentIdentity stores the selected agent per profile; empty means unset.
 	AgentIdentity string
 }
 
@@ -62,19 +61,13 @@ func DefaultConfigDir() string {
 	return filepath.Join(home, ".greennode")
 }
 
-// legacyConfigDir returns the pre-rename config directory (~/.greenode), kept as
-// a read-only fallback so users who configured the CLI before the rename keep
-// loading without re-running `grn configure`.
+// legacyConfigDir is the read-only pre-rename fallback.
 func legacyConfigDir() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".greenode")
 }
 
-// effectiveConfigDir returns the directory to READ config from: the preferred
-// ~/.greennode if it exists, otherwise the legacy ~/.greenode if present. Writes
-// always target DefaultConfigDir; this helper only affects reads, so a legacy
-// install transparently keeps working until the user re-runs `grn configure`,
-// which migrates them onto ~/.greennode.
+// effectiveConfigDir prefers current config, then legacy; writes use DefaultConfigDir.
 func effectiveConfigDir() string {
 	dir := DefaultConfigDir()
 	if _, err := os.Stat(dir); err == nil {
@@ -104,18 +97,15 @@ func LoadConfig(profile string) (*Config, error) {
 		Regions: REGIONS,
 	}
 
-	// A profile "exists" if it has a section in the credentials file, the config
-	// file, or credentials are supplied via env vars. credentials and config are
-	// read independently so a profile created by `configure set region` (config
-	// file only, no credentials yet) still loads instead of erroring.
+	// Profiles may exist in either INI file or environment credentials.
 	foundProfile := false
 	anyFileExists := false
 
 	// Load credentials — env vars override file
-	if v := os.Getenv("GRN_CLIENT_ID"); v != "" {
+	if v := credentialEnv("GRN_CLIENT_ID", "GRN_ACCESS_KEY_ID"); v != "" {
 		cfg.ClientID = v
 	}
-	if v := os.Getenv("GRN_CLIENT_SECRET"); v != "" {
+	if v := credentialEnv("GRN_CLIENT_SECRET", "GRN_SECRET_ACCESS_KEY"); v != "" {
 		cfg.ClientSecret = v
 	}
 	if cfg.ClientID != "" && cfg.ClientSecret != "" {
@@ -130,8 +120,7 @@ func LoadConfig(profile string) (*Config, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse credentials file: %w", err)
 			}
-			// Missing section is not fatal — the profile may live in the config
-			// file only. Just skip credentials for this profile.
+			// A profile may exist only in the config file.
 			if section, err := iniCreds.GetSection(profile); err == nil {
 				foundProfile = true
 				if cfg.ClientID == "" {
@@ -140,10 +129,7 @@ func LoadConfig(profile string) (*Config, error) {
 				if cfg.ClientSecret == "" {
 					cfg.ClientSecret = section.Key("client_secret").String()
 				}
-				// Login (user) identity keys. A profile created by `grn login`
-				// carries these instead of (or alongside) machine credentials,
-				// so finding the section already marks the profile as existing.
-				// refresh_token is file-only by design (no env override).
+				// Refresh tokens are file-only; no environment override.
 				if v := section.Key("auth_mode").String(); v != "" {
 					cfg.AuthMode = v
 				}
@@ -158,9 +144,7 @@ func LoadConfig(profile string) (*Config, error) {
 				if v := section.Key("iam_env").String(); v != "" {
 					cfg.IamEnv = v
 				}
-				// agentbase current-agent selection (non-secret). Read from the
-				// shared credentials INI so agentbase resolves it from the same
-				// profile as the rest of the CLI (no separate .greennode.json).
+				// Read the current agent from shared credentials.
 				if v := section.Key("agent_identity").String(); v != "" {
 					cfg.AgentIdentity = v
 				}
@@ -200,14 +184,13 @@ func LoadConfig(profile string) (*Config, error) {
 			if v := section.Key("project_id").String(); v != "" {
 				cfg.ProjectID = v
 			}
+			cfg.PortalUserID = section.Key("portal_user_id").String()
 		}
 	}
 
-	// Config files exist but the profile is in neither — report it like
-	// `aws configure` does ("profile could not be found") so reads (get/list)
-	// and API clients fail clearly instead of acting on empty config.
+	// Fail when neither existing file contains the profile.
 	if anyFileExists && !foundProfile {
-		return nil, fmt.Errorf("profile '%s' does not exist (run 'grn configure --profile %s' to create it)", profile, profile)
+		return nil, fmt.Errorf("profile '%s' does not exist (run 'grn configure --profile %s' to create it): %w", profile, profile, ErrProfileNotFound)
 	}
 
 	// Env var overrides for region
@@ -220,11 +203,90 @@ func LoadConfig(profile string) (*Config, error) {
 		cfg.ProjectID = v
 	}
 
+	// Env var override for the numeric portal user ID (validated by consumers).
+	if v := os.Getenv("GRN_PORTAL_USER_ID"); v != "" {
+		cfg.PortalUserID = v
+	}
+
 	// Default output
 	if cfg.Output == "" {
 		cfg.Output = "json"
 	}
 
+	return cfg, nil
+}
+
+func credentialEnv(primary, legacy string) string {
+	if value := os.Getenv(primary); value != "" {
+		return value
+	}
+	return os.Getenv(legacy)
+}
+
+// LoadProfileFiles reads persisted values without environment overrides.
+func LoadProfileFiles(profile string) (*Config, error) {
+	if profile == "" {
+		profile = "default"
+	}
+	configDir := effectiveConfigDir()
+	cfg := &Config{Profile: profile, Regions: REGIONS}
+	found, anyFile := false, false
+
+	credentialsPath := filepath.Join(configDir, "credentials")
+	if _, err := os.Stat(credentialsPath); err == nil {
+		anyFile = true
+		credentials, err := ini.Load(credentialsPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse credentials file: %w", err)
+		}
+		if section, err := credentials.GetSection(profile); err == nil {
+			found = true
+			cfg.ClientID = section.Key("client_id").String()
+			cfg.ClientSecret = section.Key("client_secret").String()
+			cfg.AuthMode = section.Key("auth_mode").String()
+			cfg.RefreshToken = section.Key("refresh_token").String()
+			cfg.IamEnv = section.Key("iam_env").String()
+			cfg.AgentIdentity = section.Key("agent_identity").String()
+			if value := section.Key("token_expires_at").String(); value != "" {
+				if parsed, err := time.Parse(time.RFC3339, value); err == nil {
+					cfg.TokenExpiresAt = parsed
+				}
+			}
+		}
+	}
+
+	configPath := filepath.Join(configDir, "config")
+	if _, err := os.Stat(configPath); err == nil {
+		anyFile = true
+		settings, err := ini.Load(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse config file: %w", err)
+		}
+		sectionName := profile
+		if profile != "default" {
+			sectionName = "profile " + profile
+		}
+		section, err := settings.GetSection(sectionName)
+		if err != nil && profile == "default" {
+			if root := settings.Section(ini.DefaultSection); len(root.Keys()) > 0 {
+				section, err = root, nil
+			}
+		}
+		if err == nil && section != nil {
+			found = true
+			cfg.Region = section.Key("region").String()
+			cfg.Output = section.Key("output").String()
+			cfg.ProjectID = section.Key("project_id").String()
+			cfg.PortalUserID = section.Key("portal_user_id").String()
+		}
+	}
+
+	if anyFile && !found {
+		return nil, fmt.Errorf("profile '%s' does not exist (run 'grn configure --profile %s' to create it): %w", profile, profile, ErrProfileNotFound)
+	}
+	if cfg.Output == "" {
+		cfg.Output = "json"
+	}
 	return cfg, nil
 }
 
@@ -238,8 +300,7 @@ func RegionNames() []string {
 	return names
 }
 
-// ProfileNames returns profile (section) names from the credentials file, sorted.
-// Returns nil on any error so completion stays silent.
+// ProfileNames returns sorted profile names; errors stay silent for completion.
 func ProfileNames() []string {
 	path := filepath.Join(effectiveConfigDir(), "credentials")
 	f, err := ini.Load(path)

@@ -176,7 +176,7 @@ func (c *Client) DeleteApikeyProvider(ctx context.Context, name string) error {
 func (c *Client) GetApikeyForAgentIdentity(ctx context.Context, providerName, agentIdentityName string) (*ApikeyResponse, error) {
 	var out ApikeyResponse
 	path := fmt.Sprintf("/api/v1/outbound-auth/api-key-providers/%s/agent-identities/%s/api-key", providerName, agentIdentityName)
-	if err := c.http.Get(ctx, path, nil, &out); err != nil {
+	if err := c.http.GetOnce(ctx, path, nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

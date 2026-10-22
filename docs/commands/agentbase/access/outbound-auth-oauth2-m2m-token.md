@@ -6,8 +6,7 @@ Get an M2M OAuth2 token.
 
 Retrieve a machine-to-machine (client credentials) OAuth2 token for an agent identity via an OAuth2 provider.
 
-This returns the access token. Use `-o json` (or `-o id`) to reveal the full
-value; the default `table` output is for human inspection.
+The token is `[REDACTED]` in every format unless `--show-secret` is explicit.
 
 ## Synopsis
 
@@ -54,5 +53,5 @@ Reveal the full access token value (use with care — this prints the secret):
 grn agentbase access outbound-auth oauth2 m2m-token \
   my-oauth2-provider my-agent \
   --scope read \
-  -o json
+  -o json --show-secret
 ```

@@ -33,6 +33,15 @@ func runDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	body := map[string]interface{}{
+		"deleteAllVolumes": deleteAllVolumes,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("DELETE", fmt.Sprintf("/v2/%s/servers/%s", "<project-id>", serverID), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -64,10 +73,6 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	if !cli.Confirm(force, "Are you sure you want to delete this server?") {
 		fmt.Println("Aborted.")
 		return nil
-	}
-
-	body := map[string]interface{}{
-		"deleteAllVolumes": deleteAllVolumes,
 	}
 
 	result, err := apiClient.DeleteWithBody(fmt.Sprintf("/v2/%s/servers/%s", projectID, serverID), body)

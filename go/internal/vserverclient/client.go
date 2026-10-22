@@ -3,72 +3,47 @@ package vserverclient
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
 	"github.com/greennodehub/greennode-cli/internal/formatter"
+	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
 
 // BuildClient creates a GreennodeClient from cobra command flags.
 func BuildClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, error) {
-	profile, _ := cmd.Flags().GetString("profile")
-	region, _ := cmd.Flags().GetString("region")
-	endpointURL, _ := cmd.Flags().GetString("endpoint-url")
-	noVerifySSL, _ := cmd.Flags().GetBool("no-verify-ssl")
-	debug, _ := cmd.Flags().GetBool("debug")
-	allowUntrusted, _ := cmd.Flags().GetBool("allow-untrusted-endpoint")
-	connectTimeout, _ := cmd.Flags().GetInt("cli-connect-timeout")
-	readTimeout, _ := cmd.Flags().GetInt("cli-read-timeout")
+	return BuildOperationClient(cmd, false)
+}
 
-	if err := cli.CheckEndpoint(endpointURL, noVerifySSL, allowUntrusted); err != nil {
-		return nil, nil, err
-	}
-
-	cfg, err := config.LoadConfig(profile)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Auth source is profile-driven (one auth type per profile): auth_mode=user
-	// → login refresh-token provider; else → machine client_credentials. Shared
-	// with cli.NewClient so vks and vserver select auth identically. Reads the
-	// RESOLVED profile off cfg (cfg.Profile), not the raw --profile flag.
-	tp, err := cli.NewTokenProvider(cfg)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if region != "" {
-		cfg.Region = region
-	}
-
-	var baseURL string
-	if endpointURL != "" {
-		baseURL = endpointURL
-	} else {
-		baseURL, err = cfg.GetEndpoint("vserver")
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	if noVerifySSL {
-		fmt.Fprintln(os.Stderr, "Warning: SSL certificate verification is disabled. This is not recommended for production use.")
-	}
-
-	connect := time.Duration(connectTimeout) * time.Second
-	read := time.Duration(readTimeout) * time.Second
-
-	return client.NewGreennodeClient(baseURL, tp, connect, read, !noVerifySSL, debug), cfg, nil
+// BuildOperationClient adds only the operation's required headers.
+func BuildOperationClient(cmd *cobra.Command, requirePortalUserID bool) (*client.GreennodeClient, *config.Config, error) {
+	return cli.BuildClient(cmd, cli.ClientOptions{
+		ResolveEndpoint: func(cfg *config.Config) (string, error) {
+			return cfg.GetEndpoint("vserver")
+		},
+		ApplyRegion: true,
+		AfterBuild: func(_ *cobra.Command, cfg *config.Config, apiClient *client.GreennodeClient) error {
+			if !requirePortalUserID {
+				return nil
+			}
+			if _, err := config.ValidatePositiveInt32(cfg.PortalUserID); err != nil {
+				return fmt.Errorf("this vServer operation requires a positive 32-bit portal_user_id; configure it or set GRN_PORTAL_USER_ID")
+			}
+			apiClient.SetHeader("portal-user-id", cfg.PortalUserID)
+			return nil
+		},
+	})
 }
 
 // ProjectID extracts and validates the project ID from config.
 func ProjectID(cfg *config.Config) (string, error) {
 	if cfg.ProjectID == "" {
 		return "", fmt.Errorf("project_id is not configured. Run 'grn configure' or set GRN_DEFAULT_PROJECT_ID")
+	}
+	if err := validator.ValidateID(cfg.ProjectID, "project-id"); err != nil {
+		return "", err
 	}
 	return cfg.ProjectID, nil
 }
@@ -89,8 +64,7 @@ func Output(cmd *cobra.Command, cfg *config.Config, data interface{}) error {
 	return formatter.FormatColor(data, output, query, os.Stdout, formatter.ColorEnabled(colorMode, os.Stdout))
 }
 
-// OutputWithColumns formats and writes the API result to stdout.
-// When the output format is "table", only the specified columns are shown in the given order.
+// OutputWithColumns applies ordered table columns.
 func OutputWithColumns(cmd *cobra.Command, cfg *config.Config, data interface{}, columns []string) error {
 	output, _ := cmd.Flags().GetString("output")
 	query, _ := cmd.Flags().GetString("query")

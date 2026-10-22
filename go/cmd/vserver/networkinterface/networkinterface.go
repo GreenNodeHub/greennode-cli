@@ -9,8 +9,8 @@ var NetworkInterfaceCmd = &cobra.Command{
 	Use:   "network-interface",
 	Short: "Manage elastic network interfaces",
 	Long:  "Create, list, rename, update tags on, and delete elastic network interfaces.",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

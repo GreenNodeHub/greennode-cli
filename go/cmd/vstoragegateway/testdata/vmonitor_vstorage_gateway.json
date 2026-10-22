@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "source": {
+    "id": "vmonitor_vstorage_gateway",
+    "url": "https://docs.api.greennode.ai/service-docs/vstorage-gateway.html",
+    "title": "vStorage Gateway API Definition",
+    "version": "v1",
+    "retrieved": "2026-09-10",
+    "sha256": "09059cd69ee980839c5ee7931f6cb31d52ea30b33da20bd8043a35a823b965f6"
+  },
+  "servers": [
+    {
+      "url": "https://vmonitorapi.vngcloud.vn/vstorage-gateway",
+      "description": "Generated server url"
+    }
+  ],
+  "operations": [
+    {"method":"GET","path":"/v1/regions","operation_id":"list","parameters":[],"request_body":null,"responses":{"200":{"content":{"application/json":{"schema":{"type":"array"}}}}}},
+    {"method":"GET","path":"/v1/projects","operation_id":"list_1","parameters":[{"in":"header","name":"Authorization","required":true,"schema":{"type":"string"}},{"in":"query","name":"region_id","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"application/json":{"schema":{"type":"array"}}}}}},
+    {"method":"GET","path":"/v1/containers","operation_id":"list_2","parameters":[{"in":"header","name":"Authorization","required":true,"schema":{"type":"string"}},{"in":"query","name":"region_id","required":true,"schema":{"type":"string"}},{"in":"query","name":"project_id","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"application/json":{"schema":{"type":"array"}}}}}}
+  ]
+}

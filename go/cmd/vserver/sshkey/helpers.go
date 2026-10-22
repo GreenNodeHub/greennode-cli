@@ -25,8 +25,6 @@ func outputResult(cmd *cobra.Command, cfg *config.Config, data interface{}) erro
 	return vserverclient.Output(cmd, cfg, data)
 }
 
-// resolveOutput returns the effective output format, mirroring vserverclient.Output:
-// the --output flag, falling back to the configured default, then "json".
 func resolveOutput(cmd *cobra.Command, cfg *config.Config) string {
 	output, _ := cmd.Flags().GetString("output")
 	if output == "" && cfg != nil {
@@ -38,32 +36,25 @@ func resolveOutput(cmd *cobra.Command, cfg *config.Config) string {
 	return output
 }
 
-// Preview widths (in runes) for long table fields.
 const (
 	keyPreviewLen = 40
 	idPreviewLen  = 20
 )
 
-// sshKeyTableColumns is the column order shown in table output. The long public key
-// is placed last so it never pushes the other columns out of alignment.
 var sshKeyTableColumns = []string{"id", "name", "status", "createdAt", "pubKey"}
 
-// keyFieldsToTruncate are the long key fields shortened in non-JSON output.
 var keyFieldsToTruncate = map[string]bool{
 	"publicKey":  true,
 	"pubKey":     true,
 	"privateKey": true,
 }
 
-// truncateKeyString collapses newlines and shortens a long key to a readable preview.
 func truncateKeyString(s string) string {
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.ReplaceAll(s, "\r", "")
 	return formatter.Truncate(s, keyPreviewLen)
 }
 
-// truncateKeys returns a deep copy of the response with long key fields shortened,
-// so that table/text output stays readable. Full keys remain available via JSON.
 func truncateKeys(v interface{}) interface{} {
 	switch t := v.(type) {
 	case map[string]interface{}:
@@ -89,8 +80,6 @@ func truncateKeys(v interface{}) interface{} {
 	}
 }
 
-// transformKeyTable adapts an SSH key list for table output: it shortens the id and
-// key fields and formats the timestamp compactly.
 func transformKeyTable(v interface{}) interface{} {
 	switch t := v.(type) {
 	case map[string]interface{}:
@@ -131,9 +120,8 @@ func transformKeyTable(v interface{}) interface{} {
 	}
 }
 
-// outputKeyList prints an SSH key list. Table output uses a fixed column order with
-// shortened id/key/date fields; text output shortens long keys; JSON shows full data.
 func outputKeyList(cmd *cobra.Command, cfg *config.Config, result interface{}) error {
+	result = keyOutput(cmd, result)
 	switch resolveOutput(cmd, cfg) {
 	case "table":
 		return vserverclient.OutputWithColumns(cmd, cfg, transformKeyTable(result), sshKeyTableColumns)
@@ -144,15 +132,10 @@ func outputKeyList(cmd *cobra.Command, cfg *config.Config, result interface{}) e
 	}
 }
 
-// outputKeyMutation prints the response of create/import. Key fields are always
-// shortened to a preview — the full private key lives in the saved .pem file, and
-// the full public key can be retrieved with 'sshkey list --output json'.
 func outputKeyMutation(cmd *cobra.Command, cfg *config.Config, result interface{}) error {
-	return outputResult(cmd, cfg, truncateKeys(result))
+	return outputResult(cmd, cfg, keyOutput(cmd, result))
 }
 
-// keyData unwraps the SSH key object from a response envelope.
-// Handles both {"data": {...}} and a plain object.
 func keyData(result interface{}) map[string]interface{} {
 	m, ok := result.(map[string]interface{})
 	if !ok {
@@ -164,7 +147,6 @@ func keyData(result interface{}) map[string]interface{} {
 	return m
 }
 
-// findStringField returns the first non-empty string value among the given keys.
 func findStringField(obj map[string]interface{}, keys ...string) string {
 	for _, k := range keys {
 		if v, ok := obj[k].(string); ok && v != "" {
@@ -174,7 +156,6 @@ func findStringField(obj map[string]interface{}, keys ...string) string {
 	return ""
 }
 
-// downloadsDir returns the user's Downloads directory, creating it if needed.
 func downloadsDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -187,12 +168,10 @@ func downloadsDir() (string, error) {
 	return dir, nil
 }
 
-// savePrivateKey writes the private key to "<name>.pem". It is saved in destDir,
-// or in the Downloads directory when destDir is empty. If a file with that name
-// already exists, a " (n)" suffix is added (Chrome-style), so an existing key file
-// is never overwritten. The file is created with 0600 permissions. It returns the
-// absolute path of the written file.
 func savePrivateKey(name, content, destDir string) (string, error) {
+	if err := validateKeyFileName(name); err != nil {
+		return "", err
+	}
 	dir := destDir
 	if dir == "" {
 		d, err := downloadsDir()
@@ -204,22 +183,42 @@ func savePrivateKey(name, content, destDir string) (string, error) {
 		return "", fmt.Errorf("could not create output directory %s: %w", dir, err)
 	}
 
-	path := filepath.Join(dir, name+".pem")
-	for i := 1; ; i++ {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			break
-		}
-		path = filepath.Join(dir, fmt.Sprintf("%s (%d).pem", name, i))
-	}
-
-	// Ensure the key ends with a trailing newline so the .pem is well-formed.
 	data := []byte(content)
 	if len(data) > 0 && data[len(data)-1] != '\n' {
 		data = append(data, '\n')
 	}
 
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return "", fmt.Errorf("could not write private key to %s: %w", path, err)
+	temporary, err := os.CreateTemp(dir, ".grn-key-*")
+	if err != nil {
+		return "", err
 	}
-	return path, nil
+	defer os.Remove(temporary.Name())
+	if _, err := temporary.Write(data); err != nil {
+		_ = temporary.Close()
+		return "", err
+	}
+	if err := temporary.Close(); err != nil {
+		return "", err
+	}
+	for i := 0; ; i++ {
+		fileName := name + ".pem"
+		if i > 0 {
+			fileName = fmt.Sprintf("%s (%d).pem", name, i)
+		}
+		path := filepath.Join(dir, fileName)
+		if err := os.Link(temporary.Name(), path); err != nil {
+			if os.IsExist(err) {
+				continue
+			}
+			return "", fmt.Errorf("could not save private key: %w", err)
+		}
+		return path, nil
+	}
+}
+
+func validateKeyFileName(name string) error {
+	if strings.TrimSpace(name) == "" || name == "." || name == ".." || filepath.Base(name) != name || strings.ContainsAny(name, "/\\\x00") {
+		return fmt.Errorf("SSH key name must be a file name, not a path")
+	}
+	return nil
 }

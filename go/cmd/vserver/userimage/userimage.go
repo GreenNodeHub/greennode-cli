@@ -9,8 +9,8 @@ var UserImageCmd = &cobra.Command{
 	Use:   "user-image",
 	Short: "Manage user images",
 	Long:  "List and delete user images (custom images created from your servers).",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

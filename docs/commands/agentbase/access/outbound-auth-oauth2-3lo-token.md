@@ -9,8 +9,7 @@ Retrieve a 3-legged OAuth2 token for an agent identity via an OAuth2 provider.
 Required flags: `--agent-user-id`, `--return-url`, `--scope`.
 Optional flags: `--session-id`, `--custom-parameters`, `--custom-state`, `--force-authentication`.
 
-The response may include the access token and an authorization URL. Use `-o json`
-(or `-o id`) to reveal the full values; the default `table` output is for human inspection.
+The token and authorization URL are `[REDACTED]` unless `--show-secret` is explicit.
 
 ## Synopsis
 
@@ -109,5 +108,5 @@ grn agentbase access outbound-auth oauth2 3lo-token \
   --return-url https://app.example.com/callback \
   --scope openid \
   --custom-parameters '{"prompt":"consent"}' \
-  -o json
+  -o json --show-secret
 ```

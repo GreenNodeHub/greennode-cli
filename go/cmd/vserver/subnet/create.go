@@ -2,7 +2,9 @@ package subnet
 
 import (
 	"fmt"
+	"net"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +39,23 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	if err := validator.ValidateID(vpcID, "vpc-id"); err != nil {
 		return err
 	}
+	if _, _, err := net.ParseCIDR(cidr); err != nil {
+		return fmt.Errorf("--cidr must be a valid CIDR")
+	}
+
+	body := map[string]interface{}{
+		"name":   name,
+		"cidr":   cidr,
+		"zoneId": zoneID,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		if zoneID == "" {
+			return fmt.Errorf("--zone-id is required for dry-run")
+		}
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/networks/%s/subnets", "<project-id>", vpcID), body)
+		return nil
+	}
 
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
@@ -50,12 +69,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 
 	if zoneID == "" {
 		return suggestZones(apiClient, projectID)
-	}
-
-	body := map[string]interface{}{
-		"name":   name,
-		"cidr":   cidr,
-		"zoneId": zoneID,
 	}
 
 	result, err := apiClient.Post(fmt.Sprintf("/v2/%s/networks/%s/subnets", projectID, vpcID), body)

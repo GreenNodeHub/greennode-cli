@@ -1,0 +1,973 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://docs.api.greennode.ai/service-docs/vbackup-gateway.html",
+    "title": "VBackup Gateway API Definition",
+    "version": "v1",
+    "retrieved_on": "2026-09-09",
+    "sha256": "198fb6e7d7b1085576a23a6491aaa0ede55a12ddf884009ba8675ace68198d60"
+  },
+  "region": "HCM-3",
+  "base_url": "https://hcm-3.api.vngcloud.vn/vbackup-gateway",
+  "authentication": {
+    "header": "Authorization",
+    "scheme": "Bearer"
+  },
+  "operations": [
+    {
+      "command": "backend list",
+      "operation_id": "list_4",
+      "method": "GET",
+      "path": "/v1/backends",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backend",
+          "flag": "backend",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "flag": "page",
+          "required": false,
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        },
+        {
+          "in": "query",
+          "name": "size",
+          "flag": "size",
+          "required": false,
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "configuration get",
+      "operation_id": "get",
+      "method": "GET",
+      "path": "/v1/configurations",
+      "parameters": [],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "destination list",
+      "operation_id": "list_3",
+      "method": "GET",
+      "path": "/v1/backup-destinations",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "name",
+          "flag": "name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "type",
+          "flag": "type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "flag": "page",
+          "required": false,
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        },
+        {
+          "in": "query",
+          "name": "size",
+          "flag": "size",
+          "required": false,
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "history list-backups",
+      "operation_id": "listBackupInstanceHistories",
+      "method": "GET",
+      "path": "/v1/histories/backup-instances",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "id",
+          "flag": "id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "serverId",
+          "flag": "server-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "backupInstanceId",
+          "flag": "backup-instance-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "flag": "page",
+          "required": false,
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        },
+        {
+          "in": "query",
+          "name": "size",
+          "flag": "size",
+          "required": false,
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "history list-restorations",
+      "operation_id": "listRestoreHistories",
+      "method": "GET",
+      "path": "/v1/histories/restoration",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "id",
+          "flag": "id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "serverId",
+          "flag": "server-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "backupInstanceId",
+          "flag": "backup-instance-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "backupInstancePointId",
+          "flag": "backup-instance-point-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "volumeId",
+          "flag": "volume-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "backupVolumePointId",
+          "flag": "backup-volume-point-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "flag": "page",
+          "required": false,
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        },
+        {
+          "in": "query",
+          "name": "size",
+          "flag": "size",
+          "required": false,
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "policy create",
+      "operation_id": "create",
+      "method": "POST",
+      "path": "/v1/backup-policies",
+      "parameters": [],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "backendId",
+          "projectId",
+          "name",
+          "config"
+        ]
+      },
+      "response": {
+        "status": 201,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "policy delete",
+      "operation_id": "delete",
+      "method": "DELETE",
+      "path": "/v1/backup-policies/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 204,
+        "media_type": "",
+        "type": "empty"
+      },
+      "mutation": true,
+      "destructive": true
+    },
+    {
+      "command": "policy get",
+      "operation_id": "get_1",
+      "method": "GET",
+      "path": "/v1/backup-policies/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "policy list",
+      "operation_id": "list_1",
+      "method": "GET",
+      "path": "/v1/backup-policies",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "name",
+          "flag": "name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "flag": "page",
+          "required": false,
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        },
+        {
+          "in": "query",
+          "name": "size",
+          "flag": "size",
+          "required": false,
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "policy update",
+      "operation_id": "update",
+      "method": "PUT",
+      "path": "/v1/backup-policies/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "backendId",
+          "projectId",
+          "name",
+          "config"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "server create",
+      "operation_id": "create_1",
+      "method": "POST",
+      "path": "/v1/backup-instances",
+      "parameters": [],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "backendId",
+          "projectId",
+          "serverConfig",
+          "description",
+          "backupEnabled",
+          "backupPolicyId",
+          "backupDestinationId"
+        ]
+      },
+      "response": {
+        "status": 201,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "server delete",
+      "operation_id": "delete_1",
+      "method": "DELETE",
+      "path": "/v1/backup-instances/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 204,
+        "media_type": "",
+        "type": "empty"
+      },
+      "mutation": true,
+      "destructive": true
+    },
+    {
+      "command": "server disable",
+      "operation_id": "disable",
+      "method": "PUT",
+      "path": "/v1/backup-instances/{id}/disabled",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "",
+        "type": "empty"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "server enable",
+      "operation_id": "enable",
+      "method": "PUT",
+      "path": "/v1/backup-instances/{id}/enabled",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "",
+        "type": "empty"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "server get",
+      "operation_id": "get_2",
+      "method": "GET",
+      "path": "/v1/backup-instances/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "server list",
+      "operation_id": "list_2",
+      "method": "GET",
+      "path": "/v1/backup-instances",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "id",
+          "flag": "id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "name",
+          "flag": "name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "serverId",
+          "flag": "server-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "page",
+          "flag": "page",
+          "required": false,
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        },
+        {
+          "in": "query",
+          "name": "size",
+          "flag": "size",
+          "required": false,
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "server list-points",
+      "operation_id": "listBackupInstancePoints_1",
+      "method": "GET",
+      "path": "/v1/backup-instances/{id}/backup-instance-points",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "server list-protected",
+      "operation_id": "listProtectedServers",
+      "method": "GET",
+      "path": "/v1/backup-instances/protected-servers",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "server list-volumes",
+      "operation_id": "listVolumes",
+      "method": "GET",
+      "path": "/v1/backup-instances/{id}/volumes",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "server update-policy",
+      "operation_id": "updatePolicy",
+      "method": "PUT",
+      "path": "/v1/backup-instances/{id}/policies",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "id"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "media_type": "",
+        "type": "empty"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "server update-volume",
+      "operation_id": "updateVolume",
+      "method": "PUT",
+      "path": "/v1/backup-instances/{id}/volumes",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "volumeId",
+          "backupEnabled"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "media_type": "",
+        "type": "empty"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "volume usage",
+      "operation_id": "list",
+      "method": "POST",
+      "path": "/v1/volume-usage",
+      "parameters": [],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "backendId",
+          "projectId",
+          "volumeIds"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "vserver create-instance",
+      "operation_id": "createBackupInstance",
+      "method": "POST",
+      "path": "/v1/vserver/backup-instances",
+      "parameters": [],
+      "request": {
+        "required": true,
+        "media_type": "application/json",
+        "type": "object",
+        "required_fields": [],
+        "properties": [
+          "projectId",
+          "serverIds"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": true,
+      "destructive": false
+    },
+    {
+      "command": "vserver get-instance",
+      "operation_id": "getBackupInstance",
+      "method": "GET",
+      "path": "/v1/vserver/backup-instances/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "vserver get-instance-point",
+      "operation_id": "getBackupInstancePoint",
+      "method": "GET",
+      "path": "/v1/vserver/backup-instance-points/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "vserver get-volume-point",
+      "operation_id": "getBackupVolumePoint",
+      "method": "GET",
+      "path": "/v1/vserver/backup-volume-points/{id}",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "object"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "vserver list-instance-points",
+      "operation_id": "listBackupInstancePoints",
+      "method": "GET",
+      "path": "/v1/vserver/backup-instances/{id}/backup-instance-points",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "vserver list-instances",
+      "operation_id": "listBackupInstances",
+      "method": "GET",
+      "path": "/v1/vserver/backup-instances",
+      "parameters": [
+        {
+          "in": "query",
+          "name": "backendId",
+          "flag": "backend-id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "projectId",
+          "flag": "project-id",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": false,
+      "destructive": false
+    },
+    {
+      "command": "vserver list-volume-points",
+      "operation_id": "listBackupVolumePoints",
+      "method": "GET",
+      "path": "/v1/vserver/backup-instance-points/{id}/backup-volume-points",
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "flag": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "request": null,
+      "response": {
+        "status": 200,
+        "media_type": "*/*",
+        "type": "array"
+      },
+      "mutation": false,
+      "destructive": false
+    }
+  ]
+}

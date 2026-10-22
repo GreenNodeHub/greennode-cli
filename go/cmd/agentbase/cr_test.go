@@ -64,25 +64,6 @@ func TestCRArtifactDeleteCmd_HasRequiredFlags(t *testing.T) {
 	}
 }
 
-// TestMaskSecret confirms the registry-credential secret is masked to last-4
-// (the table posture); the JSON path reveals it via the raw struct.
-func TestMaskSecret(t *testing.T) {
-	cases := []struct {
-		in   string
-		want string
-	}{
-		{"abcdef123456", "********3456"},
-		{"abc", "****"},
-		{"", "-"},
-		{"1234", "****"}, // len <= 4 fully masked
-	}
-	for _, c := range cases {
-		if got := maskSecret(c.in); got != c.want {
-			t.Errorf("maskSecret(%q)=%q, want %q", c.in, got, c.want)
-		}
-	}
-}
-
 func TestFormatBytes(t *testing.T) {
 	cases := []struct {
 		in   int64

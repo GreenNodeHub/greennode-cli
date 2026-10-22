@@ -10,8 +10,8 @@ var VpcCmd = &cobra.Command{
 	Short: "Manage VPCs (virtual private clouds)",
 	Long:  "Create, list, get, and delete VPC networks.",
 	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

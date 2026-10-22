@@ -3,6 +3,7 @@ package networkinterface
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +36,11 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	}
 	if name == "" {
 		return fmt.Errorf("flag --name is required")
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/network-interfaces-elastic/%s/rename", "<project-id>", interfaceID), map[string]interface{}{"name": name})
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)

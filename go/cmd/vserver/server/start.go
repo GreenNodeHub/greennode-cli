@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,11 @@ func runStart(cmd *cobra.Command, args []string) error {
 	serverID, _ := cmd.Flags().GetString("server-id")
 	if err := validator.ValidateID(serverID, "server-id"); err != nil {
 		return err
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("PUT", fmt.Sprintf("/v2/%s/servers/%s/start", "<project-id>", serverID), nil)
+		return nil
 	}
 
 	apiClient, cfg, err := createClient(cmd)

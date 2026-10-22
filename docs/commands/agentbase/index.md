@@ -128,8 +128,14 @@ Every command takes `-o` (`--output`):
 | Value | Meaning |
 |---|---|
 | `table` (default) | Human-readable table; secrets masked |
-| `json` | Raw JSON — secrets revealed (e.g. to pipe into `docker login`) |
+| `json` | Structured JSON; credentials redacted |
 | `id` | Print only the ID (for scripting) |
+
+Credentials are `[REDACTED]` in every format. Add `--show-secret` only when credential output is required, including API keys, tokens, registry secrets, and OpenClaw gateway tokens. Public identifiers and token metadata remain visible. Debug output and errors never honor this disclosure flag.
+
+Writes are never replayed automatically, including token requests. Credential-resolution and container-registry reads also disable replay because they may retrieve credentials or provision resources. Other reads may refresh authentication once after HTTP 401. Redirects are not followed.
+
+Runtime commands retain the legacy paths supported by the [public runtime contract](https://agentbase.api.vngcloud.vn/runtime/v3/api-docs); profile-selected development routes are unchanged.
 
 When `-o`/`--output` is not passed, the format falls back to the `output` key
 in `~/.greennode/config` (the same fallback vks/vserver use), then to `table`.

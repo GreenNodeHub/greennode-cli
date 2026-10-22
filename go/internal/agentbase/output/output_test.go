@@ -62,6 +62,27 @@ func TestJSON_Output(t *testing.T) {
 	}
 }
 
+func TestJSON_Query(t *testing.T) {
+	t.Cleanup(func() { SetQuery("") })
+	SetQuery("totalItem")
+	out := captureStdout(t, func() {
+		if err := JSON(map[string]any{"items": []string{"fixture"}, "totalItem": 1}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if strings.TrimSpace(out) != "1" {
+		t.Fatalf("output = %q, want 1", out)
+	}
+}
+
+func TestJSON_InvalidQuery(t *testing.T) {
+	t.Cleanup(func() { SetQuery("") })
+	SetQuery("[")
+	if err := JSON(map[string]any{"id": "fixture"}); err == nil || !strings.Contains(err.Error(), "JMESPath query error") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
 func TestSuccess(t *testing.T) {
 	out := captureStdout(t, func() {
 		Success("it worked")

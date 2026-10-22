@@ -2,7 +2,6 @@ package vks
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -160,8 +159,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 
 	result, err := apiClient.Post("/v1/clusters", body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	return outputResult(cmd, result)
@@ -193,25 +191,21 @@ func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool, 
 func validateCreateCluster(name string, networkErrors []string) error {
 	clusterNameRE := regexp.MustCompile(`^[a-z0-9][a-z0-9\-]{3,18}[a-z0-9]$`)
 
-	var errors []string
+	var validationErrors []string
 
 	if !clusterNameRE.MatchString(name) {
-		errors = append(errors, fmt.Sprintf(
+		validationErrors = append(validationErrors, fmt.Sprintf(
 			"Cluster name '%s' is invalid. Must be 5-20 chars, lowercase alphanumeric and hyphens, start/end with alphanumeric.", name))
 	}
 
-	errors = append(errors, networkErrors...)
+	validationErrors = append(validationErrors, networkErrors...)
+
+	if len(validationErrors) > 0 {
+		return fmt.Errorf("dry-run validation failed:\n  - %s", strings.Join(validationErrors, "\n  - "))
+	}
 
 	fmt.Println("=== DRY RUN: Validation results ===")
 	fmt.Println()
-	if len(errors) > 0 {
-		fmt.Printf("Found %d error(s):\n", len(errors))
-		for _, e := range errors {
-			fmt.Printf("  - %s\n", e)
-		}
-		os.Exit(1)
-	}
-
 	fmt.Println("All parameters are valid. Run without --dry-run to create the cluster.")
 	fmt.Println()
 	fmt.Println("Note: dry-run performs local checks only. Whether the --k8s-version is")

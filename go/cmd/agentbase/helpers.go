@@ -57,34 +57,29 @@ func envFromIamEnv(iamEnv string) agentbaseconfig.Env {
 	return agentbaseconfig.EnvProd
 }
 
-// mustLoadAgentbaseCtx loads the shared profile and resolves the agentbase env
-// + endpoints from iam_env. It exits on a LoadConfig error (matching the former
-// mustLoadConfig behavior for display commands); credential/token errors are
-// NOT fatal here — they surface from newAuthProvider/newIdentityClient so RunE
-// can return them.
+// loadAgentbaseCtx loads the shared profile and resolves the agentbase env and
+// endpoints from iam_env. All failures are returned to the command's RunE
+// boundary so callers remain testable and process termination stays in root.
 //
 // The root --endpoint-url override is honored here, the same flag vks/vserver
 // consume via cli.NewClient: when set, cli.CheckEndpoint enforces the endpoint
 // safety policy (trusted-host/TLS/allow-untrusted) and overrideEndpointHosts
 // repoints the agentbase service endpoints at it. Without this, agentbase alone
 // ignored --endpoint-url and always used the iam_env-derived endpoints.
-func mustLoadAgentbaseCtx(cmd *cobra.Command) *agentbaseCtx {
+func loadAgentbaseCtx(cmd *cobra.Command) (*agentbaseCtx, error) {
 	shared, err := coreconfig.LoadConfig(resolveProfile(cmd))
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
+		return nil, err
 	}
 	env := envFromIamEnv(shared.IamEnv)
 	endpoints := agentbaseconfig.EndpointsForEnv(env)
 
 	if endpointURL := flagString(cmd, "endpoint-url"); endpointURL != "" {
 		if err := cli.CheckEndpoint(endpointURL, flagBool(cmd, "no-verify-ssl"), flagBool(cmd, "allow-untrusted-endpoint")); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			os.Exit(1)
+			return nil, err
 		}
 		if err := overrideEndpointHosts(&endpoints, endpointURL); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			os.Exit(1)
+			return nil, err
 		}
 	}
 
@@ -92,7 +87,7 @@ func mustLoadAgentbaseCtx(cmd *cobra.Command) *agentbaseCtx {
 		shared:    shared,
 		env:       env,
 		endpoints: endpoints,
-	}
+	}, nil
 }
 
 // flagString/flagBool are nil-safe persistent-flag readers. agentbase's helpers
@@ -137,7 +132,7 @@ func resolveOutputFormat(cmd *cobra.Command, flagValue, cfgOutput string) string
 // effectiveOutputFormat is the PersistentPreRun wiring for resolveOutputFormat:
 // it loads the resolved profile's config-file output key (missing config is
 // non-fatal here — the command's RunE will surface a real LoadConfig error via
-// mustLoadAgentbaseCtx) and delegates to resolveOutputFormat.
+// loadAgentbaseCtx) and delegates to resolveOutputFormat.
 func effectiveOutputFormat(cmd *cobra.Command, flagValue string) string {
 	cfgOutput := ""
 	if cfg, err := coreconfig.LoadConfig(resolveProfile(cmd)); err == nil {

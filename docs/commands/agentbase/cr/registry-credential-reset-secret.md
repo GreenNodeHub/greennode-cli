@@ -4,9 +4,7 @@ Rotate the robot-account secret.
 
 ## Description
 
-Rotate the robot-account secret. The previous secret is invalidated immediately
-— any CI or local credentials must be updated. The new secret is MASKED in
-table output (last-4 shown); use `-o json` to reveal it.
+Rotate the robot-account secret, immediately invalidating the old value. Update CI and local credentials afterward. The new secret is `[REDACTED]` unless `--show-secret` is explicit.
 
 ## Synopsis
 

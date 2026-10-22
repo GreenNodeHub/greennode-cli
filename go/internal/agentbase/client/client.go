@@ -1,5 +1,4 @@
-// Package client provides the base HTTP client for the GreenNode AgentBase API.
-// It handles authentication, JSON serialization, and error mapping.
+// Package client implements authenticated AgentBase requests.
 package client
 
 import (
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	coreclient "github.com/greennodehub/greennode-cli/internal/client"
+	"github.com/greennodehub/greennode-cli/internal/redact"
 )
 
 // Client is the authenticated HTTP client for a single API base URL.
@@ -23,16 +23,13 @@ type Client struct {
 	auth       coreclient.TokenProvider
 }
 
-// New creates a new Client for the given base URL and token provider. The
-// provider is the shared coreclient.TokenProvider (GetToken/RefreshToken,
-// ctx-less) — the same seam vks/vserver use — so agentbase speaks the same auth
-// idiom as the rest of the CLI. Pass nil only in construction tests that never
-// call Do.
+// New requires a token provider for requests.
 func New(baseURL string, tp coreclient.TokenProvider) *Client {
 	return &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:       30 * time.Second,
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		},
 		auth: tp,
 	}
@@ -45,32 +42,36 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("API error (HTTP %d): %s", e.StatusCode, e.Body)
+	return fmt.Sprintf("API error (HTTP %d): %s", e.StatusCode, redact.Value)
 }
 
-// Do executes an authenticated HTTP request and decodes the response into out.
-// Pass out=nil if you do not need the response body. The token comes from the
-// shared TokenProvider (ctx-less GetToken, matching vks/vserver); ctx still
-// drives the HTTP call itself. A nil provider (construction tests) panics on
-// Do — never construct a Client with nil for a real request.
+type displayedError struct {
+	message string
+	cause   error
+}
+
+func (e *displayedError) Error() string { return e.message }
+func (e *displayedError) Unwrap() error { return e.cause }
+
+// Do decodes responses when out is non-nil.
 func (c *Client) Do(ctx context.Context, method, path string, query url.Values, body, out interface{}) error {
-	return c.doReq(ctx, method, path, query, nil, body, out)
+	return c.doReq(ctx, method, path, query, nil, body, out, true)
 }
 
-// DoWithHeaders is Do with extra request headers (e.g. If-Match for OCC PUTs).
-// headers may be nil. It is additive: Authorization/Content-Type/Accept are
-// still applied as in Do, and extra headers never overwrite those three.
+// DoWithHeaders preserves reserved authentication and JSON headers.
 func (c *Client) DoWithHeaders(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}) error {
-	return c.doReq(ctx, method, path, query, headers, body, out)
+	return c.doReq(ctx, method, path, query, headers, body, out, true)
 }
 
-// doReq is the single implementation behind Do and DoWithHeaders. Extra headers
-// are applied after the standard Auth/Content-Type/Accept set and never
-// overwrite those three.
-func (c *Client) doReq(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}) error {
+// GetOnce prevents replay of credential or provisioning reads.
+func (c *Client) GetOnce(ctx context.Context, path string, query url.Values, out interface{}) error {
+	return c.doReq(ctx, http.MethodGet, path, query, nil, nil, out, false)
+}
+
+func (c *Client) doReq(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}, retryRead bool) error {
 	token, err := c.auth.GetToken()
 	if err != nil {
-		return err
+		return &displayedError{message: "authentication failed", cause: err}
 	}
 
 	fullURL := c.baseURL + path
@@ -93,25 +94,20 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return &displayedError{message: "request failed; outcome may be unknown", cause: err}
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return &displayedError{message: "failed to read response body", cause: err}
 	}
 
-	// 401 — force-refresh the token and retry once with the new bearer, mirroring
-	// internal/client.GreennodeClient so a mid-session access-token expiry (or
-	// server-side revocation) self-heals instead of surfacing as a hard APIError.
-	// The proactive GetToken above + the provider's pre-expiry skew handle the
-	// common case; this is the reactive backstop. A refresh failure, a transport
-	// error on the retry, or a second 401 is terminal — no further refresh.
-	if resp.StatusCode == http.StatusUnauthorized {
+	// Only reads may refresh and replay.
+	if retryRead && resp.StatusCode == http.StatusUnauthorized && (method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions) {
 		token, err = c.auth.RefreshToken()
 		if err != nil {
-			return err
+			return &displayedError{message: "authentication refresh failed", cause: err}
 		}
 		req2, err := c.buildRequest(ctx, method, fullURL, data, headers, token)
 		if err != nil {
@@ -119,12 +115,12 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 		}
 		resp2, err := c.httpClient.Do(req2)
 		if err != nil {
-			return fmt.Errorf("request failed: %w", err)
+			return &displayedError{message: "request failed", cause: err}
 		}
 		resp2Body, err := io.ReadAll(resp2.Body)
 		resp2.Body.Close()
 		if err != nil {
-			return fmt.Errorf("failed to read response body: %w", err)
+			return &displayedError{message: "failed to read response body", cause: err}
 		}
 		resp = resp2
 		respBody = resp2Body
@@ -136,18 +132,14 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 
 	if out != nil && len(respBody) > 0 {
 		if err := json.Unmarshal(respBody, out); err != nil {
-			return fmt.Errorf("failed to decode response: %w", err)
+			return &displayedError{message: "failed to decode response", cause: err}
 		}
 	}
 
 	return nil
 }
 
-// buildRequest assembles the authenticated *http.Request for a given bearer
-// token. Shared by doReq's initial attempt and its 401 retry so the retry
-// applies an identical header set — Authorization swapped for the fresh token,
-// Content-Type/Accept/extra headers preserved. data is the already-marshaled
-// JSON body (nil for bodyless requests); nil data means no Content-Type.
+// buildRequest preserves headers across read retries.
 func (c *Client) buildRequest(ctx context.Context, method, fullURL string, data []byte, headers map[string]string, token string) (*http.Request, error) {
 	var bodyReader io.Reader
 	if data != nil {
@@ -155,7 +147,7 @@ func (c *Client) buildRequest(ctx context.Context, method, fullURL string, data 
 	}
 	req, err := http.NewRequestWithContext(ctx, method, fullURL, bodyReader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, &displayedError{message: "failed to create request", cause: err}
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	if data != nil {
@@ -163,7 +155,7 @@ func (c *Client) buildRequest(ctx context.Context, method, fullURL string, data 
 	}
 	req.Header.Set("Accept", "application/json")
 	for k, v := range headers {
-		if k == "Authorization" || k == "Content-Type" || k == "Accept" {
+		if strings.EqualFold(k, "Authorization") || strings.EqualFold(k, "Content-Type") || strings.EqualFold(k, "Accept") {
 			continue
 		}
 		req.Header.Set(k, v)

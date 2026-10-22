@@ -4,6 +4,9 @@ site_description: Universal Command Line Interface for Green Node
 repo_url: https://github.com/GreenNodeHub/greennode-cli
 repo_name: GreenNodeHub/greennode-cli
 
+exclude_docs: |
+  /superpowers/
+
 theme:
   name: material
   logo: assets/logo.png
@@ -39,6 +42,24 @@ nav:
     - Dry-run & Confirmation: usage/dry-run.md
     - Global Options: usage/global-options.md
     - Shell Completion: usage/shell-completion.md
+  - vBackup Commands:
+    - Overview: commands/vbackup/index.md
+  - vCR Commands:
+    - Overview: commands/vcr/index.md
+  - vDB Commands:
+    - Overview: commands/vdb/index.md
+  - vLB Commands:
+    - Overview: commands/vlb/index.md
+  - vMonitor Commands:
+    - Overview: commands/vmonitor/index.md
+  - vMonitor Log Commands:
+    - Overview: commands/vmonitorlog/index.md
+  - vStorage Commands:
+    - Overview: commands/vstorage/index.md
+  - vStorage Gateway Commands:
+    - Overview: commands/vstoragegateway/index.md
+  - SaaS AI Commands:
+    - Overview: commands/saasai/index.md
   - VKS Commands:
     - Overview: commands/vks/index.md
     - Cluster:
@@ -47,6 +68,11 @@ nav:
       - create-cluster: commands/vks/create-cluster.md
       - update-cluster: commands/vks/update-cluster.md
       - delete-cluster: commands/vks/delete-cluster.md
+      - get-upgrade-insights: commands/vks/get-upgrade-insights.md
+      - stop-poc: commands/vks/stop-poc.md
+    - Fleet Management:
+      - register-fleet: commands/vks/register-fleet.md
+      - unregister-fleet: commands/vks/unregister-fleet.md
     - Node Group:
       - list-nodegroups: commands/vks/list-nodegroups.md
       - get-nodegroup: commands/vks/get-nodegroup.md
@@ -56,6 +82,8 @@ nav:
       - upgrade-nodegroup-version: commands/vks/upgrade-nodegroup-version.md
       - list-nodes: commands/vks/list-nodes.md
       - delete-nodegroup: commands/vks/delete-nodegroup.md
+      - get-nodegroup-events: commands/vks/get-nodegroup-events.md
+      - list-nodegroup-images: commands/vks/list-nodegroup-images.md
     - Versions:
       - list-cluster-versions: commands/vks/list-cluster-versions.md
     - Auto-Upgrade:
@@ -68,10 +96,17 @@ nav:
     - Kubeconfig:
       - generate-kubeconfig: commands/vks/generate-kubeconfig.md
       - update-kubeconfig: commands/vks/update-kubeconfig.md
+      - acknowledge-kubeconfig-warning: commands/vks/acknowledge-kubeconfig-warning.md
     - Quota:
       - get-quota: commands/vks/get-quota.md
+    - Workspace:
+      - get-workspace: commands/vks/get-workspace.md
+      - create-workspace: commands/vks/create-workspace.md
+      - reset-workspace-service-account: commands/vks/reset-workspace-service-account.md
     - Waiter:
       - wait: commands/vks/wait.md
+  - IAM Commands:
+    - Overview: commands/iam/index.md
   - AgentBase Commands:
     - Overview: commands/agentbase/index.md
     - Context:
@@ -232,6 +267,7 @@ nav:
   - Development:
     - Contributing: development/contributing.md
     - Architecture & Adding a Service: development/architecture.md
+    - Contract Fixtures: development/contract-fixtures.md
     - Release Process: development/release.md
   - Changelog: changelog.md
 

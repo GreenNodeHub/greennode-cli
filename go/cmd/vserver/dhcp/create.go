@@ -5,13 +5,12 @@ import (
 	"net"
 	"strings"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
 )
 
-// defaultDNSServers are always included when creating a DHCP option set.
 var defaultDNSServers = []string{"10.166.12.196", "10.166.12.197"}
 
-// maxAdditionalDNSServers is how many DNS servers may be added beyond the defaults.
 const maxAdditionalDNSServers = 2
 
 var createCmd = &cobra.Command{
@@ -48,6 +47,16 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	body := map[string]interface{}{
+		"name":       name,
+		"dnsServers": dnsServers,
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		cli.PrintDryRun("POST", fmt.Sprintf("/v2/%s/dhcp_option", "<project-id>"), body)
+		return nil
+	}
+
 	apiClient, cfg, err := createClient(cmd)
 	if err != nil {
 		return err
@@ -58,11 +67,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	body := map[string]interface{}{
-		"name":       name,
-		"dnsServers": dnsServers,
-	}
-
 	result, err := apiClient.Post(fmt.Sprintf("/v2/%s/dhcp_option", projectID), body)
 	if err != nil {
 		return fmt.Errorf("failed to create DHCP option set: %w", err)
@@ -71,9 +75,6 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	return outputResult(cmd, cfg, result)
 }
 
-// buildDNSServers prepends the fixed default DNS servers and appends the user-provided
-// ones, validating each address and enforcing the additional-server limit. Defaults are
-// never duplicated.
 func buildDNSServers(added []string) ([]interface{}, error) {
 	servers := make([]interface{}, 0, len(defaultDNSServers)+len(added))
 	for _, ip := range defaultDNSServers {
@@ -89,7 +90,6 @@ func buildDNSServers(added []string) ([]interface{}, error) {
 		if net.ParseIP(ip) == nil {
 			return nil, fmt.Errorf("invalid DNS server IP address: %q", raw)
 		}
-		// Skip a default that was passed again — it does not count toward the limit.
 		if contains(defaultDNSServers, ip) {
 			continue
 		}

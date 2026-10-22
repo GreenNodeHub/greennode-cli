@@ -1,0 +1,795 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://docs.api.greennode.ai/service-docs/vdb-api.html",
+    "title": "vDB API",
+    "version": "1.0",
+    "retrieved": "2026-09-10",
+    "sha256": "32cadc3b64814aa665880df5fef861a594f3cf510b5dd3b9287fe47c2e2bcd80"
+  },
+  "servers": [
+    {
+      "url": "https:/vdb-gateway.vngcloud.vn"
+    }
+  ],
+  "security": [],
+  "components": {
+    "schemas": {
+      "UpdateDbSettingRequest": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentObject": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateDbConfigGroupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateSecurityGroupRuleDetail": {
+        "type": "object",
+        "required": []
+      },
+      "SecurityGroupRuleEntity": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListSecurityGroupRuleEntity": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateConfigGroupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ItemConfigInfo": {
+        "type": "object",
+        "required": []
+      },
+      "TinyDbInstanceInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentItemConfigInfo": {
+        "type": "object",
+        "required": []
+      },
+      "UpdatePostgreClusterSettingsRequest": {
+        "type": "object",
+        "required": []
+      },
+      "InstanceActionResult": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentInstanceActionResult": {
+        "type": "object",
+        "required": []
+      },
+      "ResizePostgreClusterRequest": {
+        "type": "object",
+        "required": []
+      },
+      "OrderResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListOrderResponse": {
+        "type": "object",
+        "required": []
+      },
+      "UpdatePostgreClusterConfigGroupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UpdateMemDbSettingRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UserUpdatePermissionsRequest": {
+        "type": "object",
+        "required": []
+      },
+      "TopicUpdateRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateDbInstanceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "Database": {
+        "type": "object",
+        "required": []
+      },
+      "DatabaseRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UserRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateBackupStorageRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ActionDbInstanceDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ActionDbInstanceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ActionDbInstancesResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListActionDbInstancesResponse": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeVolumeConfig": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeVolumeDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeVolumeRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeFlavorConfig": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeFlavorDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeFlavorRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteDbInstanceConfig": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteDbInstanceDetail": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteDbInstanceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateDbInstanceReplicaRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateConfigGroupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "RestoreBackupConfig": {
+        "type": "object",
+        "required": []
+      },
+      "RestoreBackupDetail": {
+        "type": "object",
+        "required": []
+      },
+      "RestoreBackupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateBackupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateBackupResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentCreateBackupResponse": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeBackupStorageConfig": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeBackupStorageDetail": {
+        "type": "object",
+        "required": []
+      },
+      "ResizeBackupStorageRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteBackupStorageDetail": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteBackupStorageRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreatePostgreClusterRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DatabaseRequest_2": {
+        "type": "object",
+        "required": []
+      },
+      "UserRequest_2": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentString": {
+        "type": "object",
+        "required": []
+      },
+      "CreateMemDbInstanceRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateMemDbInstanceReplicaRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteConfigGroupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteConfigResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListDeleteConfigResponse": {
+        "type": "object",
+        "required": []
+      },
+      "CreateMemConfigGroupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "RestoreMemBackupConfig": {
+        "type": "object",
+        "required": []
+      },
+      "RestoreMemBackupDetail": {
+        "type": "object",
+        "required": []
+      },
+      "RestoreMemBackupRequest": {
+        "type": "object",
+        "required": []
+      },
+      "DeleteBackupRequest": {
+        "type": "object",
+        "required": [
+          "backupId"
+        ]
+      },
+      "DeleteBackupResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListDeleteBackupResponse": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigGroupCreateRequest": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigGroupPropertyDto": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigGroupDto": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigGroupVersionDto": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigGroupVersionCreateRequest": {
+        "type": "object",
+        "required": []
+      },
+      "CreateKafkaClusterRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UserCreateRequest": {
+        "type": "object",
+        "required": []
+      },
+      "UserDto": {
+        "type": "object",
+        "required": []
+      },
+      "TopicCreateRequest": {
+        "type": "object",
+        "required": []
+      },
+      "TopicDto": {
+        "type": "object",
+        "required": []
+      },
+      "SecurityGroupRuleCreateRequest": {
+        "type": "object",
+        "required": []
+      },
+      "SecurityGroupRuleDto": {
+        "type": "object",
+        "required": []
+      },
+      "FilterRequest": {
+        "type": "object",
+        "required": []
+      },
+      "AddressInfo": {
+        "type": "object",
+        "required": []
+      },
+      "DatabaseInstancesGateway": {
+        "type": "object",
+        "required": []
+      },
+      "DatabaseInstancesGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "InstanceEntity": {
+        "type": "object",
+        "required": []
+      },
+      "PageObjectWithLimitSize": {
+        "type": "object",
+        "required": []
+      },
+      "SecurityGroupEntity": {
+        "type": "object",
+        "required": []
+      },
+      "TinyConfigInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentDatabaseInstancesGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "DBInstancesHistoryGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "HistoryResponse": {
+        "type": "object",
+        "required": []
+      },
+      "PageObject": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentDBInstancesHistoryGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListZoneInfo": {
+        "type": "object",
+        "required": []
+      },
+      "ZoneInfo": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeTypeGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "VolumeTypeInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentVolumeTypeGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListNetworkResponse": {
+        "type": "object",
+        "required": []
+      },
+      "NetworkResponseV2": {
+        "type": "object",
+        "required": []
+      },
+      "SubnetResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListNetworkResponseV2": {
+        "type": "object",
+        "required": []
+      },
+      "DbInstanceInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentDbInstanceInfo": {
+        "type": "object",
+        "required": []
+      },
+      "FlavorInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListFlavorInfo": {
+        "type": "object",
+        "required": []
+      },
+      "FlavorCode": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentSetFlavorCode": {
+        "type": "object",
+        "required": []
+      },
+      "InstanceFamily": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListInstanceFamily": {
+        "type": "object",
+        "required": []
+      },
+      "Engine": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentSetEngine": {
+        "type": "object",
+        "required": []
+      },
+      "EngineVersion": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListEngineVersion": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListItemConfigInfo": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigInfoGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentConfigInfoGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "ConfigurationParamInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListConfigurationParamInfo": {
+        "type": "object",
+        "required": []
+      },
+      "BackupInfo": {
+        "type": "object",
+        "required": []
+      },
+      "BackupInfoGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentBackupInfoGatewayResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListBackupInfo": {
+        "type": "object",
+        "required": []
+      },
+      "FreeBackupStorageInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentFreeBackupStorageInfo": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentBackupInfo": {
+        "type": "object",
+        "required": []
+      },
+      "DbBackupPackageDetail": {
+        "type": "object",
+        "required": []
+      },
+      "DbBackupPackageResponse": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListDbBackupPackageResponse": {
+        "type": "object",
+        "required": []
+      },
+      "BackupStorageDetail": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListBackupStorageDetail": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListString": {
+        "type": "object",
+        "required": []
+      },
+      "PostgreStorageType": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListPostgreStorageType": {
+        "type": "object",
+        "required": []
+      },
+      "PostgrePackage": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListPostgrePackage": {
+        "type": "object",
+        "required": []
+      },
+      "PostgreVersion": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListPostgreVersion": {
+        "type": "object",
+        "required": []
+      },
+      "BackupDailyConfig": {
+        "type": "object",
+        "required": []
+      },
+      "BackupPolicy": {
+        "type": "object",
+        "required": []
+      },
+      "BackupPolicyConfig": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListBackupPolicy": {
+        "type": "object",
+        "required": []
+      },
+      "BackupLocation": {
+        "type": "object",
+        "required": []
+      },
+      "BackupLocationConfig": {
+        "type": "object",
+        "required": []
+      },
+      "BackupMaxQuota": {
+        "type": "object",
+        "required": []
+      },
+      "BackupVault": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListBackupLocation": {
+        "type": "object",
+        "required": []
+      },
+      "BackupDatabase": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListBackupDatabase": {
+        "type": "object",
+        "required": []
+      },
+      "BackupPoint": {
+        "type": "object",
+        "required": []
+      },
+      "Destination": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentListBackupPoint": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentBackupDatabase": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentSetString": {
+        "type": "object",
+        "required": []
+      },
+      "WrapContentMapStringString": {
+        "type": "object",
+        "required": []
+      },
+      "KafkaCluster": {
+        "type": "object",
+        "required": []
+      },
+      "KafkaSecurityGroupRule": {
+        "type": "object",
+        "required": []
+      },
+      "HistoryDto": {
+        "type": "object",
+        "required": []
+      }
+    }
+  },
+  "operations": [
+    {"operation_id":"updateDatabaseSetting","method":"PUT","path":"/vdb-relational/v1/database-instances/{instanceId}/update/setting","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateDbSettingRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentObject"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateDatabaseConfigGroup","method":"PUT","path":"/vdb-relational/v1/database-instances/{instanceId}/update/config-group","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateDbConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentObject"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getSecurityRules","method":"GET","path":"/vdb-relational/v1/database-instances/{instanceId}/secrules","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListSecurityGroupRuleEntity"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateSecurityGroupRules","method":"PUT","path":"/vdb-relational/v1/database-instances/{instanceId}/secrules","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/UpdateSecurityGroupRuleDetail"}}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListSecurityGroupRuleEntity"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":[],"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateConfig","method":"PUT","path":"/vdb-relational/v1/configurations/update","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateSettingsPostgreCluster","method":"PUT","path":"/vdb-postgresql/v1/cluster/{clusterId}/settings","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdatePostgreClusterSettingsRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentInstanceActionResult"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"resizePostgreCluster","method":"PUT","path":"/vdb-postgresql/v1/cluster/{clusterId}/resize","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizePostgreClusterRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateConfigGroupPostgreCluster","method":"PUT","path":"/vdb-postgresql/v1/cluster/{clusterId}/config-group","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdatePostgreClusterConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentInstanceActionResult"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateDatabaseSetting_1","method":"PUT","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/update-setting","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateMemDbSettingRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentObject"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateDatabaseConfigGroup_1","method":"PUT","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/update-config-group","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateDbConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentObject"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getSecurityRules_1","method":"GET","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/secrules","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListSecurityGroupRuleEntity"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateSecurityRules","method":"PUT","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/secrules","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/UpdateSecurityGroupRuleDetail"}}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListSecurityGroupRuleEntity"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":[],"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateConfig_1","method":"PUT","path":"/vdb-memory/v1/configurations/update","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getUserById","method":"GET","path":"/vdb-kafka/clusters/{clusterId}/users/{userId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"userId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateUser","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/users/{userId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"userId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserUpdatePermissionsRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":"fixture-001"},
+    {"operation_id":"deleteUser","method":"DELETE","path":"/vdb-kafka/clusters/{clusterId}/users/{userId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"userId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"regenerateUserAuthenCredential","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/users/{userId}/regenerate-creds","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"userId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"getTopicById","method":"GET","path":"/vdb-kafka/clusters/{clusterId}/topics/{topicId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"topicId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/TopicDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateTopic","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/topics/{topicId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"topicId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/TopicUpdateRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":"fixture-001"},
+    {"operation_id":"deleteTopic","method":"DELETE","path":"/vdb-kafka/clusters/{clusterId}/topics/{topicId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"topicId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"updatePublicAccess","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/public-access","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"enable","in":"query","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"updateStorageType","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/kafka-storage-type","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"storageType","in":"query","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateStorageSize","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/kafka-storage-size","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"size","in":"query","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateBrokerCount","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/kafka-broker-count","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"count","in":"query","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"rebalance","in":"query","required":true,"schema":{"type":"boolean"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"updateConfigGroup","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/config-group","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"configGroupVersionId","in":"query","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"updateAuthentication","method":"PUT","path":"/vdb-kafka/clusters/{clusterId}/authentication","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"mtlsAuthen","in":"query","required":true,"schema":{"type":"boolean"}},{"name":"saslAuthen","in":"query","required":true,"schema":{"type":"boolean"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"createRelationalDatabaseInstance","method":"POST","path":"/vdb-relational/v1/payment/database-instances","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createRelationalBackUpStorage","method":"POST","path":"/vdb-relational/v1/payment/backup-storages","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateBackupStorageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"startDatabaseInstances","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/start","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"stopDatabaseInstances","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/shutdown","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"resizeStorage","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/resize-storage","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizeVolumeRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"resizeInstance","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/resize-instance","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizeFlavorRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"restartDatabaseInstances","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/reboot","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"detachReplica","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/detach-replica","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteDatabaseInstances","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/delete","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DeleteDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createRelationalDatabaseInstanceReplica","method":"POST","path":"/vdb-relational/v1/database-instances/{instanceId}/create-replicas","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateDbInstanceReplicaRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createConfig","method":"POST","path":"/vdb-relational/v1/configurations/create","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"restoreBackup","method":"POST","path":"/vdb-relational/v1/backups/{id}/restore","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RestoreBackupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createBackups","method":"POST","path":"/vdb-relational/v1/backups/create","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateBackupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentCreateBackupResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"resizeBackupStorage","method":"POST","path":"/vdb-relational/v1/backup-storages/actions/resize","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizeBackupStorageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteBackupStorage","method":"POST","path":"/vdb-relational/v1/backup-storages/actions/deletions","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DeleteBackupStorageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createOrderPostgreCluster","method":"POST","path":"/vdb-postgresql/v1/cluster","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreatePostgreClusterRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"backupNow","method":"POST","path":"/vdb-postgresql/v1/backup/backup-vdb/{clusterId}/backup-now","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentString"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createMemoryStoreDatabaseInstance","method":"POST","path":"/vdb-memory/v1/payment/database-instances","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateMemDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createMemoryStoreBackUpStorage","method":"POST","path":"/vdb-memory/v1/payment/backup-storages","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateBackupStorageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"startDatabaseInstances_1","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/start","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"stopDatabaseInstances_1","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/shutdown","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"resizeInstance_1","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/resize-instance","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizeFlavorRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"restartDatabaseInstances_1","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/reboot","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"detachReplica_1","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/detach-replica","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActionDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteDatabaseInstances_1","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/delete","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DeleteDbInstanceRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createDatabaseInstanceReplica","method":"POST","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/create-replicas","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateMemDbInstanceReplicaRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteConfigs","method":"POST","path":"/vdb-memory/v1/configurations/delete","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"uniqueItems":true,"type":"array","items":{"$ref":"#/components/schemas/DeleteConfigGroupRequest"}}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListDeleteConfigResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":[],"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createConfig_1","method":"POST","path":"/vdb-memory/v1/configurations/create","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateMemConfigGroupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"restoreBackup_1","method":"POST","path":"/vdb-memory/v1/backups/{backupId}/restore","parameters":[{"name":"backupId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RestoreMemBackupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteBackups","method":"POST","path":"/vdb-memory/v1/backups/delete","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"uniqueItems":true,"type":"array","items":{"$ref":"#/components/schemas/DeleteBackupRequest"}}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListDeleteBackupResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":[],"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createBackups_1","method":"POST","path":"/vdb-memory/v1/backups/create","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateBackupRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentCreateBackupResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"resizeBackupStorage_1","method":"POST","path":"/vdb-memory/v1/backup-storages/actions/resize","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResizeBackupStorageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteBackupStorage_1","method":"POST","path":"/vdb-memory/v1/backup-storages/actions/delete","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DeleteBackupStorageRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListActionDbInstancesResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listConfigGroup","method":"GET","path":"/vdb-kafka/config-groups","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/ConfigGroupDto"}}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":[]},
+    {"operation_id":"createConfigGroup","method":"POST","path":"/vdb-kafka/config-groups","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ConfigGroupCreateRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ConfigGroupDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createConfigGroupVersion","method":"POST","path":"/vdb-kafka/config-groups/{configGroupId}/versions","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"configGroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ConfigGroupVersionCreateRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ConfigGroupVersionDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listClusters","method":"GET","path":"/vdb-kafka/clusters","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/KafkaCluster"}}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":[]},
+    {"operation_id":"createOrderCluster","method":"POST","path":"/vdb-kafka/clusters","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"user-type","in":"header","required":false,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateKafkaClusterRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListOrderResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listUser","method":"GET","path":"/vdb-kafka/clusters/{clusterId}/users","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/UserDto"}}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":[]},
+    {"operation_id":"createUser","method":"POST","path":"/vdb-kafka/clusters/{clusterId}/users","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserCreateRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listTopic","method":"GET","path":"/vdb-kafka/clusters/{clusterId}/topics","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/TopicDto"}}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":[]},
+    {"operation_id":"createTopic","method":"POST","path":"/vdb-kafka/clusters/{clusterId}/topics","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/TopicCreateRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/TopicDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"createSecRule","method":"POST","path":"/vdb-kafka/clusters/{clusterId}/security-group-rules","parameters":[{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/SecurityGroupRuleCreateRequest"}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/SecurityGroupRuleDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":{},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDatabaseInstancesByUser","method":"GET","path":"/vdb-relational/v1/database-instances","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"filterRequest","in":"query","required":true,"schema":{"type":"object","properties":{"name":{"type":"string"},"status":{"type":"array","items":{"type":"string"}}}}},{"name":"pageNumber","in":"query","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageSize","in":"query","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentDatabaseInstancesGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListReplicas","method":"GET","path":"/vdb-relational/v1/database-instances/{replicaSourceId}/replicas","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"replicaSourceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentObject"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getHistoryDB","method":"GET","path":"/vdb-relational/v1/database-instances/{instanceId}/histories","parameters":[{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageNumber","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentDBInstancesHistoryGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listZone","method":"GET","path":"/vdb-relational/v1/database-instances/zones","parameters":[],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListZoneInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getVolumeTypes","method":"GET","path":"/vdb-relational/v1/database-instances/volume/types","parameters":[{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentVolumeTypeGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListNetwork","method":"GET","path":"/vdb-relational/v1/database-instances/networks","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListNetworkResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listSubnet","method":"GET","path":"/vdb-relational/v1/database-instances/networks/subnets","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListNetworkResponseV2"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDatabaseInstancesById","method":"GET","path":"/vdb-relational/v1/database-instances/id/{dbInstanceId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentDbInstanceInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getFlavors","method":"GET","path":"/vdb-relational/v1/database-instances/flavors","parameters":[{"name":"type","in":"query","required":true,"schema":{"type":"string"}},{"name":"version","in":"query","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListFlavorInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getFlavorCodes","method":"GET","path":"/vdb-relational/v1/database-instances/flavor_zones/codes","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentSetFlavorCode"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getAllInstanceFamily","method":"GET","path":"/vdb-relational/v1/database-instances/families","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListInstanceFamily"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getEngine","method":"GET","path":"/vdb-relational/v1/database-instances/engine","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentSetEngine"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getAllDatastore","method":"GET","path":"/vdb-relational/v1/database-instances/datastore","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListEngineVersion"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDBInstanceConfig","method":"GET","path":"/vdb-relational/v1/database-instances/configuration","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListConfigs","method":"GET","path":"/vdb-relational/v1/configurations","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageNumber","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentConfigInfoGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getConfigParams","method":"GET","path":"/vdb-relational/v1/configurations/params","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"datastoreType","in":"query","required":true,"schema":{"type":"string"}},{"name":"datastoreVersion","in":"query","required":true,"schema":{"type":"string"}},{"name":"deployType","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListConfigurationParamInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getConfigsById","method":"GET","path":"/vdb-relational/v1/configurations/id","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"id","in":"query","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListBackups","method":"GET","path":"/vdb-relational/v1/backups","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageNumber","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentBackupInfoGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListBackupsByInstanceId","method":"GET","path":"/vdb-relational/v1/backups/insId/{instanceId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"instanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getFreeBackupUsage","method":"GET","path":"/vdb-relational/v1/backups/free-backup","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentFreeBackupStorageInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDetailBackupById","method":"GET","path":"/vdb-relational/v1/backups/detail/{backupId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"backupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentBackupInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListQuotaPackage","method":"GET","path":"/vdb-relational/v1/backup-storages","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListDbBackupPackageResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListBackupStorage","method":"GET","path":"/vdb-relational/v1/backup-storages/information","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupStorageDetail"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getPostgreClusterVolumeUsed","method":"GET","path":"/vdb-postgresql/v1/cluster/{clusterId}/volume-used","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListString"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getVolumeTypesPostgreCluster","method":"GET","path":"/vdb-postgresql/v1/cluster/volume-types","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListPostgreStorageType"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listFlavorPostgreCluster","method":"GET","path":"/vdb-postgresql/v1/cluster/flavors","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListPostgrePackage"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDatastoresPostgreCluster","method":"GET","path":"/vdb-postgresql/v1/cluster/datastore","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListPostgreVersion"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listBackupPolicy","method":"GET","path":"/vdb-postgresql/v1/backup/policy","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupPolicy"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listBackupLocation","method":"GET","path":"/vdb-postgresql/v1/backup/location","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupLocation"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listBackupVDB","method":"GET","path":"/vdb-postgresql/v1/backup/backup-vdb","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupDatabase"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listBackupRestorePoint","method":"GET","path":"/vdb-postgresql/v1/backup/backup-vdb/{clusterId}/restore-point","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupPoint"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getBackupVDB","method":"GET","path":"/vdb-postgresql/v1/backup/backup-vdb/{clusterId}/detail","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentBackupDatabase"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getVolumeTypes_1","method":"GET","path":"/vdb-memory/v1/database/volume-types","parameters":[{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentVolumeTypeGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listDatabaseInstanceStatus","method":"GET","path":"/vdb-memory/v1/database/status","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentSetString"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListNetwork_1","method":"GET","path":"/vdb-memory/v1/database/networks","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListNetworkResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listSubnet_1","method":"GET","path":"/vdb-memory/v1/database/networks/subnets","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListNetworkResponseV2"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getFlavors_1","method":"GET","path":"/vdb-memory/v1/database/flavors","parameters":[{"name":"type","in":"query","required":true,"schema":{"type":"string"}},{"name":"version","in":"query","required":true,"schema":{"type":"string"}},{"name":"zoneId","in":"query","required":false,"schema":{"type":"string","default":"HCM03-1A"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListFlavorInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getAllInstanceFamily_1","method":"GET","path":"/vdb-memory/v1/database/families","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListInstanceFamily"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getEngine_1","method":"GET","path":"/vdb-memory/v1/database/engine","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentSetEngine"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getAllDatastore_1","method":"GET","path":"/vdb-memory/v1/database/datastore","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListEngineVersion"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDBInstanceConfig_1","method":"GET","path":"/vdb-memory/v1/database/configuration","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getFlavorCodes_1","method":"GET","path":"/vdb-memory/v1/database/codes","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentSetFlavorCode"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDatabaseInstancesByUser_1","method":"GET","path":"/vdb-memory/v1/database-instances","parameters":[{"name":"filterRequest","in":"query","required":true,"schema":{"type":"object","properties":{"name":{"type":"string"},"status":{"type":"array","items":{"type":"string"}}}}},{"name":"pageNumber","in":"query","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageSize","in":"query","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentDatabaseInstancesGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDatabaseInstancesById_1","method":"GET","path":"/vdb-memory/v1/database-instances/{dbInstanceId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentDbInstanceInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListReplicas_1","method":"GET","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/replicas","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentObject"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getHistoryDB_1","method":"GET","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/histories","parameters":[{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageNumber","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentDBInstancesHistoryGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListBackupsByInstanceId_1","method":"GET","path":"/vdb-memory/v1/database-instances/{dbInstanceId}/backups","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"dbInstanceId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListConfigs_1","method":"GET","path":"/vdb-memory/v1/configurations","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageNumber","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentConfigInfoGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getConfigsById_1","method":"GET","path":"/vdb-memory/v1/configurations/{configId}/detail","parameters":[{"name":"configId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentItemConfigInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getConfigParams_1","method":"GET","path":"/vdb-memory/v1/configurations/params","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"datastoreType","in":"query","required":true,"schema":{"type":"string"}},{"name":"datastoreVersion","in":"query","required":true,"schema":{"type":"string"}},{"name":"deployType","in":"query","required":false,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListConfigurationParamInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListBackups_1","method":"GET","path":"/vdb-memory/v1/backups","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"pageNumber","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":1}},{"name":"pageSize","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":10}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentBackupInfoGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getDetailBackupById_1","method":"GET","path":"/vdb-memory/v1/backups/{backupId}/detail","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"backupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentBackupInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getFreeBackupUsage_1","method":"GET","path":"/vdb-memory/v1/backups/free-backup","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentFreeBackupStorageInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListBackupStorage_1","method":"GET","path":"/vdb-memory/v1/backup-storages","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListBackupStorageDetail"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getListQuotaPackage_1","method":"GET","path":"/vdb-memory/v1/backup-storages/packages","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListDbBackupPackageResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getVolumeTypes_2","method":"GET","path":"/vdb-kafka/database/volume-types","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentVolumeTypeGatewayResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listFlavor","method":"GET","path":"/vdb-kafka/database/flavors","parameters":[{"name":"type","in":"query","required":false,"schema":{"type":"string","default":"kafka"}},{"name":"version","in":"query","required":false,"schema":{"type":"string","default":"1.0"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListFlavorInfo"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listFamily","method":"GET","path":"/vdb-kafka/database/families","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListInstanceFamily"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listAppConfigs","method":"GET","path":"/vdb-kafka/database/configs","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentMapStringString"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"listCode","method":"GET","path":"/vdb-kafka/database/codes","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentSetFlavorCode"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getConfigGroupById","method":"GET","path":"/vdb-kafka/config-groups/{configGroupId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"configGroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ConfigGroupDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteConfigGroup","method":"DELETE","path":"/vdb-kafka/config-groups/{configGroupId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"configGroupId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"getConfigGroupVersionById","method":"GET","path":"/vdb-kafka/config-groups/{configGroupId}/versions/{configGroupVersionId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"configGroupId","in":"path","required":true,"schema":{"type":"string"}},{"name":"configGroupVersionId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/ConfigGroupVersionDto"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"getClusterById","method":"GET","path":"/vdb-kafka/clusters/{clusterId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/KafkaCluster"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteCluster","method":"DELETE","path":"/vdb-kafka/clusters/{clusterId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"},
+    {"operation_id":"getUserAuthenCredential","method":"GET","path":"/vdb-kafka/clusters/{clusterId}/users/{userId}/authen-creds","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"userId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"type":"string","format":"byte"}}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":[]},
+    {"operation_id":"listHistory","method":"GET","path":"/vdb-kafka/clusters/{clusterId}/history","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/HistoryDto"}}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":[]},
+    {"operation_id":"deleteConfigs_1","method":"DELETE","path":"/vdb-relational/v1/configurations/delete","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"uniqueItems":true,"type":"array","items":{"$ref":"#/components/schemas/DeleteConfigGroupRequest"}}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListDeleteConfigResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":[],"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteBackups_1","method":"DELETE","path":"/vdb-relational/v1/backups/{backupId}/delete","parameters":[{"name":"backupId","in":"path","required":true,"schema":{"type":"string"}},{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}}],"request_body":{"content":{"application/json":{"schema":{"uniqueItems":true,"type":"array","items":{"$ref":"#/components/schemas/DeleteBackupRequest"}}}},"required":true},"responses":{"200":{"content":{"*/*":{"schema":{"$ref":"#/components/schemas/WrapContentListDeleteBackupResponse"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"request_example":[],"response_example":{"id":"fixture-result"}},
+    {"operation_id":"deleteSecRule","method":"DELETE","path":"/vdb-kafka/clusters/{clusterId}/security-group-rules/{secGroupRuleId}","parameters":[{"name":"portal-user-id","in":"header","required":true,"schema":{"type":"integer","format":"int32"}},{"name":"clusterId","in":"path","required":true,"schema":{"type":"string"}},{"name":"secGroupRuleId","in":"path","required":true,"schema":{"type":"string"}}],"request_body":null,"responses":{"200":{"content":{"*/*":{"schema":{"type":"string"}}}},"202":{},"204":{},"400":{},"401":{},"403":{},"404":{},"500":{}},"response_example":"fixture-001"}
+  ]
+}
