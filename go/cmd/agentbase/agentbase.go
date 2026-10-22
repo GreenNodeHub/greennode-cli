@@ -15,6 +15,8 @@
 package agentbase
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
@@ -50,7 +52,7 @@ select dev/prod with 'grn configure set iam_env <dev|prod>' (machine) or
 'grn login --iam-env <env>' (user); set the current agent with 'grn agentbase
 access agent-id use <name>'. Run 'grn agentbase context current' to see the
 active environment and endpoints.`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Honor ~/.greennode/config's output key as the default format when
 		// --output/-o is not passed explicitly, matching cli.Output's fallback
 		// for vks/vserver. agentbase keeps its own --output/-o flag (shorthand
@@ -58,7 +60,21 @@ active environment and endpoints.`,
 		// the shared config govern agentbase like the rest of the CLI.
 		output.SetFormat(output.ParseFormat(effectiveOutputFormat(cmd, outputFormat)))
 		cliinput.SetInteractive(interactiveMode)
+		return applyAgentbaseQuery(cmd)
 	},
+}
+
+// applyAgentbaseQuery wires grn's global --query flag (JMESPath, defined on
+// the root command) into the agentbase output stack: the query only applies
+// to JSON output, so setting it with table/id fails fast instead of being
+// silently ignored. Must run after output.SetFormat (it checks GetFormat).
+func applyAgentbaseQuery(cmd *cobra.Command) error {
+	query := flagString(cmd, "query")
+	output.SetQuery(query)
+	if query != "" && output.GetFormat() != output.FormatJSON {
+		return fmt.Errorf("--query is only supported with -o json for agentbase commands")
+	}
+	return nil
 }
 
 func init() {

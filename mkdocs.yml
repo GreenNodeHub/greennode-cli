@@ -176,6 +176,31 @@ nav:
       - openclaw start: commands/agentbase/marketplace/openclaw-start.md
       - openclaw stop: commands/agentbase/marketplace/openclaw-stop.md
       - openclaw update-version: commands/agentbase/marketplace/openclaw-update-version.md
+    - Tools:
+      - Overview: commands/agentbase/tools/index.md
+      - browser list: commands/agentbase/tools/browser-list.md
+      - browser create: commands/agentbase/tools/browser-create.md
+      - browser get: commands/agentbase/tools/browser-get.md
+      - browser delete: commands/agentbase/tools/browser-delete.md
+      - browser wait: commands/agentbase/tools/browser-wait.md
+      - browser session list: commands/agentbase/tools/browser-session-list.md
+      - browser session create: commands/agentbase/tools/browser-session-create.md
+      - browser session get: commands/agentbase/tools/browser-session-get.md
+      - browser session delete: commands/agentbase/tools/browser-session-delete.md
+      - browser session automation-stream: commands/agentbase/tools/browser-session-automation-stream.md
+      - browser session live-view-stream-sign: commands/agentbase/tools/browser-session-live-view-stream-sign.md
+      - browser session recording: commands/agentbase/tools/browser-session-recording.md
+      - browser session streams update: commands/agentbase/tools/browser-session-streams-update.md
+      - code-interpreter list: commands/agentbase/tools/code-interpreter-list.md
+      - code-interpreter create: commands/agentbase/tools/code-interpreter-create.md
+      - code-interpreter get: commands/agentbase/tools/code-interpreter-get.md
+      - code-interpreter delete: commands/agentbase/tools/code-interpreter-delete.md
+      - code-interpreter wait: commands/agentbase/tools/code-interpreter-wait.md
+      - code-interpreter session list: commands/agentbase/tools/code-interpreter-session-list.md
+      - code-interpreter session create: commands/agentbase/tools/code-interpreter-session-create.md
+      - code-interpreter session delete: commands/agentbase/tools/code-interpreter-session-delete.md
+      - code-interpreter session invoke: commands/agentbase/tools/code-interpreter-session-invoke.md
+      - code-interpreter session task-wait: commands/agentbase/tools/code-interpreter-session-task-wait.md
     - Policy:
       - Overview: commands/agentbase/policy/index.md
       - group create: commands/agentbase/policy/group-create.md

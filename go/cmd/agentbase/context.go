@@ -44,6 +44,7 @@ var contextCurrentCmd = &cobra.Command{
 				{"Gateway", ab.endpoints.Gateway},
 				{"Policy", ab.endpoints.Policy},
 				{"CR", ab.endpoints.Cr},
+				{"BuiltInTools", ab.endpoints.BuiltInTools},
 				{"OAuth2 Token", ab.endpoints.OAuth2Token},
 			},
 		)

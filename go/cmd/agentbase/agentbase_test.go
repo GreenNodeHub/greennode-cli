@@ -143,6 +143,64 @@ func TestAgentbaseCmd_HasMarketplaceSubtree(t *testing.T) {
 	}
 }
 
+// TestAgentbaseCmd_HasToolsSubtree verifies the built-in-tools group (browser
+// + code-interpreter lifecycles, their nested session groups, and the invoke
+// leaf) is mounted under `grn agentbase`.
+func TestAgentbaseCmd_HasToolsSubtree(t *testing.T) {
+	toolsGrp, _, err := AgentbaseCmd.Find([]string{"tools"})
+	if err != nil {
+		t.Fatalf("agentbase has no 'tools' subcommand: %v", err)
+	}
+	for _, want := range []string{"browser", "code-interpreter"} {
+		if _, _, err := toolsGrp.Find([]string{want}); err != nil {
+			t.Errorf("tools missing subcommand %q: %v", want, err)
+		}
+	}
+	brCmd, _, err := toolsGrp.Find([]string{"browser"})
+	if err != nil {
+		t.Fatalf("tools has no 'browser' subcommand: %v", err)
+	}
+	for _, want := range []string{"list", "create", "get", "delete", "wait", "session"} {
+		if _, _, err := brCmd.Find([]string{want}); err != nil {
+			t.Errorf("browser missing subcommand %q: %v", want, err)
+		}
+	}
+	brSessionCmd, _, err := brCmd.Find([]string{"session"})
+	if err != nil {
+		t.Fatalf("browser has no 'session' subcommand: %v", err)
+	}
+	for _, want := range []string{"list", "create", "get", "delete", "automation-stream", "live-view-stream-sign", "recording", "streams"} {
+		if _, _, err := brSessionCmd.Find([]string{want}); err != nil {
+			t.Errorf("browser session missing subcommand %q: %v", want, err)
+		}
+	}
+	streamsCmd, _, err := brSessionCmd.Find([]string{"streams"})
+	if err != nil {
+		t.Fatalf("browser session has no 'streams' subcommand: %v", err)
+	}
+	if _, _, err := streamsCmd.Find([]string{"update"}); err != nil {
+		t.Errorf("browser session streams missing subcommand %q: %v", "update", err)
+	}
+	ciCmd, _, err := toolsGrp.Find([]string{"code-interpreter"})
+	if err != nil {
+		t.Fatalf("tools has no 'code-interpreter' subcommand: %v", err)
+	}
+	for _, want := range []string{"list", "create", "get", "delete", "wait", "session"} {
+		if _, _, err := ciCmd.Find([]string{want}); err != nil {
+			t.Errorf("code-interpreter missing subcommand %q: %v", want, err)
+		}
+	}
+	ciSessionCmd, _, err := ciCmd.Find([]string{"session"})
+	if err != nil {
+		t.Fatalf("code-interpreter has no 'session' subcommand: %v", err)
+	}
+	for _, want := range []string{"list", "create", "delete", "invoke"} {
+		if _, _, err := ciSessionCmd.Find([]string{want}); err != nil {
+			t.Errorf("code-interpreter session missing subcommand %q: %v", want, err)
+		}
+	}
+}
+
 // TestOldCommandNamesAbsent locks in the hard cut of the agentbase rename:
 // identity→access, catalog→marketplace, workload→agent-id. Old names must be
 // absent (no aliases were kept). Uses subCmdExists (Commands() iteration)

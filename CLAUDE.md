@@ -26,7 +26,9 @@ go/
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
 │   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
-│   │   └── helpers.go               # mustLoadConfig / newAuthProvider
+│   │   ├── helpers.go               # mustLoadConfig / newAuthProvider
+│   │   ├── tools.go                 # tools group: built-in browsers (+ sessions, streams, recording; delete has confirm/--force/--dry-run)
+│   │   └── tools_code_interpreter.go # tools code-interpreter + sessions + session invoke (+ async task-wait)
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list
@@ -82,6 +84,7 @@ go/
 │   │   ├── identity/                # access (agent identities) API client + models
 │   │   ├── cliinput/                # interactive prompts
 │   │   ├── jsonslice/               # typed JSON slice helper
+│   │   ├── tools/                   # built-in tools (browsers + code interpreters) API client + models
 │   │   └── output/                  # table/json/id + color + banner
 │   └── validator/validator.go       # ID format validation
 ├── go.mod, go.sum
