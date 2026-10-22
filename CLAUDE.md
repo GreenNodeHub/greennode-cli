@@ -9,6 +9,11 @@ GreenNode CLI (`grn`) is a unified command-line tool for managing GreenNode serv
 - **Language**: Go (using cobra CLI framework)
 - **Binary**: Single file, zero runtime dependencies
 
+## Operational context
+
+Operational context (incidents, invariants, farms, the Redmine task workflow) lives in the **vks-harness**
+repo (`knowledge/`, `AGENTS.md`). Management farms are read-only for agents.
+
 ## Project structure
 
 ```
@@ -46,7 +51,6 @@ go/
 │       ├── list_cluster_versions.go      # Available k8s versions
 │       ├── config_auto_healing.go        # Configure auto-healing
 │       ├── get_cluster_events.go         # Cluster events (paginated)
-│       ├── get_nodegroup_events.go       # Node group events (paginated)
 │       ├── generate_kubeconfig.go        # Request kubeconfig (async)
 │       ├── update_kubeconfig.go          # Fetch + merge kubeconfig
 │       ├── completion.go            # registerCompletions() — wires all VKS flag value completers
