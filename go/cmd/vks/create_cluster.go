@@ -8,6 +8,7 @@ import (
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var createClusterCmd = &cobra.Command{
@@ -23,13 +24,16 @@ func init() {
 	// Cluster settings (required)
 	f.String("name", "", "Cluster name (required)")
 	f.String("k8s-version", "", "Kubernetes version (required)")
-	f.String("network-type", "", "Network type: TIGERA, CILIUM_OVERLAY, CILIUM_NATIVE_ROUTING (required). TIGERA/CILIUM_OVERLAY need --cidr; CILIUM_NATIVE_ROUTING needs --node-netmask-size and --secondary-subnets")
+	f.String("network-type", "", "Network type: TIGERA, CILIUM_OVERLAY, CILIUM_NATIVE_ROUTING (required). TIGERA/CILIUM_OVERLAY need --cidr; CILIUM_NATIVE_ROUTING needs --node-netmask-size")
 	f.String("vpc-id", "", "VPC ID (required)")
-	f.String("subnet-id", "", "Subnet ID")
+	f.String("subnet-ids", "", "Subnet IDs for the cluster, comma-separated (required, at least one)")
 
 	for _, name := range []string{"name", "k8s-version", "network-type", "vpc-id"} {
 		createClusterCmd.MarkFlagRequired(name)
 	}
+	// --subnet-ids is required too, but it is enforced in resolveSubnetIDs rather
+	// than with MarkFlagRequired: that would reject callers who pass only the
+	// deprecated --list-subnet-ids alias.
 
 	// Cluster settings (optional)
 	f.String("cidr", "", "CIDR block (required for TIGERA and CILIUM_OVERLAY)")
@@ -39,9 +43,10 @@ func init() {
 	f.String("load-balancer-plugin", "enabled", "Load balancer plugin (enabled, disabled)")
 	f.String("block-store-csi-plugin", "enabled", "Block store CSI plugin (enabled, disabled)")
 	f.String("service-endpoint", "disabled", "Service endpoint (enabled, disabled)")
-	f.String("az-strategy", "SINGLE", "Availability zone strategy")
-	f.String("secondary-subnets", "", "Secondary subnet CIDRs, comma-separated, e.g. 10.5.60.0/22 (required for CILIUM_NATIVE_ROUTING, at least one, max 10). NOT subnet IDs")
+	f.String("az-strategy", "SINGLE", "Availability zone strategy: SINGLE (exactly one --subnet-ids value) or MULTI")
 	f.String("list-subnet-ids", "", "Subnet IDs for the cluster (comma-separated)")
+	// Deprecating hides the alias from help and prints a warning when it is used.
+	_ = f.MarkDeprecated("list-subnet-ids", "use --subnet-ids instead")
 	f.Int("node-netmask-size", 0, "Node netmask size: 24, 25, or 26 (required for CILIUM_NATIVE_ROUTING)")
 	f.String("auto-upgrade-config", "", "Auto-upgrade config (shorthand time=03:00,weekdays=Mon or JSON; use JSON for multiple weekdays)")
 	f.String("auto-healing-config", "", "Auto-healing config; set exactly one of maxUnhealthy or unhealthyRange (shorthand enableAutoHealing=true,maxUnhealthy=20%,timeoutUnhealthy=10 or JSON)")
@@ -50,101 +55,25 @@ func init() {
 
 func runCreateCluster(cmd *cobra.Command, args []string) error {
 	name, _ := cmd.Flags().GetString("name")
-	k8sVersion, _ := cmd.Flags().GetString("k8s-version")
 	networkType, _ := cmd.Flags().GetString("network-type")
-	vpcID, _ := cmd.Flags().GetString("vpc-id")
-	subnetID, _ := cmd.Flags().GetString("subnet-id")
 	cidr, _ := cmd.Flags().GetString("cidr")
-	description, _ := cmd.Flags().GetString("description")
-	releaseChannel, _ := cmd.Flags().GetString("release-channel")
-	azStrategy, _ := cmd.Flags().GetString("az-strategy")
-	secondarySubnets, _ := cmd.Flags().GetString("secondary-subnets")
-	listSubnetIDs, _ := cmd.Flags().GetString("list-subnet-ids")
-	autoUpgradeStr, _ := cmd.Flags().GetString("auto-upgrade-config")
-	autoHealingStr, _ := cmd.Flags().GetString("auto-healing-config")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
-	// Parse enabled/disabled toggle flags.
-	privateClusterVal, _ := cmd.Flags().GetString("private-cluster")
-	lbPluginVal, _ := cmd.Flags().GetString("load-balancer-plugin")
-	csiPluginVal, _ := cmd.Flags().GetString("block-store-csi-plugin")
-	serviceEndpointVal, _ := cmd.Flags().GetString("service-endpoint")
-	enablePrivateCluster, err := parseToggle("private-cluster", privateClusterVal)
-	if err != nil {
-		return err
-	}
-	enabledLBPlugin, err := parseToggle("load-balancer-plugin", lbPluginVal)
-	if err != nil {
-		return err
-	}
-	enabledCSIPlugin, err := parseToggle("block-store-csi-plugin", csiPluginVal)
-	if err != nil {
-		return err
-	}
-	enabledServiceEndpoint, err := parseToggle("service-endpoint", serviceEndpointVal)
+	body, err := buildCreateClusterBody(cmd.Flags())
 	if err != nil {
 		return err
 	}
 
-	// Build cluster body. Node groups are created separately via
-	// 'grn vks create-nodegroup'.
-	body := map[string]interface{}{
-		"name":                       name,
-		"version":                    k8sVersion,
-		"networkType":                networkType,
-		"vpcId":                      vpcID,
-		"enablePrivateCluster":       enablePrivateCluster,
-		"releaseChannel":             releaseChannel,
-		"enabledBlockStoreCsiPlugin": enabledCSIPlugin,
-		"enabledLoadBalancerPlugin":  enabledLBPlugin,
-		"enabledServiceEndpoint":     enabledServiceEndpoint,
-		"azStrategy":                 azStrategy,
-	}
+	// Field requirements enforced client-side so both dry-run and real creates
+	// fail fast with a clear message instead of an opaque server error.
+	netmaskSet := cmd.Flags().Changed("node-netmask-size")
+	nodeNetmaskSize, _ := cmd.Flags().GetInt("node-netmask-size")
+	azStrategy, _ := body["azStrategy"].(string)
+	subnetIDs, _ := body["listSubnetIds"].([]string)
 
-	if subnetID != "" {
-		body["subnetId"] = subnetID
-	}
-	if cidr != "" {
-		body["cidr"] = cidr
-	}
-	if description != "" {
-		body["description"] = description
-	}
-	if secondarySubnets != "" {
-		body["secondarySubnets"] = parseCommaSeparated(secondarySubnets)
-	}
-	if listSubnetIDs != "" {
-		body["listSubnetIds"] = parseCommaSeparated(listSubnetIDs)
-	}
-	if cmd.Flags().Changed("node-netmask-size") {
-		nodeNetmaskSize, _ := cmd.Flags().GetInt("node-netmask-size")
-		body["nodeNetmaskSize"] = nodeNetmaskSize
-	}
-	if autoUpgradeStr != "" {
-		uc, err := cli.ParseStructFlag(autoUpgradeStr)
-		if err != nil {
-			return fmt.Errorf("--auto-upgrade-config: %w", err)
-		}
-		body["autoUpgradeConfig"] = uc
-	}
-	if autoHealingStr != "" {
-		hc, err := cli.ParseStructFlagTyped(autoHealingStr, []string{"timeoutUnhealthy"}, []string{"enableAutoHealing"})
-		if err != nil {
-			return fmt.Errorf("--auto-healing-config: %w", err)
-		}
-		if enabled, _ := hc["enableAutoHealing"].(bool); enabled {
-			_, hasMax := hc["maxUnhealthy"]
-			_, hasRange := hc["unhealthyRange"]
-			if hasMax == hasRange {
-				return fmt.Errorf("--auto-healing-config: set exactly one of maxUnhealthy or unhealthyRange")
-			}
-		}
-		body["autoHealingConfig"] = hc
-	}
-
-	// Network-type-specific requirements (enforced client-side so both dry-run
-	// and real creates fail fast with a clear message).
-	netErrs := validateNetworkRequirements(networkType, cidr, cmd.Flags().Changed("node-netmask-size"), secondarySubnets)
+	netErrs := validateNetworkRequirements(networkType, cidr, netmaskSet)
+	netErrs = append(netErrs, validateNodeNetmaskSize(netmaskSet, nodeNetmaskSize)...)
+	netErrs = append(netErrs, validateAZStrategy(azStrategy, subnetIDs)...)
 
 	if dryRun {
 		return validateCreateCluster(name, netErrs)
@@ -167,12 +96,128 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	return outputResult(cmd, result)
 }
 
+// buildCreateClusterBody composes the POST body from flags. Every key it sets
+// exists on CreateClusterComboDto, the schema POST /v1/clusters accepts. The
+// deprecated single-subnet "subnetId" is never sent: one subnet and many subnets
+// both travel in "listSubnetIds".
+func buildCreateClusterBody(flags *pflag.FlagSet) (map[string]interface{}, error) {
+	name, _ := flags.GetString("name")
+	k8sVersion, _ := flags.GetString("k8s-version")
+	networkType, _ := flags.GetString("network-type")
+	vpcID, _ := flags.GetString("vpc-id")
+	cidr, _ := flags.GetString("cidr")
+	description, _ := flags.GetString("description")
+	releaseChannel, _ := flags.GetString("release-channel")
+	azStrategy, _ := flags.GetString("az-strategy")
+	autoUpgradeStr, _ := flags.GetString("auto-upgrade-config")
+	autoHealingStr, _ := flags.GetString("auto-healing-config")
+
+	// Parse enabled/disabled toggle flags.
+	privateClusterVal, _ := flags.GetString("private-cluster")
+	lbPluginVal, _ := flags.GetString("load-balancer-plugin")
+	csiPluginVal, _ := flags.GetString("block-store-csi-plugin")
+	serviceEndpointVal, _ := flags.GetString("service-endpoint")
+	enablePrivateCluster, err := parseToggle("private-cluster", privateClusterVal)
+	if err != nil {
+		return nil, err
+	}
+	enabledLBPlugin, err := parseToggle("load-balancer-plugin", lbPluginVal)
+	if err != nil {
+		return nil, err
+	}
+	enabledCSIPlugin, err := parseToggle("block-store-csi-plugin", csiPluginVal)
+	if err != nil {
+		return nil, err
+	}
+	enabledServiceEndpoint, err := parseToggle("service-endpoint", serviceEndpointVal)
+	if err != nil {
+		return nil, err
+	}
+
+	subnetIDs, err := resolveSubnetIDs(flags)
+	if err != nil {
+		return nil, err
+	}
+
+	// Node groups are created separately via 'grn vks create-nodegroup'.
+	body := map[string]interface{}{
+		"name":                       name,
+		"version":                    k8sVersion,
+		"networkType":                networkType,
+		"vpcId":                      vpcID,
+		"listSubnetIds":              subnetIDs,
+		"enablePrivateCluster":       enablePrivateCluster,
+		"releaseChannel":             releaseChannel,
+		"enabledBlockStoreCsiPlugin": enabledCSIPlugin,
+		"enabledLoadBalancerPlugin":  enabledLBPlugin,
+		"enabledServiceEndpoint":     enabledServiceEndpoint,
+		"azStrategy":                 azStrategy,
+	}
+
+	if cidr != "" {
+		body["cidr"] = cidr
+	}
+	if description != "" {
+		body["description"] = description
+	}
+	if flags.Changed("node-netmask-size") {
+		nodeNetmaskSize, _ := flags.GetInt("node-netmask-size")
+		body["nodeNetmaskSize"] = nodeNetmaskSize
+	}
+	if autoUpgradeStr != "" {
+		uc, err := cli.ParseStructFlag(autoUpgradeStr)
+		if err != nil {
+			return nil, fmt.Errorf("--auto-upgrade-config: %w", err)
+		}
+		body["autoUpgradeConfig"] = uc
+	}
+	if autoHealingStr != "" {
+		hc, err := cli.ParseStructFlagTyped(autoHealingStr, []string{"timeoutUnhealthy"}, []string{"enableAutoHealing"})
+		if err != nil {
+			return nil, fmt.Errorf("--auto-healing-config: %w", err)
+		}
+		if enabled, _ := hc["enableAutoHealing"].(bool); enabled {
+			_, hasMax := hc["maxUnhealthy"]
+			_, hasRange := hc["unhealthyRange"]
+			if hasMax == hasRange {
+				return nil, fmt.Errorf("--auto-healing-config: set exactly one of maxUnhealthy or unhealthyRange")
+			}
+		}
+		body["autoHealingConfig"] = hc
+	}
+
+	return body, nil
+}
+
+// resolveSubnetIDs returns the cluster's subnet IDs. The API still accepts the
+// single-subnet "subnetId" as a deprecated fallback, but the CLI stops sending it
+// ahead of its removal: one subnet and many subnets both travel in
+// "listSubnetIds" — hence a single required list flag. The deprecated
+// --list-subnet-ids alias is still accepted, but not together with --subnet-ids,
+// where there would be no safe way to guess which one the caller meant.
+func resolveSubnetIDs(flags *pflag.FlagSet) ([]string, error) {
+	subnetIDs, _ := flags.GetString("subnet-ids")
+	deprecated, _ := flags.GetString("list-subnet-ids")
+
+	if subnetIDs != "" && deprecated != "" {
+		return nil, fmt.Errorf("--subnet-ids and --list-subnet-ids set the same field; pass only --subnet-ids")
+	}
+	if deprecated != "" {
+		subnetIDs = deprecated
+	}
+
+	ids := parseCommaSeparated(subnetIDs)
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("--subnet-ids is required (at least one subnet ID, comma-separated)")
+	}
+	return ids, nil
+}
+
 // validateNetworkRequirements checks the fields each network type requires.
-// The API mandates --cidr for TIGERA/CILIUM_OVERLAY and both
-// --node-netmask-size and at least one --secondary-subnets for
-// CILIUM_NATIVE_ROUTING; validating here turns opaque server errors into
-// actionable messages.
-func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool, secondarySubnets string) []string {
+// The API mandates --cidr for TIGERA/CILIUM_OVERLAY and
+// --node-netmask-size for CILIUM_NATIVE_ROUTING; validating here turns opaque
+// server errors into actionable messages.
+func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool) []string {
 	var errs []string
 	switch networkType {
 	case "TIGERA", "CILIUM_OVERLAY":
@@ -183,11 +228,37 @@ func validateNetworkRequirements(networkType, cidr string, nodeNetmaskSet bool, 
 		if !nodeNetmaskSet {
 			errs = append(errs, "--node-netmask-size is required when --network-type is CILIUM_NATIVE_ROUTING (allowed: 24, 25, 26)")
 		}
-		if secondarySubnets == "" {
-			errs = append(errs, "--secondary-subnets is required when --network-type is CILIUM_NATIVE_ROUTING (at least one subnet)")
-		}
 	}
 	return errs
+}
+
+// validateNodeNetmaskSize checks the range CreateClusterDto.nodeNetmaskSize
+// allows (24-26). Only checked when the flag was explicitly set, since the field
+// is otherwise omitted and the server applies its own default.
+func validateNodeNetmaskSize(nodeNetmaskSet bool, size int) []string {
+	if nodeNetmaskSet && (size < 24 || size > 26) {
+		return []string{fmt.Sprintf("--node-netmask-size must be 24, 25, or 26, got %d", size)}
+	}
+	return nil
+}
+
+// validateAZStrategy checks --az-strategy against the subnet list. The API allows
+// SINGLE or MULTI, and documents listSubnetIds as "a single-element list for
+// SINGLE" — so several subnets under the default SINGLE strategy is caught here
+// instead of coming back as an opaque server rejection.
+func validateAZStrategy(azStrategy string, subnetIDs []string) []string {
+	switch azStrategy {
+	case "SINGLE":
+		if len(subnetIDs) > 1 {
+			return []string{fmt.Sprintf(
+				"--az-strategy SINGLE takes exactly one --subnet-ids value, got %d; use --az-strategy MULTI for a multi-subnet cluster",
+				len(subnetIDs))}
+		}
+	case "MULTI":
+	default:
+		return []string{fmt.Sprintf("--az-strategy must be SINGLE or MULTI, got %q", azStrategy)}
+	}
+	return nil
 }
 
 func validateCreateCluster(name string, networkErrors []string) error {
