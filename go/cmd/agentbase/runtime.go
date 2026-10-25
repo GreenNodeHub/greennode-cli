@@ -18,8 +18,8 @@ import (
 
 // runtimeCmd groups the agent-runtime lifecycle commands. The agentbase /runtime
 // endpoint fronts the agent-core-runtime REST API (POST/GET/PATCH/DELETE
-// /agent-runtimes — note: bare paths, no /api/v1). An agent runtime is a
-// deployable container (image/command/args/env/autoscaling); it converges
+// /v1/agent-runtimes). An agent runtime is a deployable container
+// (image/command/args/env/network/inbound-auth/autoscaling); it converges
 // asynchronously (CREATING → ACTIVE), so create/update/delete return immediately
 // and `wait` polls to a terminal state.
 //
@@ -67,20 +67,27 @@ func newRuntimeClient(ctx context.Context, cmd *cobra.Command) (*runtimepkg.Clie
 // ---------------------------------------------------------------------------
 
 // runtimeSpec holds the mutable spec fields common to create and update.
+// networkConfig/inboundAuth/protocol/allowedCidrs are only populated when the
+// corresponding flags are set (they are optional server-side; omitting them
+// keeps the platform defaults: public network, no inbound auth, HTTP).
 type runtimeSpec struct {
-	Description string
-	ImageURL    string
-	ImageAuth   *runtimepkg.ImageAuth
-	Command     []string
-	Args        []string
-	Env         map[string]string
-	FlavorID    string
-	Autoscaling runtimepkg.Autoscaling
+	Description  string
+	ImageURL     string
+	ImageAuth    *runtimepkg.ImageAuth
+	Command      []string
+	Args         []string
+	Env          map[string]string
+	Network      *runtimepkg.NetworkConfig
+	AllowedCidrs []string
+	Inbound      *runtimepkg.InboundAuth
+	Protocol     string
+	FlavorID     string
+	Autoscaling  runtimepkg.Autoscaling
 }
 
-// readRuntimeSpec reads + prompts the mutable spec fields. name is handled by
-// the caller (create-only). Required (@NotEmpty) fields: imageUrl, flavorId;
-// autoscaling has flag defaults so it is always populated.
+// readRuntimeSpec reads + validates the mutable spec fields. name and poc are
+// create-only and handled by the caller. Required (@NotEmpty) fields:
+// imageUrl, flavorId; autoscaling has flag defaults so it is always populated.
 func readRuntimeSpec(cmd *cobra.Command) (*runtimeSpec, error) {
 	f := cmd.Flags()
 
@@ -107,19 +114,35 @@ func readRuntimeSpec(cmd *cobra.Command) (*runtimeSpec, error) {
 		return nil, err
 	}
 
-	minReplicas, _ := f.GetInt("min-replicas")
+	// minReplicas was removed from the API — the platform owns the floor (1).
+	// The flag stays registered (hidden, deprecated) so old scripts only warn.
+	if f.Changed("min-replicas") {
+		fmt.Fprintln(os.Stderr, "warning: --min-replicas is deprecated and ignored; the platform owns the replica floor (always 1)")
+	}
 	maxReplicas, _ := f.GetInt("max-replicas")
 	cpuUtil, _ := f.GetInt("cpu-utilization")
 	memUtil, _ := f.GetInt("memory-utilization")
 	autoscaling := runtimepkg.Autoscaling{
-		MinReplicas:       minReplicas,
 		MaxReplicas:       maxReplicas,
 		CPUUtilization:    cpuUtil,
 		MemoryUtilization: memUtil,
 	}
-	if autoscaling.MaxReplicas < autoscaling.MinReplicas {
-		return nil, fmt.Errorf("--max-replicas (%d) must be >= --min-replicas (%d)",
-			autoscaling.MaxReplicas, autoscaling.MinReplicas)
+	if autoscaling.MaxReplicas < 1 {
+		return nil, fmt.Errorf("--max-replicas (%d) must be >= 1", autoscaling.MaxReplicas)
+	}
+
+	network, err := readNetworkConfig(cmd)
+	if err != nil {
+		return nil, err
+	}
+	allowedCidrs, _ := f.GetStringArray("allowed-cidrs")
+	inbound, err := readInboundAuth(cmd)
+	if err != nil {
+		return nil, err
+	}
+	protocol, _ := f.GetString("protocol")
+	if protocol != "" && protocol != "HTTP" && protocol != "MCP" {
+		return nil, fmt.Errorf("--protocol must be HTTP or MCP (got %q)", protocol)
 	}
 
 	imageAuth, err := readImageAuth(cmd)
@@ -128,30 +151,131 @@ func readRuntimeSpec(cmd *cobra.Command) (*runtimeSpec, error) {
 	}
 
 	return &runtimeSpec{
-		Description: description,
-		ImageURL:    imageURL,
-		ImageAuth:   imageAuth,
-		Command:     command,
-		Args:        args,
-		Env:         env,
-		FlavorID:    flavorID,
-		Autoscaling: autoscaling,
+		Description:  description,
+		ImageURL:     imageURL,
+		ImageAuth:    imageAuth,
+		Command:      command,
+		Args:         args,
+		Env:          env,
+		Network:      network,
+		AllowedCidrs: allowedCidrs,
+		Inbound:      inbound,
+		Protocol:     protocol,
+		FlavorID:     flavorID,
+		Autoscaling:  autoscaling,
+	}, nil
+}
+
+// readNetworkConfig builds *NetworkConfig only when --network-mode is set.
+// PUBLIC is the platform default (endpoints on the public internet); VPC
+// attaches endpoints to a VPC/subnet (vpcId and subnetId are then required;
+// routeCidrs adds egress routes).
+func readNetworkConfig(cmd *cobra.Command) (*runtimepkg.NetworkConfig, error) {
+	f := cmd.Flags()
+	mode, _ := f.GetString("network-mode")
+	if mode == "" {
+		return nil, nil
+	}
+	if mode != "PUBLIC" && mode != "VPC" {
+		return nil, fmt.Errorf("--network-mode must be PUBLIC or VPC (got %q)", mode)
+	}
+	vpcID, _ := f.GetString("vpc-id")
+	subnetID, _ := f.GetString("subnet-id")
+	routeCidrs, _ := f.GetStringArray("route-cidrs")
+	if mode == "VPC" && (vpcID == "" || subnetID == "") {
+		return nil, fmt.Errorf("--network-mode VPC requires both --vpc-id and --subnet-id")
+	}
+	return &runtimepkg.NetworkConfig{
+		Mode:       mode,
+		VpcID:      vpcID,
+		SubnetID:   subnetID,
+		RouteCidrs: routeCidrs,
+	}, nil
+}
+
+// readInboundAuth builds *InboundAuth only when --inbound-mode is set. NONE is
+// open, IAM authenticates callers via the platform IAM, JWT validates caller
+// JWTs (--inbound-jwt-* then required: DISCOVERY needs --inbound-jwt-discovery-url,
+// JWKS needs --inbound-jwt-jwks).
+func readInboundAuth(cmd *cobra.Command) (*runtimepkg.InboundAuth, error) {
+	f := cmd.Flags()
+	mode, _ := f.GetString("inbound-mode")
+	if mode == "" {
+		return nil, nil
+	}
+	if mode != "NONE" && mode != "IAM" && mode != "JWT" {
+		return nil, fmt.Errorf("--inbound-mode must be NONE, IAM or JWT (got %q)", mode)
+	}
+	if mode != "JWT" {
+		for _, name := range []string{"inbound-jwt-source", "inbound-jwt-jwks", "inbound-jwt-discovery-url", "inbound-jwt-audience", "inbound-jwt-client", "inbound-jwt-scope", "inbound-jwt-principal-claim"} {
+			if f.Changed(name) {
+				return nil, fmt.Errorf("--%s only applies when --inbound-mode is JWT", name)
+			}
+		}
+		return &runtimepkg.InboundAuth{Mode: mode}, nil
+	}
+	source, _ := f.GetString("inbound-jwt-source")
+	if source == "" {
+		return nil, fmt.Errorf("--inbound-mode JWT requires --inbound-jwt-source (DISCOVERY or JWKS)")
+	}
+	if source != "DISCOVERY" && source != "JWKS" {
+		return nil, fmt.Errorf("--inbound-jwt-source must be DISCOVERY or JWKS (got %q)", source)
+	}
+	jwksRaw, _ := f.GetString("inbound-jwt-jwks")
+	discoveryURL, _ := f.GetString("inbound-jwt-discovery-url")
+	switch source {
+	case "DISCOVERY":
+		if discoveryURL == "" {
+			return nil, fmt.Errorf("--inbound-jwt-source DISCOVERY requires --inbound-jwt-discovery-url")
+		}
+	case "JWKS":
+		if jwksRaw == "" {
+			return nil, fmt.Errorf("--inbound-jwt-source JWKS requires --inbound-jwt-jwks (the key set JSON, max 32KiB)")
+		}
+		if !json.Valid([]byte(jwksRaw)) {
+			return nil, fmt.Errorf("--inbound-jwt-jwks must be a valid JSON key set")
+		}
+		if len(jwksRaw) > 32*1024 {
+			return nil, fmt.Errorf("--inbound-jwt-jwks is %d bytes; the API caps it at 32KiB (prefer DISCOVERY)", len(jwksRaw))
+		}
+	}
+	audiences, _ := f.GetStringArray("inbound-jwt-audience")
+	clients, _ := f.GetStringArray("inbound-jwt-client")
+	scopes, _ := f.GetStringArray("inbound-jwt-scope")
+	principalClaim, _ := f.GetString("inbound-jwt-principal-claim")
+	return &runtimepkg.InboundAuth{
+		Mode: mode,
+		JWT: &runtimepkg.InboundAuthJWT{
+			Source:           source,
+			JWKS:             json.RawMessage(jwksRaw),
+			DiscoveryURL:     discoveryURL,
+			AllowedAudiences: audiences,
+			AllowedClients:   clients,
+			AllowedScopes:    scopes,
+			PrincipalClaim:   principalClaim,
+		},
 	}, nil
 }
 
 // readImageAuth builds *ImageAuth only when --image-auth-enabled is set (or a
 // username is supplied). username/password are required when auth is enabled.
-// The password is send-only (never present on responses); prefer --file for it.
+// --image-auth-use-registry-credentials instead lets the platform pull with
+// its own credentials (no username/password needed). The password is send-only
+// (never present on responses); prefer --file for it.
 func readImageAuth(cmd *cobra.Command) (*runtimepkg.ImageAuth, error) {
 	f := cmd.Flags()
 	enabled, _ := f.GetBool("image-auth-enabled")
+	useRegistry, _ := f.GetBool("image-auth-use-registry-credentials")
 	username, _ := f.GetString("image-auth-username")
 	password, _ := f.GetString("image-auth-password")
+	if useRegistry {
+		return &runtimepkg.ImageAuth{Enabled: true, UseAgentBaseRegistryCredentials: &useRegistry}, nil
+	}
 	if !enabled && username == "" {
 		return nil, nil
 	}
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("--image-auth-enabled requires both --image-auth-username and --image-auth-password (or use --file)")
+		return nil, fmt.Errorf("--image-auth-enabled requires both --image-auth-username and --image-auth-password (or --image-auth-use-registry-credentials, or use --file)")
 	}
 	return &runtimepkg.ImageAuth{Enabled: enabled, Username: username, Password: password}, nil
 }
@@ -183,8 +307,9 @@ var runtimeCreateCmd = &cobra.Command{
 	Long: `Create a new agent runtime.
 
 By default the runtime is built from flags (the simple path). For environment
-variables, private-registry auth, or multi-element command/args, use --file with
-a template produced by 'grn agentbase runtime generate'.
+variables, private-registry auth, network placement (VPC), inbound auth (IAM or
+JWT), a CIDR allowlist, an MCP protocol runtime, or multi-element command/args,
+use --file with a template produced by 'grn agentbase runtime generate'.
 
 The runtime is created asynchronously; this command returns as soon as the
 service accepts the spec (state CREATING). Converge with
@@ -196,7 +321,7 @@ service accepts the spec (state CREATING). Converge with
 			if err != nil {
 				return fmt.Errorf("read --file: %w", err)
 			}
-			req, err := loadRuntimeSpec(data)
+			req, err := loadRuntimeSpec(data, true)
 			if err != nil {
 				return err
 			}
@@ -211,17 +336,26 @@ service accepts the spec (state CREATING). Converge with
 		if err != nil {
 			return err
 		}
-		return createRuntimeAndPrint(ctx, cmd, &runtimepkg.CreateAgentRuntimeRequest{
-			Name:                 name,
+		req := &runtimepkg.CreateAgentRuntimeRequest{
 			Description:          spec.Description,
 			ImageURL:             spec.ImageURL,
 			ImageAuth:            spec.ImageAuth,
 			Command:              spec.Command,
 			Args:                 spec.Args,
 			EnvironmentVariables: spec.Env,
+			NetworkConfig:        spec.Network,
+			AllowedCidrs:         spec.AllowedCidrs,
+			InboundAuth:          spec.Inbound,
+			Protocol:             spec.Protocol,
 			FlavorID:             spec.FlavorID,
 			Autoscaling:          spec.Autoscaling,
-		})
+		}
+		// poc is create-only: send it only when the flag was explicitly set.
+		if cmd.Flags().Changed("poc") {
+			poc, _ := cmd.Flags().GetBool("poc")
+			req.POC = &poc
+		}
+		return createRuntimeAndPrint(ctx, cmd, req)
 	},
 }
 
@@ -259,8 +393,12 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 				Command:              []string{},
 				Args:                 []string{},
 				EnvironmentVariables: map[string]string{},
+				NetworkConfig:        &runtimepkg.NetworkConfig{Mode: "PUBLIC"},
+				AllowedCidrs:         []string{},
+				InboundAuth:          &runtimepkg.InboundAuth{Mode: "NONE"},
+				Protocol:             "HTTP",
 				FlavorID:             "fill-flavor-id",
-				Autoscaling:          runtimepkg.Autoscaling{MinReplicas: 1, MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
+				Autoscaling:          runtimepkg.Autoscaling{MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
 			}
 			b, err := json.MarshalIndent(example, "", "  ")
 			if err != nil {
@@ -281,12 +419,14 @@ const runtimeCreateTemplateYAML = `# Agent runtime create spec.
 # Fill in and apply with:  grn agentbase runtime create --file <this-file>
 #
 # Required: name, imageUrl, flavorId, autoscaling (and command/args/env, which
-# may be empty lists/map but must be present). name is sealed (immutable).
+# may be empty lists/map but must be present). name is sealed (immutable);
+# 5-50 chars, [a-zA-Z0-9._-].
 name: my-runtime             # immutable
 description: ""
 imageUrl: registry.example.com/my-agent:latest
 # imageAuth:                 # optional private-registry credentials (send-only)
 #   enabled: true
+#   useAgentBaseRegistryCredentials: false   # let the platform pull with its own registry credentials
 #   username: ""
 #   password: ""             # prefer keeping this in the file, not on the CLI
 command:                     # container entrypoint (list); may be empty
@@ -296,9 +436,28 @@ command:                     # container entrypoint (list); may be empty
 args: []                     # container args (list); may be empty
 environmentVariables:        # map; may be empty
   LOG_LEVEL: info
+# networkConfig:             # optional network placement (omit = PUBLIC)
+#   mode: VPC                # PUBLIC | VPC (VPC requires vpcId + subnetId)
+#   vpcId: ""
+#   subnetId: ""
+#   routeCidrs: []           # egress routes (max 20)
+# allowedCidrs:              # optional inbound CIDR allowlist (max 20)
+#   - 10.0.0.0/8
+# inboundAuth:               # optional inbound authentication (omit = NONE)
+#   mode: JWT                # NONE | IAM | JWT
+#   jwt:                     # required when mode is JWT
+#     source: DISCOVERY      # DISCOVERY | JWKS
+#     discoveryUrl: https://idp.example.com/.well-known/openid-configuration
+#     # jwks: '{"keys": []}' # inline key set when source is JWKS (max 32KiB)
+#     allowedAudiences: []   # max 20
+#     allowedClients: []     # max 20
+#     allowedScopes: []      # max 50
+#     principalClaim: sub
+protocol: HTTP               # HTTP | MCP (omit = HTTP)
 flavorId: fill-flavor-id
-autoscaling:                 # HPA config (bounds: replicas 1-10, util 10-90)
-  minReplicas: 1
+poc: false                   # proof-of-concept runtime (create-only)
+autoscaling:                 # HPA config (bounds: maxReplicas 1-10, util 10-90;
+                             # minReplicas is platform-owned and no longer accepted)
   maxReplicas: 2
   cpuUtilization: 70
   memoryUtilization: 70
@@ -398,10 +557,12 @@ For anything beyond the simple path, use --file with the create template
 			if err != nil {
 				return fmt.Errorf("read --file: %w", err)
 			}
-			createReq, err := loadRuntimeSpec(data)
+			createReq, err := loadRuntimeSpec(data, false)
 			if err != nil {
 				return err
 			}
+			// poc is create-only: a spec file carrying poc is accepted for
+			// convenience but the field is not forwarded on update.
 			return updateRuntimeAndPrint(ctx, cmd, id, &runtimepkg.UpdateAgentRuntimeRequest{
 				Description:          createReq.Description,
 				ImageURL:             createReq.ImageURL,
@@ -409,6 +570,10 @@ For anything beyond the simple path, use --file with the create template
 				Command:              createReq.Command,
 				Args:                 createReq.Args,
 				EnvironmentVariables: createReq.EnvironmentVariables,
+				NetworkConfig:        createReq.NetworkConfig,
+				AllowedCidrs:         createReq.AllowedCidrs,
+				InboundAuth:          createReq.InboundAuth,
+				Protocol:             createReq.Protocol,
 				FlavorID:             createReq.FlavorID,
 				Autoscaling:          createReq.Autoscaling,
 			})
@@ -424,6 +589,10 @@ For anything beyond the simple path, use --file with the create template
 			Command:              spec.Command,
 			Args:                 spec.Args,
 			EnvironmentVariables: spec.Env,
+			NetworkConfig:        spec.Network,
+			AllowedCidrs:         spec.AllowedCidrs,
+			InboundAuth:          spec.Inbound,
+			Protocol:             spec.Protocol,
 			FlavorID:             spec.FlavorID,
 			Autoscaling:          spec.Autoscaling,
 		})
@@ -542,12 +711,18 @@ var (
 // ---------------------------------------------------------------------------
 
 func renderRuntimeDetail(rt *runtimepkg.AgentRuntime) error {
+	poc := ""
+	if rt.POC != nil {
+		poc = fmt.Sprintf("%t", *rt.POC)
+	}
 	rows := [][]string{
 		{"ID", rt.ID},
 		{"Name", rt.Name},
 		{"Description", output.StrOrDash(rt.Description)},
 		{"State", rt.Status},
+		{"Display Status", output.StrOrDash(rt.DisplayStatus)},
 		{"Status Reason", output.StrOrDash(rt.StatusReason)},
+		{"PoC", output.StrOrDash(poc)},
 		{"Created", formatTimeVal(rt.CreatedAt)},
 		{"Updated", formatTimeVal(rt.UpdatedAt)},
 	}
@@ -562,8 +737,9 @@ func renderRuntimeDetail(rt *runtimepkg.AgentRuntime) error {
 // loadRuntimeSpec parses a YAML/JSON create spec into CreateAgentRuntimeRequest.
 // yaml.Unmarshal into a map then json.Unmarshal into the struct so the file's
 // camelCase keys bind to the struct's json tags (yaml.v3 does not honor json
-// tags directly). Used by both create (--file) and update (--file, minus name).
-func loadRuntimeSpec(data []byte) (*runtimepkg.CreateAgentRuntimeRequest, error) {
+// tags directly). Used by both create (--file, name required) and update
+// (--file, name omitted/ignored: the create template minus name works as-is).
+func loadRuntimeSpec(data []byte, requireName bool) (*runtimepkg.CreateAgentRuntimeRequest, error) {
 	m, err := yamlToMap(data)
 	if err != nil {
 		return nil, err
@@ -576,8 +752,11 @@ func loadRuntimeSpec(data []byte) (*runtimepkg.CreateAgentRuntimeRequest, error)
 	if err := json.Unmarshal(jb, &req); err != nil {
 		return nil, fmt.Errorf("invalid runtime spec: %w", err)
 	}
-	if req.Name == "" || req.ImageURL == "" || req.FlavorID == "" {
-		return nil, fmt.Errorf("spec is missing required field(s): name, imageUrl, flavorId")
+	if req.ImageURL == "" || req.FlavorID == "" {
+		return nil, fmt.Errorf("spec is missing required field(s): imageUrl, flavorId")
+	}
+	if requireName && req.Name == "" {
+		return nil, fmt.Errorf("spec is missing required field: name")
 	}
 	return &req, nil
 }
@@ -1014,6 +1193,7 @@ func renderEndpointDetail(ep *runtimepkg.AgentRuntimeEndpointDto) error {
 		{"Live Version", fmt.Sprintf("%d", ep.LiveVersion)},
 		{"Replicas", fmt.Sprintf("%d", ep.CurrentReplicaCount)},
 		{"URL", output.StrOrDash(ep.URL)},
+		{"Outbound IPs", output.StrOrDash(strings.Join(ep.OutboundIps, ", "))},
 		{"Status", ep.Status},
 		{"Display Status", ep.DisplayStatus},
 		{"Created", formatTimeVal(ep.CreatedAt)},
@@ -1103,7 +1283,8 @@ func init() {
 	// create
 	create := runtimeCreateCmd
 	addRuntimeSpecFlags(create)
-	create.Flags().StringVarP(&runtimeName, "name", "n", "", "Runtime name (required without --interactive, immutable)")
+	create.Flags().StringVarP(&runtimeName, "name", "n", "", "Runtime name (required without --interactive, immutable; 5-50 chars)")
+	create.Flags().Bool("poc", false, "Mark as a proof-of-concept runtime (create-only)")
 	create.Flags().StringVar(&runtimeFile, "file", "", "Apply a spec file (see 'generate'); authoritative when set")
 	runtimeCmd.AddCommand(create)
 
@@ -1210,8 +1391,10 @@ func addLogFlags(cmd *cobra.Command) {
 }
 
 // addRuntimeSpecFlags registers the mutable spec flags shared by create and
-// update (everything except --name). autoscaling has flag defaults so it is
-// always populated without prompting.
+// update (everything except --name and --poc, which are create-only).
+// autoscaling has flag defaults so it is always populated without prompting.
+// The network/inbound flags stay unset by default (platform defaults: public
+// network, no inbound auth, HTTP).
 func addRuntimeSpecFlags(cmd *cobra.Command) {
 	f := cmd.Flags()
 	f.String("description", "", "Description")
@@ -1219,14 +1402,31 @@ func addRuntimeSpecFlags(cmd *cobra.Command) {
 	f.Bool("image-auth-enabled", false, "Enable private-registry auth (requires --image-auth-username/password)")
 	f.String("image-auth-username", "", "Private-registry username (with --image-auth-enabled)")
 	f.String("image-auth-password", "", "Private-registry password (with --image-auth-enabled; prefer --file)")
+	f.Bool("image-auth-use-registry-credentials", false, "imageAuth: let the platform pull using its own registry credentials")
 	f.StringArray("command", nil, "Container entrypoint element (repeatable)")
 	f.StringArray("args", nil, "Container arg (repeatable)")
 	f.StringArray("env", nil, "Environment variable KEY=VALUE (repeatable)")
+	f.String("network-mode", "", "networkConfig mode: PUBLIC or VPC (unset = PUBLIC)")
+	f.String("vpc-id", "", "networkConfig vpcId (required with --network-mode VPC)")
+	f.String("subnet-id", "", "networkConfig subnetId (required with --network-mode VPC)")
+	f.StringArray("route-cidrs", nil, "networkConfig egress route CIDR (repeatable, max 20)")
+	f.StringArray("allowed-cidrs", nil, "Inbound CIDR allowlist (repeatable, max 20)")
+	f.String("inbound-mode", "", "inboundAuth mode: NONE, IAM or JWT (unset = NONE)")
+	f.String("inbound-jwt-source", "", "inboundAuth JWT key source: DISCOVERY or JWKS (with --inbound-mode JWT)")
+	f.String("inbound-jwt-jwks", "", "inboundAuth JWT inline key set JSON (with source JWKS, max 32KiB; prefer --file)")
+	f.String("inbound-jwt-discovery-url", "", "inboundAuth JWT OIDC discovery URL (with source DISCOVERY)")
+	f.StringArray("inbound-jwt-audience", nil, "inboundAuth JWT allowed audience (repeatable, max 20)")
+	f.StringArray("inbound-jwt-client", nil, "inboundAuth JWT allowed client (repeatable, max 20)")
+	f.StringArray("inbound-jwt-scope", nil, "inboundAuth JWT allowed scope (repeatable, max 50)")
+	f.String("inbound-jwt-principal-claim", "", "inboundAuth JWT principal claim (default sub)")
+	f.String("protocol", "", "Runtime protocol: HTTP or MCP (unset = HTTP)")
 	f.String("flavor-id", "", "Flavor id (required)")
-	f.Int("min-replicas", 1, "Autoscaling: minimum replicas (1-10)")
+	f.Int("min-replicas", 1, "Deprecated: ignored; the platform owns the replica floor (always 1)")
 	f.Int("max-replicas", 2, "Autoscaling: maximum replicas (1-10)")
 	f.Int("cpu-utilization", 70, "Autoscaling: CPU scale-up threshold % (10-90)")
 	f.Int("memory-utilization", 70, "Autoscaling: memory scale-up threshold % (10-90)")
+	// Hidden + deprecated, not removed, so existing scripts only warn.
+	_ = f.MarkDeprecated("min-replicas", "minReplicas is platform-owned (always 1); the flag is ignored")
 }
 
 // runtimeName holds the --name value for create.

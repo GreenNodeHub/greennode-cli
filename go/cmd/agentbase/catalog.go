@@ -214,20 +214,24 @@ For anything richer — messaging channels (telegram/zalo), the GreenNode model
 provider, environment variables, or POC flag — write a spec file and apply it
 with --file (keys are the JSON/camelCase field names). Example:
 
-    name: my-bot
-    versionId: v1
+    name: my-bot              # lowercase [a-z0-9-], max 50 chars; defaults to the id
+    versionId: v1             # from 'marketplace openclaw-versions list'
     flavorId: f1
     poc: true
     greenNodeModelProvider:
       enabled: true
-      apiKeyName: my-key
+      apiKeyName: my-key      # optional; platform-managed 'openclaw-service' key when omitted
     environmentVariables:
       LOG_LEVEL: info
     channels:
       telegram:
         botToken: tok
-        dmPolicy: ALLOWLIST
-        dmAllowedUserIds: ["123"]`,
+        dmPolicy: allowlist   # allowlist | pairing (required per channel)
+        dmAllowedUserIds: ["123"]
+
+The create response carries two one-time credentials — the gatewayToken and
+the access token embedded in the url (#token=...) — that no later read returns,
+so save them from the output.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		if catalogFile != "" {

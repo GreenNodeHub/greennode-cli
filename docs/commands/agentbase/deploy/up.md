@@ -25,7 +25,6 @@ grn agentbase deploy up
     [--command <value>]
     [--args <value>]
     [--env <value>]
-    [--min-replicas <value>]
     [--max-replicas <value>]
     [--cpu-utilization <value>]
     [--memory-utilization <value>]
@@ -101,20 +100,12 @@ Environment variable `KEY=VALUE` (repeatable).
 - Required: No
 - Syntax: `--env LOG_LEVEL=info`
 
-**`--min-replicas`** (integer)
-
-Autoscaling min replicas.
-
-- Required: No
-- Default: `1`
-
 **`--max-replicas`** (integer)
 
-Autoscaling max replicas.
+Autoscaling max replicas. The minimum is platform-owned (always 1).
 
 - Required: No
 - Default: `2`
-- Constraints: must be greater than or equal to `--min-replicas`.
 
 **`--cpu-utilization`** (integer)
 

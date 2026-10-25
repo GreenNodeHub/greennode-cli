@@ -39,7 +39,7 @@ func (c *Client) List(ctx context.Context, page, size int) (*ListAgentRuntimesRe
 		q.Set("size", strconv.Itoa(size))
 	}
 	var out ListAgentRuntimesResponse
-	if err := c.http.Get(ctx, "/agent-runtimes", q, &out); err != nil {
+	if err := c.http.Get(ctx, "/v1/agent-runtimes", q, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -49,7 +49,7 @@ func (c *Client) List(ctx context.Context, page, size int) (*ListAgentRuntimesRe
 // (CREATING) state; converge with `wait`.
 func (c *Client) Create(ctx context.Context, req *CreateAgentRuntimeRequest) (*AgentRuntime, error) {
 	var out AgentRuntime
-	if err := c.http.Post(ctx, "/agent-runtimes", req, &out); err != nil {
+	if err := c.http.Post(ctx, "/v1/agent-runtimes", req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -59,7 +59,7 @@ func (c *Client) Create(ctx context.Context, req *CreateAgentRuntimeRequest) (*A
 // name is immutable but not the path key).
 func (c *Client) Get(ctx context.Context, id string) (*AgentRuntime, error) {
 	var out AgentRuntime
-	if err := c.http.Get(ctx, fmt.Sprintf("/agent-runtimes/%s", id), nil, &out); err != nil {
+	if err := c.http.Get(ctx, fmt.Sprintf("/v1/agent-runtimes/%s", id), nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -71,7 +71,7 @@ func (c *Client) Get(ctx context.Context, id string) (*AgentRuntime, error) {
 // the default endpoint forward.
 func (c *Client) Update(ctx context.Context, id string, req *UpdateAgentRuntimeRequest) (*AgentRuntime, error) {
 	var out AgentRuntime
-	if err := c.http.Patch(ctx, fmt.Sprintf("/agent-runtimes/%s", id), nil, req, &out); err != nil {
+	if err := c.http.Patch(ctx, fmt.Sprintf("/v1/agent-runtimes/%s", id), nil, req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -80,7 +80,7 @@ func (c *Client) Update(ctx context.Context, id string, req *UpdateAgentRuntimeR
 // Delete deletes an agent runtime by id. The service returns 200 with an empty
 // body; converge with `wait` (status DELETED).
 func (c *Client) Delete(ctx context.Context, id string) error {
-	return c.http.Delete(ctx, fmt.Sprintf("/agent-runtimes/%s", id), nil)
+	return c.http.Delete(ctx, fmt.Sprintf("/v1/agent-runtimes/%s", id), nil)
 }
 
 // pageQuery builds the ?page=&size= query (both omitted when <= 0, falling back
@@ -103,7 +103,7 @@ func pageQuery(page, size int) url.Values {
 // ListEndpoints returns a page of endpoints for a runtime.
 func (c *Client) ListEndpoints(ctx context.Context, id string, page, size int) (*ListResponseAgentRuntimeEndpointDto, error) {
 	var out ListResponseAgentRuntimeEndpointDto
-	if err := c.http.Get(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints", id), pageQuery(page, size), &out); err != nil {
+	if err := c.http.Get(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints", id), pageQuery(page, size), &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -112,7 +112,7 @@ func (c *Client) ListEndpoints(ctx context.Context, id string, page, size int) (
 // CreateEndpoint creates a new endpoint on a runtime.
 func (c *Client) CreateEndpoint(ctx context.Context, id string, req *AgentRuntimeEndpointCreateRequest) (*AgentRuntimeEndpointDto, error) {
 	var out AgentRuntimeEndpointDto
-	if err := c.http.Post(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints", id), req, &out); err != nil {
+	if err := c.http.Post(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints", id), req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -126,7 +126,7 @@ func (c *Client) UpdateEndpoint(ctx context.Context, id, endpointID string, vers
 	q := url.Values{}
 	q.Set("version", strconv.Itoa(version))
 	var out AgentRuntimeEndpointDto
-	if err := c.http.Do(ctx, http.MethodPut, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s", id, endpointID), q, nil, &out); err != nil {
+	if err := c.http.Do(ctx, http.MethodPut, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s", id, endpointID), q, nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -137,7 +137,7 @@ func (c *Client) UpdateEndpoint(ctx context.Context, id, endpointID string, vers
 // PrintDeletedID when the body is empty.
 func (c *Client) DeleteEndpoint(ctx context.Context, id, endpointID string) (*AgentRuntimeEndpointDto, error) {
 	var out AgentRuntimeEndpointDto
-	if err := c.http.Delete(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s", id, endpointID), &out); err != nil {
+	if err := c.http.Delete(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s", id, endpointID), &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -145,18 +145,18 @@ func (c *Client) DeleteEndpoint(ctx context.Context, id, endpointID string) (*Ag
 
 // StartEndpoint starts an endpoint. No body; 200 OK.
 func (c *Client) StartEndpoint(ctx context.Context, id, endpointID string) error {
-	return c.http.Post(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s/start", id, endpointID), nil, nil)
+	return c.http.Post(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s/start", id, endpointID), nil, nil)
 }
 
 // StopEndpoint stops an endpoint. No body; 200 OK.
 func (c *Client) StopEndpoint(ctx context.Context, id, endpointID string) error {
-	return c.http.Post(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s/stop", id, endpointID), nil, nil)
+	return c.http.Post(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s/stop", id, endpointID), nil, nil)
 }
 
 // EndpointLogs searches an endpoint's logs. 200 → LogSearchResult.
 func (c *Client) EndpointLogs(ctx context.Context, id, endpointID string, req *LogSearchRequest) (*LogSearchResult, error) {
 	var out LogSearchResult
-	if err := c.http.Post(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s/logs", id, endpointID), req, &out); err != nil {
+	if err := c.http.Post(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s/logs", id, endpointID), req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -172,7 +172,7 @@ func (c *Client) EndpointMetrics(ctx context.Context, id, endpointID, from, to s
 		q.Set("toTimestamp", to)
 	}
 	var out AgentRuntimeEndpointMetrics
-	if err := c.http.Get(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s/metrics", id, endpointID), q, &out); err != nil {
+	if err := c.http.Get(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s/metrics", id, endpointID), q, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -181,7 +181,7 @@ func (c *Client) EndpointMetrics(ctx context.Context, id, endpointID, from, to s
 // EndpointEvents lists kubernetes events for an endpoint.
 func (c *Client) EndpointEvents(ctx context.Context, id, endpointID string) ([]KubeEventDto, error) {
 	var out []KubeEventDto
-	if err := c.http.Get(ctx, fmt.Sprintf("/agent-runtimes/%s/endpoints/%s/events", id, endpointID), nil, &out); err != nil {
+	if err := c.http.Get(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/endpoints/%s/events", id, endpointID), nil, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -195,7 +195,7 @@ func (c *Client) EndpointEvents(ctx context.Context, id, endpointID string) ([]K
 // LogSearchResult.
 func (c *Client) Logs(ctx context.Context, id string, req *LogSearchRequest) (*LogSearchResult, error) {
 	var out LogSearchResult
-	if err := c.http.Post(ctx, fmt.Sprintf("/agent-runtimes/%s/logs", id), req, &out); err != nil {
+	if err := c.http.Post(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/logs", id), req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -205,13 +205,13 @@ func (c *Client) Logs(ctx context.Context, id string, req *LogSearchRequest) (*L
 // OK. The service also exposes a deprecated PATCH variant; this POST is the
 // canonical one (the QC PATCH row maps to it).
 func (c *Client) ResetServiceAccount(ctx context.Context, id string) error {
-	return c.http.Post(ctx, fmt.Sprintf("/agent-runtimes/%s/reset-service-account", id), nil, nil)
+	return c.http.Post(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/reset-service-account", id), nil, nil)
 }
 
 // ListVersions returns a page of a runtime's versions (full spec per version).
 func (c *Client) ListVersions(ctx context.Context, id string, page, size int) (*ListResponseAgentRuntimeVersionDto, error) {
 	var out ListResponseAgentRuntimeVersionDto
-	if err := c.http.Get(ctx, fmt.Sprintf("/agent-runtimes/%s/versions", id), pageQuery(page, size), &out); err != nil {
+	if err := c.http.Get(ctx, fmt.Sprintf("/v1/agent-runtimes/%s/versions", id), pageQuery(page, size), &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -221,7 +221,7 @@ func (c *Client) ListVersions(ctx context.Context, id string, page, size int) (*
 // Sub-resources: tracing (Slice 4)
 //
 // The trace endpoints are Google-AIP custom verbs on the agent-runtimes
-// collection (/agent-runtimes:get-trace, :search-traces,
+// collection (/v1/agent-runtimes:get-trace, :search-traces,
 // :trace-search-tag-values). They forward arbitrary query params (allParams) to
 // the tracing backend and return that backend's raw JSON, so the response is
 // decoded as json.RawMessage and printed verbatim.
@@ -237,7 +237,7 @@ func (c *Client) GetTrace(ctx context.Context, traceID string, params url.Values
 	}
 	q.Set("traceId", traceID)
 	var out json.RawMessage
-	if err := c.http.Get(ctx, "/agent-runtimes:get-trace", q, &out); err != nil {
+	if err := c.http.Get(ctx, "/v1/agent-runtimes:get-trace", q, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -247,7 +247,7 @@ func (c *Client) GetTrace(ctx context.Context, traceID string, params url.Values
 // the tracing backend (the --param flag).
 func (c *Client) SearchTraces(ctx context.Context, params url.Values) (json.RawMessage, error) {
 	var out json.RawMessage
-	if err := c.http.Get(ctx, "/agent-runtimes:search-traces", params, &out); err != nil {
+	if err := c.http.Get(ctx, "/v1/agent-runtimes:search-traces", params, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -263,7 +263,7 @@ func (c *Client) TraceTagValues(ctx context.Context, tagKey string, params url.V
 	}
 	q.Set("tagKey", tagKey)
 	var out json.RawMessage
-	if err := c.http.Get(ctx, "/agent-runtimes:trace-search-tag-values", q, &out); err != nil {
+	if err := c.http.Get(ctx, "/v1/agent-runtimes:trace-search-tag-values", q, &out); err != nil {
 		return nil, err
 	}
 	return out, nil

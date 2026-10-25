@@ -51,3 +51,15 @@ grn agentbase access <command> [options]
 | [outbound-auth oauth2 delete](outbound-auth-oauth2-delete.md) | Delete an OAuth2 provider |
 | [outbound-auth oauth2 m2m-token](outbound-auth-oauth2-m2m-token.md) | Get an M2M OAuth2 token |
 | [outbound-auth oauth2 3lo-token](outbound-auth-oauth2-3lo-token.md) | Get a 3-legged OAuth2 token |
+
+### Outbound Auth — Managed OAuth2 (read-only)
+
+Platform-managed OAuth2 providers: credentials live server-side and are never
+exposed, so the surface is read-only plus 3LO token retrieval. Each provider
+has a fixed `callbackUrl` the delegated browser flow returns to.
+
+| Command | Description |
+|---------|-------------|
+| [outbound-auth managed list](outbound-auth-managed-list.md) | List platform-managed OAuth2 providers |
+| [outbound-auth managed get](outbound-auth-managed-get.md) | Get a platform-managed OAuth2 provider |
+| [outbound-auth managed 3lo-token](outbound-auth-managed-3lo-token.md) | Get a 3-legged OAuth2 token (managed provider) |

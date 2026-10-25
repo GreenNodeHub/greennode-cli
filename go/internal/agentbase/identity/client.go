@@ -228,3 +228,44 @@ func (c *Client) GetDelegatedApiKey(ctx context.Context, providerName, agentIden
 	}
 	return &out, nil
 }
+
+// --- Managed OAuth2 providers (platform-managed, read-only) ---
+
+// ListManagedOauth2Providers returns a paginated list of platform-managed
+// OAuth2 providers (0-based page, identity-style).
+func (c *Client) ListManagedOauth2Providers(ctx context.Context, page, size int) (*PagedResponseManagedOauth2ProviderSummaryResponse, error) {
+	q := url.Values{}
+	q.Set("page", strconv.Itoa(page))
+	q.Set("size", strconv.Itoa(size))
+	var out PagedResponseManagedOauth2ProviderSummaryResponse
+	if err := c.http.Get(ctx, "/api/v1/outbound-auth/managed-oauth2-providers", q, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetManagedOauth2Provider retrieves a single managed OAuth2 provider summary
+// by name.
+func (c *Client) GetManagedOauth2Provider(ctx context.Context, name string) (*ManagedOauth2ProviderSummaryResponse, error) {
+	var out ManagedOauth2ProviderSummaryResponse
+	if err := c.http.Get(ctx, fmt.Sprintf("/api/v1/outbound-auth/managed-oauth2-providers/%s", name), nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetManaged3LOToken starts or resumes a 3-legged OAuth2 flow through a
+// managed provider for an agent identity. The first call typically returns an
+// authorizationUrl; the browser flow completes server-side at the provider's
+// fixed callback.
+func (c *Client) GetManaged3LOToken(ctx context.Context, providerName, agentIdentityName string, req *ThreeLoTokenRequest) (*ThreeLoTokenResponse, error) {
+	if req == nil {
+		req = &ThreeLoTokenRequest{}
+	}
+	var out ThreeLoTokenResponse
+	path := fmt.Sprintf("/api/v1/outbound-auth/managed-oauth2-providers/%s/agent-identities/%s/tokens/3lo", providerName, agentIdentityName)
+	if err := c.http.Post(ctx, path, req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

@@ -383,3 +383,133 @@ type PrivateRoutesResponse struct {
 type ReplacePrivateRoutesRequest struct {
 	Routes []string `json:"routes"`
 }
+
+// ----------------------------------------------------------------------------
+// MCP connectors / MCP server templates / target tools sync
+// (GET /api/v1/mcp-connectors, GET /api/v1/mcp-server-templates,
+// GET|POST /api/v1/gateways/{name}/targets/{target}/tools|sync)
+// ----------------------------------------------------------------------------
+
+// MCPConnectorListResponse is the body of GET /api/v1/mcp-connectors: every
+// target flattened across the caller's gateways.
+type MCPConnectorListResponse struct {
+	Items      []MCPConnectorResponse `json:"items"`
+	Pagination Pagination             `json:"pagination"`
+}
+
+// MCPConnectorResponse is one MCP connector: a single target on a single
+// caller-owned gateway, with its ready-to-use connectUrl.
+type MCPConnectorResponse struct {
+	Name         string                      `json:"name"`
+	Type         string                      `json:"type"`
+	ConnectURL   string                      `json:"connectUrl"`
+	CreatedAt    string                      `json:"createdAt"`
+	UpdatedAt    string                      `json:"updatedAt"`
+	Gateway      MCPConnectorGatewayRef      `json:"gateway"`
+	Template     MCPConnectorTemplateRef     `json:"template"`
+	OutboundAuth MCPConnectorOutboundAuthDTO `json:"outboundAuth"`
+}
+
+// MCPConnectorGatewayRef is the parent-gateway context on a connector.
+type MCPConnectorGatewayRef struct {
+	ID          string                     `json:"id"`
+	Name        string                     `json:"name"`
+	DisplayName string                     `json:"displayName"`
+	Endpoint    string                     `json:"endpoint"`
+	State       string                     `json:"state"`
+	NetworkMode string                     `json:"networkMode"`
+	UpdatedAt   string                     `json:"updatedAt"`
+	InboundAuth MCPConnectorInboundAuthDTO `json:"inboundAuth"`
+}
+
+// MCPConnectorInboundAuthDTO is the parent gateway's inbound-auth summary.
+type MCPConnectorInboundAuthDTO struct {
+	Mode         string `json:"mode"`
+	Source       string `json:"source"`
+	DiscoveryURL string `json:"discoveryUrl"`
+}
+
+// MCPConnectorTemplateRef names the catalog template a connector derives from
+// (or CUSTOM when it does not).
+type MCPConnectorTemplateRef struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"displayName"`
+}
+
+// MCPConnectorOutboundAuthDTO is the upstream outbound-auth descriptor.
+type MCPConnectorOutboundAuthDTO struct {
+	Type     string   `json:"type"`
+	Flow     string   `json:"flow"`
+	Provider string   `json:"provider"`
+	Scopes   []string `json:"scopes"`
+}
+
+// MCPServerTemplateListResponse is the body of GET /api/v1/mcp-server-templates.
+type MCPServerTemplateListResponse struct {
+	Items      []MCPServerTemplateResponse `json:"items"`
+	Pagination Pagination                  `json:"pagination"`
+}
+
+// MCPServerTemplateResponse is one enabled template from the MCP server
+// catalog. Its authOptions' Recommended* fields are pre-fill hints for a
+// target-creation form; edits go through the gateway update path.
+type MCPServerTemplateResponse struct {
+	ID                string                        `json:"id"`
+	DisplayName       string                        `json:"displayName"`
+	Vendor            string                        `json:"vendor"`
+	AuthVendor        string                        `json:"authVendor"`
+	Description       string                        `json:"description"`
+	Endpoint          string                        `json:"endpoint"`
+	Logo              string                        `json:"logo"`
+	SortOrder         int                           `json:"sortOrder"`
+	AuthOptions       []MCPServerTemplateAuthOption `json:"authOptions"`
+	EndpointVariables []EndpointVariable            `json:"endpointVariables"`
+}
+
+// MCPServerTemplateAuthOption is one auth wiring a template recommends.
+type MCPServerTemplateAuthOption struct {
+	Type                         string            `json:"type"`
+	Flow                         string            `json:"flow"`
+	Label                        string            `json:"label"`
+	RecommendedScopes            []string          `json:"recommendedScopes"`
+	RecommendedHeaderName        string            `json:"recommendedHeaderName"`
+	RecommendedHeaderValuePrefix string            `json:"recommendedHeaderValuePrefix"`
+	RecommendedCustomParameters  map[string]string `json:"recommendedCustomParameters"`
+}
+
+// EndpointVariable is one URL-path variable a template's endpoint needs.
+type EndpointVariable struct {
+	Key         string `json:"key"`
+	Description string `json:"description"`
+	Sample      string `json:"sample"`
+}
+
+// SyncRequest is the optional body of POST .../targets/{target}/sync.
+// returnTo is where the gateway redirects the browser after interactive
+// (3LO) tools/list completion; omit it for a plain done page.
+type SyncRequest struct {
+	ReturnTo string `json:"returnTo,omitempty"`
+}
+
+// SyncResponse is the body of both GET .../targets/{target}/tools (the last
+// synced list) and POST .../sync. On interactive auth the sync response comes
+// back with status=authorization_required plus an authorizeUrl to open in a
+// browser; the gateway then finishes tools/list server-side.
+type SyncResponse struct {
+	Status        string       `json:"status"`
+	Tools         []SyncedTool `json:"tools"`
+	ToolCount     int          `json:"toolCount"`
+	LastSyncedAt  string       `json:"lastSyncedAt"`
+	AuthorizeURL  string       `json:"authorizeUrl"`
+	SyncSessionID string       `json:"syncSessionId"`
+	Error         string       `json:"error"`
+}
+
+// SyncedTool is one tool from a target's tools/list.
+type SyncedTool struct {
+	Name         string                 `json:"name"`
+	Title        string                 `json:"title"`
+	Description  string                 `json:"description"`
+	InputSchema  map[string]interface{} `json:"inputSchema"`
+	OutputSchema map[string]interface{} `json:"outputSchema"`
+}

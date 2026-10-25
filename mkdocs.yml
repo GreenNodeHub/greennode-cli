@@ -105,6 +105,9 @@ nav:
       - outbound-auth oauth2 delete: commands/agentbase/access/outbound-auth-oauth2-delete.md
       - outbound-auth oauth2 m2m-token: commands/agentbase/access/outbound-auth-oauth2-m2m-token.md
       - outbound-auth oauth2 3lo-token: commands/agentbase/access/outbound-auth-oauth2-3lo-token.md
+      - outbound-auth managed list: commands/agentbase/access/outbound-auth-managed-list.md
+      - outbound-auth managed get: commands/agentbase/access/outbound-auth-managed-get.md
+      - outbound-auth managed 3lo-token: commands/agentbase/access/outbound-auth-managed-3lo-token.md
     - Gateway:
       - Overview: commands/agentbase/gateway/index.md
       - create: commands/agentbase/gateway/create.md
@@ -122,6 +125,11 @@ nav:
       - private-network routes get: commands/agentbase/gateway/private-network-routes-get.md
       - private-network routes set: commands/agentbase/gateway/private-network-routes-set.md
       - service-account repair: commands/agentbase/gateway/service-account-repair.md
+      - mcp-connectors list: commands/agentbase/gateway/mcp-connectors-list.md
+      - mcp-connectors get: commands/agentbase/gateway/mcp-connectors-get.md
+      - mcp-server-templates list: commands/agentbase/gateway/mcp-server-templates-list.md
+      - target tools: commands/agentbase/gateway/target-tools.md
+      - target sync: commands/agentbase/gateway/target-sync.md
     - Runtime:
       - Overview: commands/agentbase/runtime/index.md
       - create: commands/agentbase/runtime/create.md

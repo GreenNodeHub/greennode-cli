@@ -69,7 +69,7 @@ func TestManifest_Decode(t *testing.T) {
 			"command": ["./agent"],
 			"env": {"LOG_LEVEL": "info"},
 			"flavorId": "agent.small",
-			"autoscaling": {"minReplicas": 1, "maxReplicas": 3}
+			"autoscaling": {"maxReplicas": 3}
 		}
 	}`)
 	var m Manifest
