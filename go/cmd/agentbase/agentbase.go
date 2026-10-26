@@ -62,6 +62,7 @@ active environment and endpoints.`,
 		cliinput.SetInteractive(interactiveMode)
 		return applyAgentbaseQuery(cmd)
 	},
+	RunE: requireSubcommand,
 }
 
 // applyAgentbaseQuery wires grn's global --query flag (JMESPath, defined on

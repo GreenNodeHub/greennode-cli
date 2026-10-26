@@ -47,6 +47,7 @@ Besides the lifecycle, the group reads the connector catalog:
 'mcp-connectors' lists/gets the MCP servers attached across your gateways
 (with ready connectUrls), 'mcp-server-templates' lists the template catalog,
 and 'target tools'/'target sync' read or refresh a target's tools/list.`,
+	RunE: requireSubcommand,
 }
 
 // newGatewayClient mirrors newIdentityClient: resolve the shared profile +
@@ -878,6 +879,7 @@ var gatewayCreateName string
 var gatewayFlavorsCmd = &cobra.Command{
 	Use:   "flavors",
 	Short: "Gateway placement flavors",
+	RunE:  requireSubcommand,
 }
 
 var gatewayFlavorsListCmd = &cobra.Command{
@@ -931,6 +933,7 @@ catalog. Filters are optional.`,
 var gatewayAccessLogsCmd = &cobra.Command{
 	Use:   "access-logs",
 	Short: "Gateway access logs",
+	RunE:  requireSubcommand,
 }
 
 // addAccessLogFilterFlags registers the shared access-log filter flags on a
@@ -1095,11 +1098,13 @@ func printCallerBuckets(buckets []gatewaypkg.AccessLogCallerBucket) {
 var gatewayInboundAuthCmd = &cobra.Command{
 	Use:   "inbound-auth",
 	Short: "Gateway inbound authentication",
+	RunE:  requireSubcommand,
 }
 
 var gatewayInboundAuthJwtCmd = &cobra.Command{
 	Use:   "jwt",
 	Short: "JWT inbound-auth configuration",
+	RunE:  requireSubcommand,
 }
 
 var gatewayInboundAuthJwtIdpAppCmd = &cobra.Command{
@@ -1108,6 +1113,7 @@ var gatewayInboundAuthJwtIdpAppCmd = &cobra.Command{
 	Long: `Manage the gateway's inbound-auth JWT IdP application credentials (the
 OAuth2 client/secret the gateway uses to talk to the IdP). The secret stays
 server-side after it is set.`,
+	RunE: requireSubcommand,
 }
 
 var gatewayInboundAuthJwtIdpAppSetCmd = &cobra.Command{
@@ -1164,11 +1170,13 @@ var gatewayInboundAuthJwtIdpAppClearCmd = &cobra.Command{
 var gatewayPrivateNetworkCmd = &cobra.Command{
 	Use:   "private-network",
 	Short: "PRIVATE-mode gateway private network",
+	RunE:  requireSubcommand,
 }
 
 var gatewayPrivateNetworkRoutesCmd = &cobra.Command{
 	Use:   "routes",
 	Short: "Private-network node routes (CIDRs)",
+	RunE:  requireSubcommand,
 }
 
 var gatewayPrivateNetworkRoutesGetCmd = &cobra.Command{
@@ -1257,6 +1265,7 @@ concurrency; omit to force the replace.`,
 var gatewayServiceAccountCmd = &cobra.Command{
 	Use:   "service-account",
 	Short: "Gateway IAM service account",
+	RunE:  requireSubcommand,
 }
 
 var gatewayServiceAccountRepairCmd = &cobra.Command{
@@ -1290,6 +1299,7 @@ the refreshed gateway.`,
 var gatewayMcpConnectorsCmd = &cobra.Command{
 	Use:   "mcp-connectors",
 	Short: "List MCP connectors (targets across gateways)",
+	RunE:  requireSubcommand,
 }
 
 var gatewayMcpConnectorsListCmd = &cobra.Command{
@@ -1400,6 +1410,7 @@ Ownership is caller-scoped, so another user's gateway looks like a 404.`,
 var gatewayMcpServerTemplatesCmd = &cobra.Command{
 	Use:   "mcp-server-templates",
 	Short: "List MCP server templates",
+	RunE:  requireSubcommand,
 }
 
 var gatewayMcpServerTemplatesListCmd = &cobra.Command{
@@ -1453,6 +1464,7 @@ filters that AND together.`,
 var gatewayTargetCmd = &cobra.Command{
 	Use:   "target",
 	Short: "Target tools on a gateway",
+	RunE:  requireSubcommand,
 }
 
 var gatewayTargetToolsCmd = &cobra.Command{

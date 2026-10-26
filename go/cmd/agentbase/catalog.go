@@ -31,24 +31,28 @@ Two groups:
                         and switch version.
 
 Marketplace ops share the ~/.greennode profile and the runtime endpoint.`,
+	RunE: requireSubcommand,
 }
 
 // catalogFlavorsCmd groups the flavor commands.
 var catalogFlavorsCmd = &cobra.Command{
 	Use:   "flavors",
 	Short: "Browse compute flavors",
+	RunE:  requireSubcommand,
 }
 
 // catalogOpenClawVersionsCmd groups the openclaw-version commands.
 var catalogOpenClawVersionsCmd = &cobra.Command{
 	Use:   "openclaw-versions",
 	Short: "Browse OpenClaw versions",
+	RunE:  requireSubcommand,
 }
 
 // catalogOpenClawCmd groups the openclaw lifecycle commands.
 var catalogOpenClawCmd = &cobra.Command{
 	Use:   "openclaw",
 	Short: "Manage OpenClaws",
+	RunE:  requireSubcommand,
 }
 
 // newCatalogClient mirrors newRuntimeClient (catalog is served by the runtime

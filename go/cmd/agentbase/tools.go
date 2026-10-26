@@ -43,6 +43,7 @@ endpoint awaits go-live.
 
 tools commands share the ~/.greennode profile and the built-in tools
 endpoint (see 'grn agentbase context current').`,
+	RunE: requireSubcommand,
 }
 
 // newToolsClient builds the tools client for the agent-core-built-in-tools
@@ -160,6 +161,7 @@ Create is asynchronous: 201 CREATING → poll with 'wait' until ACTIVE (or
 FAILED). Sessions attach to a browser (see 'browser session') and expose the
 CDP automation stream, the live-view stream, and (after the session is
 deleted) its recording.`,
+	RunE: requireSubcommand,
 }
 
 var toolsBrowserListCmd = &cobra.Command{
@@ -406,6 +408,7 @@ recording (downloadable only after the session is deleted and archived).
 --end-user-id is optional (the X-End-User-ID header): the end user on whose
 behalf the session acts, 1-128 chars of A-Za-z0-9._:@- (validated
 server-side).`,
+	RunE: requireSubcommand,
 }
 
 var toolsBrowserSessionListCmd = &cobra.Command{
@@ -643,6 +646,7 @@ var toolsBrowserSessionStreamsCmd = &cobra.Command{
 Only the automation stream's status is toggleable (ENABLED|DISABLED); the
 live-view stream is always on. The update returns no body, so the CLI re-reads
 the session and shows the resulting streams.`,
+	RunE: requireSubcommand,
 }
 
 var toolsBrowserSessionStreamsUpdateCmd = &cobra.Command{

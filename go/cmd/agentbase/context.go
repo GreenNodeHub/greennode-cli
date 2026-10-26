@@ -18,6 +18,7 @@ The environment selects the agentbase API endpoints AND the IAM v2 token URL; it
 is stored as iam_env in the shared ~/.greennode profile (default prod), the same
 selector vks/vserver use. Switch it with 'grn configure set iam_env <dev|prod>'
 (machine) or 'grn login --iam-env <env>' (user).`,
+	RunE: requireSubcommand,
 }
 
 var contextCurrentCmd = &cobra.Command{

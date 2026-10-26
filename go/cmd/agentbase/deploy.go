@@ -52,6 +52,7 @@ resolves the pull credentials from your auto-provisioned robot account.
 runtime to ACTIVE). ` + "`destroy`" + ` deletes runtime + memory; pass --purge to
 also delete the identity. ` + "`up`" + `/` + "`destroy`" + ` look resources up by
 name, so no state file is needed.`,
+	RunE: requireSubcommand,
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 					"env":       map[string]string{"LOG_LEVEL": "info"},
 					"flavorId":  "agent.small",
 					"autoscaling": map[string]any{
-						"maxReplicas": 3,
+						"maxReplicas":    3,
 						"cpuUtilization": 70, "memoryUtilization": 80,
 					},
 				},

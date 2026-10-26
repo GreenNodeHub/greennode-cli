@@ -29,6 +29,7 @@ Authentication is shared with the rest of the CLI: machine credentials come from
 login from 'grn login'. Use 'grn logout' to clear a login. There is no separate
 agentbase login/logout — the profile's auth_mode (user vs machine) selects the
 token source agentbase uses, exactly like vks/vserver.`,
+	RunE: requireSubcommand,
 }
 
 // identity whoami / config show were removed: agentbase defers config display to
@@ -42,6 +43,7 @@ var workloadCmd = &cobra.Command{
 	Use:   "agent-id",
 	Short: "Manage agent identities",
 	Long:  `Create, list, get, update, and delete agent identities used to represent digital identities for agents accessing external services.`,
+	RunE:  requireSubcommand,
 }
 
 var (
@@ -279,6 +281,7 @@ var outboundAuthCmd = &cobra.Command{
 	Long: `Manage static API key, delegated API key, and OAuth2 providers for agent
 outbound authentication, plus read-only access to platform-managed OAuth2
 providers.`,
+	RunE: requireSubcommand,
 }
 
 // --- outbound-auth static ---
@@ -287,6 +290,7 @@ var staticCmd = &cobra.Command{
 	Use:   "static",
 	Short: "Manage static API key providers",
 	Long:  `Create, list, get, update, and delete static API key providers for outbound authentication.`,
+	RunE:  requireSubcommand,
 }
 
 var staticCreateCmd = &cobra.Command{
@@ -493,6 +497,7 @@ var delegatedCmd = &cobra.Command{
 	Use:   "delegated",
 	Short: "Manage delegated API key providers",
 	Long:  `Create, list, get, and delete delegated API key providers for user-provided API keys for external services.`,
+	RunE:  requireSubcommand,
 }
 
 var delegatedCreateCmd = &cobra.Command{
@@ -690,6 +695,7 @@ var oauth2Cmd = &cobra.Command{
 	Use:   "oauth2",
 	Short: "Manage OAuth2 providers",
 	Long:  `Create, list, get, update, and delete OAuth2 providers, and retrieve M2M and 3-legged OAuth2 tokens.`,
+	RunE:  requireSubcommand,
 }
 
 var oauth2CreateCmd = &cobra.Command{
@@ -1046,6 +1052,7 @@ var managedOauth2Cmd = &cobra.Command{
 never exposed, so the CLI surface is read-only (list, get) plus 3LO token
 retrieval for an agent identity. Each provider has a fixed callbackUrl the
 delegated browser flow returns to.`,
+	RunE: requireSubcommand,
 }
 
 var managedOauth2ListCmd = &cobra.Command{

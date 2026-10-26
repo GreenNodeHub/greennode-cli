@@ -35,6 +35,7 @@ account used for 'docker login':
 
 The robot-account secret is real (it authorizes push/pull): it is MASKED in
 table output and revealed only with -o json. Use 'reset-secret' to rotate it.`,
+	RunE: requireSubcommand,
 }
 
 // newCRClient mirrors newPolicyClient: resolve the shared profile + env, select
@@ -61,6 +62,7 @@ var crRepositoryCmd = &cobra.Command{
 	Short: "Show the user's container-registry repository",
 	Long: `Show the user's auto-provisioned repository (name, registry URL, image count,
 quota). The repository + robot account are created on first access if absent.`,
+	RunE: requireSubcommand,
 }
 
 var crRepositoryGetCmd = &cobra.Command{
@@ -87,6 +89,7 @@ var crRepositoryGetCmd = &cobra.Command{
 var crImageCmd = &cobra.Command{
 	Use:   "image",
 	Short: "List or delete images in the user's repository",
+	RunE:  requireSubcommand,
 }
 
 var crImageListCmd = &cobra.Command{
@@ -160,6 +163,7 @@ var crImageDeleteCmd = &cobra.Command{
 var crArtifactCmd = &cobra.Command{
 	Use:   "artifact",
 	Short: "List or delete artifacts (digests) within an image",
+	RunE:  requireSubcommand,
 }
 
 var crArtifactListCmd = &cobra.Command{
@@ -247,6 +251,7 @@ var crRegistryCredentialCmd = &cobra.Command{
 registry for push/pull. The secret is MASKED in table output and revealed only
 with -o json (so you can pipe it into 'docker login'). 'reset-secret' rotates
 the secret.`,
+	RunE: requireSubcommand,
 }
 
 var crRegistryCredentialGetCmd = &cobra.Command{
