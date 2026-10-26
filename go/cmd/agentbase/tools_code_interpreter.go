@@ -28,6 +28,7 @@ Create is asynchronous: 201 CREATING → poll with 'wait' until ACTIVE (or
 FAILED). Sessions attach to a code interpreter and are the unit of execution:
 'code-interpreter session invoke' runs a tool (executeCode, executeCommand,
 listFiles, writeFiles, readFiles, getTask, ...) inside a session.`,
+	RunE: requireSubcommand,
 }
 
 var toolsCodeInterpreterListCmd = &cobra.Command{
@@ -220,6 +221,7 @@ creation is synchronous (no wait needed).
 --end-user-id is optional (the X-End-User-ID header): the end user on whose
 behalf the session acts, 1-128 chars of A-Za-z0-9._:@- (validated
 server-side).`,
+	RunE: requireSubcommand,
 }
 
 var toolsCISessionListCmd = &cobra.Command{
@@ -354,6 +356,13 @@ func toolsInvokeToolArgs(cmd *cobra.Command, tool string) (*toolspkg.InvokeArgum
 		}
 		arguments.Command = command
 	case "listFiles":
+		// The backend REQUIRES directoryPath (it 400s with -32602 when
+		// omitted), and the platform MCP server defaults it to "." — mirror
+		// that so a bare listFiles lists the session working directory
+		// instead of erroring.
+		if directoryPath == "" {
+			directoryPath = "."
+		}
 		arguments.DirectoryPath = directoryPath
 	case "writeFiles":
 		if len(content) == 0 && len(contentB64) == 0 {
@@ -411,7 +420,8 @@ Per-tool flags (the tool decides which are required):
   executeCode          --language, --code (both required)
   executeCommand       --command (required)
   startCommandExecution --command (required; async variant)
-  listFiles            --directory-path (optional)
+  listFiles            --directory-path (optional; defaults to '.', the
+                         session working directory)
   writeFiles           --content path=content (repeatable, at least one;
                         the CLI base64-encodes each content) or
                         --content-b64 path=<base64 blob> (pre-encoded)
@@ -742,7 +752,7 @@ func init() {
 	toolsCISessionInvokeCmd.Flags().String("language", "", "executeCode: language (required for executeCode)")
 	toolsCISessionInvokeCmd.Flags().String("code", "", "executeCode: code to run (required for executeCode)")
 	toolsCISessionInvokeCmd.Flags().String("command", "", "executeCommand/startCommandExecution: command to run (required)")
-	toolsCISessionInvokeCmd.Flags().String("directory-path", "", "listFiles: directory to list (optional)")
+	toolsCISessionInvokeCmd.Flags().String("directory-path", "", "listFiles: directory to list (optional; defaults to '.', the session working directory)")
 	toolsCISessionInvokeCmd.Flags().StringSlice("content", nil, "writeFiles: file to write as path=content (repeatable, split on the first '='; the CLI base64-encodes the content)")
 	toolsCISessionInvokeCmd.Flags().StringSlice("content-b64", nil, "writeFiles: file to write as path=<base64 blob> (repeatable, for pre-encoded content)")
 	toolsCISessionInvokeCmd.Flags().StringSlice("path", nil, "readFiles: file path to read (repeatable)")
