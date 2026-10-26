@@ -1,6 +1,8 @@
 package agentbase
 
 import (
+	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -161,14 +163,21 @@ func mustSet(t *testing.T, cmd *cobra.Command, flag, value string) {
 	}
 }
 
-// TestReadImageAuth covers the three paths: none → nil; enabled+creds → built;
-// enabled without password → error.
+// TestReadImageAuth covers the three paths: none → {enabled:false} (the API
+// requires imageAuth present — nil used to 400 server-side); enabled+creds →
+// built; enabled without password → error.
 func TestReadImageAuth(t *testing.T) {
-	t.Run("none_returns_nil", func(t *testing.T) {
+	t.Run("none_returns_disabled_default", func(t *testing.T) {
 		cmd := newSpecCmd(t)
 		got, err := readImageAuth(cmd)
-		if err != nil || got != nil {
-			t.Errorf("expected (nil, nil), got (%+v, %v)", got, err)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got == nil || got.Enabled {
+			t.Errorf("expected &ImageAuth{Enabled:false}, got %+v", got)
+		}
+		if got.Username != "" || got.Password != "" || got.UseAgentBaseRegistryCredentials != nil {
+			t.Errorf("disabled default must carry no credentials: %+v", got)
 		}
 	})
 	t.Run("enabled_with_creds", func(t *testing.T) {
@@ -203,7 +212,7 @@ func TestReadRuntimeSpec_AutoscalingMaxLtOneErrors(t *testing.T) {
 	mustSet(t, cmd, "image-url", "img")
 	mustSet(t, cmd, "flavor-id", "f")
 	mustSet(t, cmd, "max-replicas", "0") // < 1
-	if _, err := readRuntimeSpec(cmd); err == nil {
+	if _, err := readRuntimeSpec(cmd, false); err == nil {
 		t.Error("expected error when max-replicas < 1")
 	}
 }
@@ -217,7 +226,7 @@ func TestReadRuntimeSpec_OK(t *testing.T) {
 	mustSet(t, cmd, "flavor-id", "f1")
 	mustSet(t, cmd, "command", "python")
 	mustSet(t, cmd, "env", "K=V")
-	s, err := readRuntimeSpec(cmd)
+	s, err := readRuntimeSpec(cmd, false)
 	if err != nil {
 		t.Fatalf("readRuntimeSpec: %v", err)
 	}
@@ -233,8 +242,8 @@ func TestReadRuntimeSpec_OK(t *testing.T) {
 	if s.Autoscaling.MaxReplicas != 2 { // flag defaults (minReplicas is platform-owned)
 		t.Errorf("autoscaling default mismatch: %+v", s.Autoscaling)
 	}
-	if s.ImageAuth != nil {
-		t.Errorf("imageAuth should be nil when not enabled: %+v", s.ImageAuth)
+	if s.ImageAuth == nil || s.ImageAuth.Enabled {
+		t.Errorf("imageAuth should default to &ImageAuth{Enabled:false}: %+v", s.ImageAuth)
 	}
 	// Ensure the returned spec round-trips into a request struct.
 	_ = runtimepkg.CreateAgentRuntimeRequest{
@@ -379,7 +388,7 @@ func TestReadRuntimeSpec_NewFieldsAssemble(t *testing.T) {
 	mustSet(t, cmd, "subnet-id", "sub-1")
 	mustSet(t, cmd, "inbound-mode", "IAM")
 	mustSet(t, cmd, "min-replicas", "3") // deprecated: tolerated, ignored
-	s, err := readRuntimeSpec(cmd)
+	s, err := readRuntimeSpec(cmd, false)
 	if err != nil {
 		t.Fatalf("readRuntimeSpec: %v", err)
 	}
@@ -405,5 +414,263 @@ func TestReadImageAuth_UseRegistryCredentials(t *testing.T) {
 	}
 	if got == nil || !got.Enabled || got.UseAgentBaseRegistryCredentials == nil || !*got.UseAgentBaseRegistryCredentials {
 		t.Errorf("unexpected: %+v", got)
+	}
+}
+
+// TestCreateRequestFromSpec verifies the flag-path create request carries the
+// name (34830: the request literal used to omit it, so create-by-flags always
+// failed server-side with a name validation error).
+func TestCreateRequestFromSpec(t *testing.T) {
+	spec := &runtimeSpec{
+		ImageURL: "img:1", FlavorID: "f1", Command: []string{"python"},
+		Env:         map[string]string{"K": "V"},
+		ImageAuth:   &runtimepkg.ImageAuth{Enabled: false},
+		Autoscaling: runtimepkg.Autoscaling{MaxReplicas: 2},
+	}
+	req := createRequestFromSpec("my-rt", spec)
+	if req.Name != "my-rt" {
+		t.Errorf("name missing from create request: %+v", req)
+	}
+	if req.ImageURL != "img:1" || req.FlavorID != "f1" || req.Autoscaling.MaxReplicas != 2 {
+		t.Errorf("spec fields not mapped: %+v", req)
+	}
+	if req.ImageAuth == nil || req.ImageAuth.Enabled {
+		t.Errorf("imageAuth should be &ImageAuth{Enabled:false}: %+v", req.ImageAuth)
+	}
+}
+
+// TestReadRuntimeSpec_ForUpdate covers the update mode: no prompting for
+// image-url/flavor-id (unset = carry over), explicitly-set-but-empty rejected,
+// and the autoscaling max>=1 guard skipped when no autoscaling flag is set
+// (the guard runs on the merged request, not the partial spec).
+func TestReadRuntimeSpec_ForUpdate(t *testing.T) {
+	cliinput.SetInteractive(false)
+	t.Run("unset_image_and_flavor_ok", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		s, err := readRuntimeSpec(cmd, true)
+		if err != nil {
+			t.Fatalf("readRuntimeSpec(forUpdate): %v", err)
+		}
+		if s.ImageURL != "" || s.FlavorID != "" {
+			t.Errorf("unset flags must stay empty on update: %+v", s)
+		}
+	})
+	t.Run("explicitly_empty_image_url_errors", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "image-url", "")
+		if _, err := readRuntimeSpec(cmd, true); err == nil {
+			t.Error("expected error for explicitly-set-but-empty --image-url")
+		}
+	})
+	t.Run("explicitly_empty_flavor_id_errors", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "flavor-id", "")
+		if _, err := readRuntimeSpec(cmd, true); err == nil {
+			t.Error("expected error for explicitly-set-but-empty --flavor-id")
+		}
+	})
+	t.Run("autoscaling_guard_skipped_when_unset", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "image-url", "img")
+		mustSet(t, cmd, "flavor-id", "f")
+		if _, err := readRuntimeSpec(cmd, true); err != nil {
+			t.Errorf("update mode must not require autoscaling flags: %v", err)
+		}
+	})
+	t.Run("autoscaling_guard_applies_when_set", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "max-replicas", "0")
+		if _, err := readRuntimeSpec(cmd, true); err == nil {
+			t.Error("expected error when --max-replicas < 1 is explicitly set")
+		}
+	})
+}
+
+// TestReadNetworkConfig_DanglingFlagsError covers vpc-id/subnet-id/route-cidrs
+// set without --network-mode: previously silently ignored, now an error.
+func TestReadNetworkConfig_DanglingFlagsError(t *testing.T) {
+	for _, flag := range []string{"vpc-id", "subnet-id"} {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, flag, "x")
+		if _, err := readNetworkConfig(cmd); err == nil {
+			t.Errorf("expected error for dangling --%s", flag)
+		}
+	}
+	cmd := newSpecCmd(t)
+	mustSet(t, cmd, "route-cidrs", "10.0.0.0/8")
+	if _, err := readNetworkConfig(cmd); err == nil {
+		t.Error("expected error for dangling --route-cidrs")
+	}
+}
+
+// testVersion is a current-version fixture for buildUpdateRequest: every field
+// distinct so carry-over vs override is observable.
+func testVersion() *runtimepkg.AgentRuntimeVersionDto {
+	return &runtimepkg.AgentRuntimeVersionDto{
+		Version:              7,
+		Description:          "cur-desc",
+		ImageURL:             "cur-img:7",
+		Command:              []string{"cur-cmd"},
+		Args:                 []string{"cur-arg"},
+		EnvironmentVariables: map[string]string{"CUR": "1"},
+		NetworkConfig: &runtimepkg.AgentRuntimeNetworkConfigEntity{
+			Mode: "VPC", VpcID: "cur-vpc", SubnetID: "cur-sub", RouteCidrs: []string{"10.0.0.0/8"},
+		},
+		AllowedCidrs: []string{"10.0.0.0/8"},
+		InboundAuth: &runtimepkg.AgentRuntimeInboundAuthDto{
+			Mode: "JWT",
+			JWT: &runtimepkg.AgentRuntimeInboundAuthJwtDto{
+				Source: "JWKS", JWKS: json.RawMessage(`{"keys": []}`),
+				AllowedAudiences: []string{"aud"}, PrincipalClaim: "sub",
+			},
+		},
+		Protocol:    "MCP",
+		FlavorID:    "cur-flavor",
+		Autoscaling: runtimepkg.Autoscaling{MaxReplicas: 3},
+	}
+}
+
+// specFromFlags assembles the update-path spec from a flag command.
+func specFromFlags(t *testing.T, cmd *cobra.Command) *runtimeSpec {
+	t.Helper()
+	s, err := readRuntimeSpec(cmd, true)
+	if err != nil {
+		t.Fatalf("readRuntimeSpec(forUpdate): %v", err)
+	}
+	return s
+}
+
+// TestBuildUpdateRequest covers the update merge semantics (34836): unset
+// flags carry the current version's field over; changed flags replace their
+// field wholesale; imageAuth is derived from the current version with the
+// password caveat.
+func TestBuildUpdateRequest(t *testing.T) {
+	t.Run("nothing_set_carries_everything", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		cur := testVersion()
+		req, carried, err := buildUpdateRequest(specFromFlags(t, cmd), cur, cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.Description != "cur-desc" || req.ImageURL != "cur-img:7" ||
+			req.Command[0] != "cur-cmd" || req.Args[0] != "cur-arg" ||
+			req.EnvironmentVariables["CUR"] != "1" || req.FlavorID != "cur-flavor" ||
+			req.Protocol != "MCP" || req.AllowedCidrs[0] != "10.0.0.0/8" ||
+			req.Autoscaling.MaxReplicas != 3 {
+			t.Errorf("carry-over mismatch: %+v", req)
+		}
+		if req.NetworkConfig == nil || req.NetworkConfig.Mode != "VPC" || req.NetworkConfig.VpcID != "cur-vpc" ||
+			req.NetworkConfig.SubnetID != "cur-sub" || req.NetworkConfig.RouteCidrs[0] != "10.0.0.0/8" {
+			t.Errorf("networkConfig carry-over mismatch: %+v", req.NetworkConfig)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "JWT" || req.InboundAuth.JWT == nil ||
+			req.InboundAuth.JWT.Source != "JWKS" || string(req.InboundAuth.JWT.JWKS) != `{"keys": []}` ||
+			req.InboundAuth.JWT.AllowedAudiences[0] != "aud" || req.InboundAuth.JWT.PrincipalClaim != "sub" {
+			t.Errorf("inboundAuth carry-over mismatch: %+v", req.InboundAuth)
+		}
+		for _, f := range []string{"description", "imageUrl", "command", "args", "environmentVariables",
+			"networkConfig", "allowedCidrs", "inboundAuth", "protocol", "flavorId", "autoscaling", "imageAuth"} {
+			if !slices.Contains(carried, f) {
+				t.Errorf("carried list missing %s: %v", f, carried)
+			}
+		}
+	})
+	t.Run("changed_flag_replaces_field_wholesale", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "env", "NEW=2")
+		req, _, err := buildUpdateRequest(specFromFlags(t, cmd), testVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.EnvironmentVariables["NEW"] != "2" || len(req.EnvironmentVariables) != 1 {
+			t.Errorf("env should be replaced wholesale, not merged: %+v", req.EnvironmentVariables)
+		}
+		if req.ImageURL != "cur-img:7" {
+			t.Errorf("unset image-url should carry over: %+v", req)
+		}
+	})
+	t.Run("network_flag_replaces_network", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "network-mode", "VPC")
+		mustSet(t, cmd, "vpc-id", "v1")
+		mustSet(t, cmd, "subnet-id", "s1")
+		req, _, err := buildUpdateRequest(specFromFlags(t, cmd), testVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.NetworkConfig == nil || req.NetworkConfig.VpcID != "v1" ||
+			req.NetworkConfig.SubnetID != "s1" || len(req.NetworkConfig.RouteCidrs) != 0 {
+			t.Errorf("networkConfig should be the flag spec: %+v", req.NetworkConfig)
+		}
+	})
+	t.Run("imageauth_password_auth_cannot_carry", func(t *testing.T) {
+		cur := testVersion()
+		cur.ImageAuth = &runtimepkg.AgentRuntimeImageAuthDto{Enabled: true, Username: "u"}
+		cmd := newSpecCmd(t)
+		_, _, err := buildUpdateRequest(specFromFlags(t, cmd), cur, cmd.Flags().Changed)
+		if err == nil {
+			t.Error("expected error carrying username/password image auth")
+		}
+	})
+	t.Run("imageauth_registry_credentials_carries", func(t *testing.T) {
+		cur := testVersion()
+		cur.ImageAuth = &runtimepkg.AgentRuntimeImageAuthDto{Enabled: true, UseAgentBaseRegistryCredentials: true, Username: "u"}
+		cmd := newSpecCmd(t)
+		req, _, err := buildUpdateRequest(specFromFlags(t, cmd), cur, cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		ia := req.ImageAuth
+		if ia == nil || !ia.Enabled || ia.UseAgentBaseRegistryCredentials == nil || !*ia.UseAgentBaseRegistryCredentials ||
+			ia.Username != "u" || ia.Password != "" {
+			t.Errorf("registry-credentials imageAuth should carry verbatim: %+v", ia)
+		}
+	})
+	t.Run("imageauth_disabled_carries_as_disabled", func(t *testing.T) {
+		cur := testVersion() // ImageAuth nil = disabled
+		cmd := newSpecCmd(t)
+		req, _, err := buildUpdateRequest(specFromFlags(t, cmd), cur, cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.ImageAuth == nil || req.ImageAuth.Enabled {
+			t.Errorf("nil imageAuth must carry as {enabled:false}: %+v", req.ImageAuth)
+		}
+	})
+	t.Run("imageauth_flag_wins", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "image-auth-enabled", "true")
+		mustSet(t, cmd, "image-auth-username", "nu")
+		mustSet(t, cmd, "image-auth-password", "np")
+		req, _, err := buildUpdateRequest(specFromFlags(t, cmd), testVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.ImageAuth == nil || !req.ImageAuth.Enabled || req.ImageAuth.Username != "nu" || req.ImageAuth.Password != "np" {
+			t.Errorf("image-auth flags should replace imageAuth: %+v", req.ImageAuth)
+		}
+	})
+	t.Run("autoscaling_flag_replaces_autoscaling", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "max-replicas", "5")
+		req, _, err := buildUpdateRequest(specFromFlags(t, cmd), testVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.Autoscaling.MaxReplicas != 5 {
+			t.Errorf("autoscaling should be the flag spec: %+v", req.Autoscaling)
+		}
+	})
+}
+
+// TestCarriedImageAuth_UnsetVersion returns {enabled:false} (imageAuth is
+// required server-side; nil used to 400 the update).
+func TestCarriedImageAuth_UnsetVersion(t *testing.T) {
+	ia, err := carriedImageAuth(&runtimepkg.AgentRuntimeVersionDto{})
+	if err != nil {
+		t.Fatalf("carriedImageAuth: %v", err)
+	}
+	if ia == nil || ia.Enabled || ia.Username != "" {
+		t.Errorf("expected &ImageAuth{Enabled:false}, got %+v", ia)
 	}
 }

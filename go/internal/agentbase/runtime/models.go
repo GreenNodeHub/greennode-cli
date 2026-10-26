@@ -106,9 +106,12 @@ type CreateAgentRuntimeRequest struct {
 }
 
 // UpdateAgentRuntimeRequest is the body for PATCH /v1/agent-runtimes/{id}.
-// Same as create minus name (immutable) and poc (create-only). Every field is
-// required (full-spec replacement — updating creates a new version and rolls
-// the default endpoint forward), so this is NOT JSON Merge Patch semantics.
+// Same as create minus name (immutable) and poc (create-only). imageAuth is
+// required server-side; the API never returns the stored password, so the CLI
+// cannot blindly echo a version's imageAuth back on update. The server applies
+// the body as a full-spec replacement (updating creates a new immutable
+// version), so the CLI's update command carries fields whose flags are unset
+// over from the current version rather than resetting them to the defaults.
 type UpdateAgentRuntimeRequest struct {
 	Description          string            `json:"description"`
 	ImageURL             string            `json:"imageUrl"`

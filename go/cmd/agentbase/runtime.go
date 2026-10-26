@@ -35,9 +35,11 @@ environment, autoscaling, and flavor. Runtimes converge asynchronously:
 create/update return the resource in a CREATING/UPDATING state and reach ACTIVE
 (or ERROR / SERVICE_ACCOUNT_ERROR). Use 'wait' to block until terminal.
 
-The runtime API addresses resources by id (not name; name is immutable). Update
-is a full-spec replacement — every field is required, so for anything beyond the
-simple path, generate a template, fill it in, and apply with --file:
+The runtime API addresses resources by id (not name; name is immutable). Create
+is fully flag-driven (see 'create --help'); update carries fields whose flags
+are unset over from the current version (see 'update --help'). For a full spec
+from a file — or to keep the image-auth password out of the shell — generate a
+template, fill it in, and apply with --file:
 
     grn agentbase runtime generate > rt.yaml
     # ...edit rt.yaml...
@@ -45,6 +47,7 @@ simple path, generate a template, fill it in, and apply with --file:
     grn agentbase runtime wait <id>
 
 Runtimes share the ~/.greennode profile like the rest of agentbase.`,
+	RunE: requireSubcommand,
 }
 
 // newRuntimeClient mirrors newGatewayClient: resolve the shared profile + env,
@@ -86,23 +89,40 @@ type runtimeSpec struct {
 }
 
 // readRuntimeSpec reads + validates the mutable spec fields. name and poc are
-// create-only and handled by the caller. Required (@NotEmpty) fields:
-// imageUrl, flavorId; autoscaling has flag defaults so it is always populated.
-func readRuntimeSpec(cmd *cobra.Command) (*runtimeSpec, error) {
+// create-only and handled by the caller. On create (forUpdate=false) the
+// @NotEmpty fields imageUrl/flavorId are prompted when unset; autoscaling has
+// flag defaults so it is always populated. On update (forUpdate=true) unset
+// flags are left empty — no prompting — and carried over from the current
+// version by buildUpdateRequest; the autoscaling bounds are only checked when
+// a scaling flag is actually set (the rest carries over).
+func readRuntimeSpec(cmd *cobra.Command, forUpdate bool) (*runtimeSpec, error) {
 	f := cmd.Flags()
 
 	description, _ := f.GetString("description")
 
 	imageURL, _ := f.GetString("image-url")
-	imageURL, err := cliinput.RequireOrPromptString(imageURL, "--image-url", "Container image URL")
-	if err != nil {
-		return nil, err
+	if forUpdate {
+		// Explicitly-set-but-empty is a user error; unset carries over.
+		if f.Changed("image-url") && imageURL == "" {
+			return nil, fmt.Errorf("--image-url cannot be empty")
+		}
+	} else {
+		var err error
+		if imageURL, err = cliinput.RequireOrPromptString(imageURL, "--image-url", "Container image URL"); err != nil {
+			return nil, err
+		}
 	}
 
 	flavorID, _ := f.GetString("flavor-id")
-	flavorID, err = cliinput.RequireOrPromptString(flavorID, "--flavor-id", "Flavor id")
-	if err != nil {
-		return nil, err
+	if forUpdate {
+		if f.Changed("flavor-id") && flavorID == "" {
+			return nil, fmt.Errorf("--flavor-id cannot be empty")
+		}
+	} else {
+		var err error
+		if flavorID, err = cliinput.RequireOrPromptString(flavorID, "--flavor-id", "Flavor id"); err != nil {
+			return nil, err
+		}
 	}
 
 	command, _ := f.GetStringArray("command")
@@ -127,7 +147,7 @@ func readRuntimeSpec(cmd *cobra.Command) (*runtimeSpec, error) {
 		CPUUtilization:    cpuUtil,
 		MemoryUtilization: memUtil,
 	}
-	if autoscaling.MaxReplicas < 1 {
+	if autoscaling.MaxReplicas < 1 && (!forUpdate || f.Changed("max-replicas") || f.Changed("cpu-utilization") || f.Changed("memory-utilization")) {
 		return nil, fmt.Errorf("--max-replicas (%d) must be >= 1", autoscaling.MaxReplicas)
 	}
 
@@ -174,6 +194,14 @@ func readNetworkConfig(cmd *cobra.Command) (*runtimepkg.NetworkConfig, error) {
 	f := cmd.Flags()
 	mode, _ := f.GetString("network-mode")
 	if mode == "" {
+		// A dangling --vpc-id/--subnet-id/--route-cidrs without --network-mode
+		// used to be silently ignored — refuse it instead (it would otherwise
+		// read as "leave the network public" while the user meant VPC).
+		for _, name := range []string{"vpc-id", "subnet-id", "route-cidrs"} {
+			if f.Changed(name) {
+				return nil, fmt.Errorf("--%s only applies with --network-mode (PUBLIC or VPC)", name)
+			}
+		}
 		return nil, nil
 	}
 	if mode != "PUBLIC" && mode != "VPC" {
@@ -257,11 +285,14 @@ func readInboundAuth(cmd *cobra.Command) (*runtimepkg.InboundAuth, error) {
 	}, nil
 }
 
-// readImageAuth builds *ImageAuth only when --image-auth-enabled is set (or a
-// username is supplied). username/password are required when auth is enabled.
-// --image-auth-use-registry-credentials instead lets the platform pull with
-// its own credentials (no username/password needed). The password is send-only
-// (never present on responses); prefer --file for it.
+// readImageAuth builds the imageAuth spec from the --image-auth-* flags. The
+// API requires imageAuth to be present on create/update (@NotNull): with no
+// image-auth flags (a public image) it returns {enabled: false} — a nil here
+// used to make the server 400 on "imageAuth must not be null". username/
+// password are required when auth is enabled; --image-auth-use-registry-
+// credentials instead lets the platform pull with its own credentials (no
+// username/password needed). The password is send-only (never present on
+// responses); prefer --file for it.
 func readImageAuth(cmd *cobra.Command) (*runtimepkg.ImageAuth, error) {
 	f := cmd.Flags()
 	enabled, _ := f.GetBool("image-auth-enabled")
@@ -272,7 +303,8 @@ func readImageAuth(cmd *cobra.Command) (*runtimepkg.ImageAuth, error) {
 		return &runtimepkg.ImageAuth{Enabled: true, UseAgentBaseRegistryCredentials: &useRegistry}, nil
 	}
 	if !enabled && username == "" {
-		return nil, nil
+		// Public image: the spec must still carry imageAuth {enabled: false}.
+		return &runtimepkg.ImageAuth{Enabled: false}, nil
 	}
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("--image-auth-enabled requires both --image-auth-username and --image-auth-password (or --image-auth-use-registry-credentials, or use --file)")
@@ -306,10 +338,25 @@ var runtimeCreateCmd = &cobra.Command{
 	Short: "Create a new agent runtime",
 	Long: `Create a new agent runtime.
 
-By default the runtime is built from flags (the simple path). For environment
-variables, private-registry auth, network placement (VPC), inbound auth (IAM or
-JWT), a CIDR allowlist, an MCP protocol runtime, or multi-element command/args,
-use --file with a template produced by 'grn agentbase runtime generate'.
+The whole spec is flag-driven. --name (immutable, prompted when unset),
+--image-url, --flavor-id, repeatable --command/--args/--env KEY=VALUE, and
+autoscaling (--max-replicas, --cpu-utilization, --memory-utilization; unset
+sends the defaults 2/70/70).
+
+Private-registry auth: --image-auth-username/--image-auth-password, or
+--image-auth-use-registry-credentials to let the platform pull with its own
+credentials. imageAuth is required by the API: with no image-auth flags the
+request sends {enabled: false} (public image).
+
+Network placement: --network-mode VPC with --vpc-id/--subnet-id and optional
+repeatable --route-cidrs (unset = PUBLIC). Inbound auth: --inbound-mode
+NONE/IAM/JWT (JWT adds --inbound-jwt-source DISCOVERY|JWKS and its flags).
+Inbound CIDR allowlist: repeatable --allowed-cidrs. Protocol: --protocol
+HTTP|MCP.
+
+--file applies a full spec instead ('grn agentbase runtime generate' template)
+— prefer it to keep the image-auth password (and inline JWKS key sets) out of
+the shell history.
 
 The runtime is created asynchronously; this command returns as soon as the
 service accepts the spec (state CREATING). Converge with
@@ -325,6 +372,12 @@ service accepts the spec (state CREATING). Converge with
 			if err != nil {
 				return err
 			}
+			// imageAuth is @NotNull server-side: a spec without it is a
+			// public image — send {enabled: false} instead of letting the
+			// server 400 on a missing field.
+			if req.ImageAuth == nil {
+				req.ImageAuth = &runtimepkg.ImageAuth{Enabled: false}
+			}
 			return createRuntimeAndPrint(ctx, cmd, req)
 		}
 		name, _ := cmd.Flags().GetString("name")
@@ -332,24 +385,11 @@ service accepts the spec (state CREATING). Converge with
 		if err != nil {
 			return err
 		}
-		spec, err := readRuntimeSpec(cmd)
+		spec, err := readRuntimeSpec(cmd, false)
 		if err != nil {
 			return err
 		}
-		req := &runtimepkg.CreateAgentRuntimeRequest{
-			Description:          spec.Description,
-			ImageURL:             spec.ImageURL,
-			ImageAuth:            spec.ImageAuth,
-			Command:              spec.Command,
-			Args:                 spec.Args,
-			EnvironmentVariables: spec.Env,
-			NetworkConfig:        spec.Network,
-			AllowedCidrs:         spec.AllowedCidrs,
-			InboundAuth:          spec.Inbound,
-			Protocol:             spec.Protocol,
-			FlavorID:             spec.FlavorID,
-			Autoscaling:          spec.Autoscaling,
-		}
+		req := createRequestFromSpec(name, spec)
 		// poc is create-only: send it only when the flag was explicitly set.
 		if cmd.Flags().Changed("poc") {
 			poc, _ := cmd.Flags().GetBool("poc")
@@ -357,6 +397,28 @@ service accepts the spec (state CREATING). Converge with
 		}
 		return createRuntimeAndPrint(ctx, cmd, req)
 	},
+}
+
+// createRequestFromSpec assembles the create request from the prompt-resolved
+// name and the flag-read spec. The name must reach the request — a regression
+// once dropped it and the server 400'd with "name must not be blank" while the
+// flag path looked fine. Unit-tested in runtime_test.go.
+func createRequestFromSpec(name string, spec *runtimeSpec) *runtimepkg.CreateAgentRuntimeRequest {
+	return &runtimepkg.CreateAgentRuntimeRequest{
+		Name:                 name,
+		Description:          spec.Description,
+		ImageURL:             spec.ImageURL,
+		ImageAuth:            spec.ImageAuth,
+		Command:              spec.Command,
+		Args:                 spec.Args,
+		EnvironmentVariables: spec.Env,
+		NetworkConfig:        spec.Network,
+		AllowedCidrs:         spec.AllowedCidrs,
+		InboundAuth:          spec.Inbound,
+		Protocol:             spec.Protocol,
+		FlavorID:             spec.FlavorID,
+		Autoscaling:          spec.Autoscaling,
+	}
 }
 
 func createRuntimeAndPrint(ctx context.Context, cmd *cobra.Command, req *runtimepkg.CreateAgentRuntimeRequest) error {
@@ -418,17 +480,22 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 const runtimeCreateTemplateYAML = `# Agent runtime create spec.
 # Fill in and apply with:  grn agentbase runtime create --file <this-file>
 #
-# Required: name, imageUrl, flavorId, autoscaling (and command/args/env, which
-# may be empty lists/map but must be present). name is sealed (immutable);
-# 5-50 chars, [a-zA-Z0-9._-].
+# Required: name, imageUrl, flavorId, imageAuth, autoscaling (and command/args/
+# env, which may be empty lists/map but must be present). name is sealed
+# (immutable); 5-50 chars, [a-zA-Z0-9._-].
 name: my-runtime             # immutable
 description: ""
 imageUrl: registry.example.com/my-agent:latest
-# imageAuth:                 # optional private-registry credentials (send-only)
-#   enabled: true
-#   useAgentBaseRegistryCredentials: false   # let the platform pull with its own registry credentials
-#   username: ""
-#   password: ""             # prefer keeping this in the file, not on the CLI
+# imageAuth is required by the API. enabled: false (public image) is the
+# default body below — for a private registry, enable it and fill username +
+# password (send-only; the API never returns the password), or set
+# useAgentBaseRegistryCredentials to let the platform pull with its own
+# registry credentials.
+imageAuth:
+  enabled: false
+  # useAgentBaseRegistryCredentials: false
+  # username: ""
+  # password: ""             # prefer keeping this in the file, not on the CLI
 command:                     # container entrypoint (list); may be empty
   - python
   - -m
@@ -541,17 +608,33 @@ var runtimeGetCmd = &cobra.Command{
 
 var runtimeUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
-	Short: "Update an agent runtime (full-spec replacement)",
-	Long: `Update an agent runtime. Unlike gateway, this is a FULL-SPEC replacement, not a
-merge-patch: every field is required server-side (the create spec minus name).
-Updating creates a new version and rolls the default endpoint forward.
+	Short: "Update an agent runtime (new immutable version)",
+	Long: `Update an agent runtime. Updating creates a new immutable version and rolls
+the default endpoint forward.
 
-For anything beyond the simple path, use --file with the create template
-('grn agentbase runtime generate') minus the name field.`,
+The API is a full-spec replacement, but the flag path is merge-like: a field
+whose flags are left unset is carried over from the current version (a stderr
+note lists the carried fields), and a set flag replaces its field wholesale
+(no element-level merge). Set flags only for what you intend to change.
+
+imageAuth is the exception — the API never returns the stored password, so
+username/password image auth cannot be carried over: re-supply
+--image-auth-username/--image-auth-password (or --file with a full spec).
+Without image auth the update re-sends {enabled: false}.
+
+--file applies a full spec instead ('grn agentbase runtime generate' template
+minus name) — it must include imageAuth explicitly, since a missing imageAuth
+would silently wipe stored credentials.
+
+The update is asynchronous; converge with 'grn agentbase runtime wait <id>'.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		id := args[0]
+		client, err := newRuntimeClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
 		if runtimeFile != "" {
 			data, err := os.ReadFile(runtimeFile)
 			if err != nil {
@@ -561,9 +644,17 @@ For anything beyond the simple path, use --file with the create template
 			if err != nil {
 				return err
 			}
+			// imageAuth is required server-side and cannot be defaulted on
+			// update: a missing imageAuth would silently wipe the stored
+			// credentials. Make the user state it — {enabled: false} drops
+			// them deliberately, username/password or
+			// useAgentBaseRegistryCredentials keeps them.
+			if createReq.ImageAuth == nil {
+				return fmt.Errorf("spec is missing required field: imageAuth (the API never returns the stored password, so it cannot be carried over; set imageAuth explicitly: {enabled: false} drops it, username/password or useAgentBaseRegistryCredentials keeps it)")
+			}
 			// poc is create-only: a spec file carrying poc is accepted for
 			// convenience but the field is not forwarded on update.
-			return updateRuntimeAndPrint(ctx, cmd, id, &runtimepkg.UpdateAgentRuntimeRequest{
+			return updateRuntimeAndPrint(ctx, client, cmd, id, &runtimepkg.UpdateAgentRuntimeRequest{
 				Description:          createReq.Description,
 				ImageURL:             createReq.ImageURL,
 				ImageAuth:            createReq.ImageAuth,
@@ -578,32 +669,29 @@ For anything beyond the simple path, use --file with the create template
 				Autoscaling:          createReq.Autoscaling,
 			})
 		}
-		spec, err := readRuntimeSpec(cmd)
+		spec, err := readRuntimeSpec(cmd, true)
 		if err != nil {
 			return err
 		}
-		return updateRuntimeAndPrint(ctx, cmd, id, &runtimepkg.UpdateAgentRuntimeRequest{
-			Description:          spec.Description,
-			ImageURL:             spec.ImageURL,
-			ImageAuth:            spec.ImageAuth,
-			Command:              spec.Command,
-			Args:                 spec.Args,
-			EnvironmentVariables: spec.Env,
-			NetworkConfig:        spec.Network,
-			AllowedCidrs:         spec.AllowedCidrs,
-			InboundAuth:          spec.Inbound,
-			Protocol:             spec.Protocol,
-			FlavorID:             spec.FlavorID,
-			Autoscaling:          spec.Autoscaling,
-		})
+		// Full-spec replacement: base the request on the current version and
+		// let the changed flags override — unset flags used to reset fields to
+		// the server defaults (inboundAuth NONE, networkConfig PUBLIC, ...) .
+		cur, err := latestVersion(ctx, client, id)
+		if err != nil {
+			return err
+		}
+		req, carried, err := buildUpdateRequest(spec, cur, cmd.Flags().Changed)
+		if err != nil {
+			return err
+		}
+		if len(carried) > 0 {
+			fmt.Fprintf(os.Stderr, "Carrying over from version %d: %s\n", cur.Version, strings.Join(carried, ", "))
+		}
+		return updateRuntimeAndPrint(ctx, client, cmd, id, req)
 	},
 }
 
-func updateRuntimeAndPrint(ctx context.Context, cmd *cobra.Command, id string, req *runtimepkg.UpdateAgentRuntimeRequest) error {
-	client, err := newRuntimeClient(ctx, cmd)
-	if err != nil {
-		return err
-	}
+func updateRuntimeAndPrint(ctx context.Context, client *runtimepkg.Client, cmd *cobra.Command, id string, req *runtimepkg.UpdateAgentRuntimeRequest) error {
 	rt, err := client.Update(ctx, id, req)
 	if err != nil {
 		return err
@@ -611,6 +699,207 @@ func updateRuntimeAndPrint(ctx context.Context, cmd *cobra.Command, id string, r
 	fmt.Fprintf(os.Stderr, "Runtime %q updating (state %s). Run 'grn agentbase runtime wait %s' to converge.\n",
 		rt.Name, rt.Status, rt.ID)
 	return output.PrintResource(rt, func() string { return rt.ID }, func() error { return renderRuntimeDetail(rt) })
+}
+
+// imageAuthFlags are the flags that explicitly set the imageAuth spec; any of
+// them marks it as user-provided on update (otherwise it is derived from the
+// current version).
+var imageAuthFlags = []string{"image-auth-enabled", "image-auth-use-registry-credentials", "image-auth-username", "image-auth-password"}
+
+// networkFlags are the flags that explicitly set networkConfig.
+var networkFlags = []string{"network-mode", "vpc-id", "subnet-id", "route-cidrs"}
+
+// autoscalingFlags are the flags that explicitly set autoscaling.
+var autoscalingFlags = []string{"max-replicas", "cpu-utilization", "memory-utilization"}
+
+// anyChanged reports whether any of the named flags was explicitly set.
+func anyChanged(changed func(string) bool, names ...string) bool {
+	for _, name := range names {
+		if changed(name) {
+			return true
+		}
+	}
+	return false
+}
+
+// buildUpdateRequest assembles the update request for the flag path. The API
+// is a full-spec replacement, so a field whose flags are unset is carried over
+// from the current version (and recorded in the returned carry list for the
+// caller's stderr note) instead of silently resetting to the server defaults
+// (inboundAuth NONE, networkConfig PUBLIC, empty env/command/args). A changed
+// flag replaces its field wholesale (no element-level merge).
+//
+// imageAuth is the exception: the API never returns the stored password and an
+// update with enabled=false wipes the stored credentials, so it cannot be
+// carried over blindly — see carriedImageAuth.
+func buildUpdateRequest(spec *runtimeSpec, cur *runtimepkg.AgentRuntimeVersionDto, changed func(string) bool) (*runtimepkg.UpdateAgentRuntimeRequest, []string, error) {
+	req := &runtimepkg.UpdateAgentRuntimeRequest{}
+	var carried []string
+
+	if changed("description") {
+		req.Description = spec.Description
+	} else {
+		req.Description = cur.Description
+		carried = append(carried, "description")
+	}
+	if changed("image-url") {
+		req.ImageURL = spec.ImageURL
+	} else {
+		req.ImageURL = cur.ImageURL
+		carried = append(carried, "imageUrl")
+	}
+	if changed("command") {
+		req.Command = spec.Command
+	} else {
+		req.Command = cur.Command
+		carried = append(carried, "command")
+	}
+	if changed("args") {
+		req.Args = spec.Args
+	} else {
+		req.Args = cur.Args
+		carried = append(carried, "args")
+	}
+	if changed("env") {
+		req.EnvironmentVariables = spec.Env
+	} else {
+		req.EnvironmentVariables = cur.EnvironmentVariables
+		carried = append(carried, "environmentVariables")
+	}
+	if anyChanged(changed, networkFlags...) {
+		req.NetworkConfig = spec.Network
+	} else {
+		req.NetworkConfig = versionNetworkConfig(cur)
+		carried = append(carried, "networkConfig")
+	}
+	if changed("allowed-cidrs") {
+		req.AllowedCidrs = spec.AllowedCidrs
+	} else {
+		req.AllowedCidrs = cur.AllowedCidrs
+		carried = append(carried, "allowedCidrs")
+	}
+	if changed("inbound-mode") {
+		req.InboundAuth = spec.Inbound
+	} else {
+		req.InboundAuth = versionInboundAuth(cur)
+		carried = append(carried, "inboundAuth")
+	}
+	if changed("protocol") {
+		req.Protocol = spec.Protocol
+	} else {
+		req.Protocol = cur.Protocol
+		carried = append(carried, "protocol")
+	}
+	if changed("flavor-id") {
+		req.FlavorID = spec.FlavorID
+	} else {
+		req.FlavorID = cur.FlavorID
+		carried = append(carried, "flavorId")
+	}
+	if anyChanged(changed, autoscalingFlags...) {
+		req.Autoscaling = spec.Autoscaling
+	} else {
+		req.Autoscaling = cur.Autoscaling
+		carried = append(carried, "autoscaling")
+	}
+
+	if anyChanged(changed, imageAuthFlags...) {
+		req.ImageAuth = spec.ImageAuth
+	} else {
+		ia, err := carriedImageAuth(cur)
+		if err != nil {
+			return nil, nil, err
+		}
+		req.ImageAuth = ia
+		carried = append(carried, "imageAuth")
+	}
+	return req, carried, nil
+}
+
+// carriedImageAuth rebuilds the update's imageAuth from the current version.
+// See buildUpdateRequest for why username/password auth cannot be carried over
+// (the API never returns the stored password, and defaulting to enabled=false
+// would wipe it).
+func carriedImageAuth(cur *runtimepkg.AgentRuntimeVersionDto) (*runtimepkg.ImageAuth, error) {
+	if cur.ImageAuth == nil || !cur.ImageAuth.Enabled {
+		// imageAuth is required server-side: re-send {enabled: false}.
+		return &runtimepkg.ImageAuth{Enabled: false}, nil
+	}
+	if cur.ImageAuth.UseAgentBaseRegistryCredentials {
+		// Registry-credentials mode needs no password: carry it verbatim.
+		useRegistry := true
+		return &runtimepkg.ImageAuth{
+			Enabled:                         true,
+			UseAgentBaseRegistryCredentials: &useRegistry,
+			Username:                        cur.ImageAuth.Username,
+		}, nil
+	}
+	return nil, fmt.Errorf("current version uses username/password image auth: the API never returns the stored password, so it cannot be carried over; re-supply --image-auth-username/--image-auth-password (or apply a full spec with --file)")
+}
+
+// versionNetworkConfig converts a version's networkConfig entity into the
+// update request's NetworkConfig (same shape, distinct types).
+func versionNetworkConfig(cur *runtimepkg.AgentRuntimeVersionDto) *runtimepkg.NetworkConfig {
+	if cur.NetworkConfig == nil {
+		return nil
+	}
+	return &runtimepkg.NetworkConfig{
+		Mode:       cur.NetworkConfig.Mode,
+		VpcID:      cur.NetworkConfig.VpcID,
+		SubnetID:   cur.NetworkConfig.SubnetID,
+		RouteCidrs: cur.NetworkConfig.RouteCidrs,
+	}
+}
+
+// versionInboundAuth converts a version's inboundAuth view into the update
+// request's InboundAuth (same shape, distinct types; JWKS is copied raw).
+func versionInboundAuth(cur *runtimepkg.AgentRuntimeVersionDto) *runtimepkg.InboundAuth {
+	if cur.InboundAuth == nil {
+		return nil
+	}
+	ia := &runtimepkg.InboundAuth{Mode: cur.InboundAuth.Mode}
+	if cur.InboundAuth.JWT != nil {
+		jwks := cur.InboundAuth.JWT.JWKS
+		if len(jwks) == 0 {
+			jwks = nil
+		}
+		ia.JWT = &runtimepkg.InboundAuthJWT{
+			Source:           cur.InboundAuth.JWT.Source,
+			JWKS:             jwks,
+			DiscoveryURL:     cur.InboundAuth.JWT.DiscoveryURL,
+			AllowedAudiences: cur.InboundAuth.JWT.AllowedAudiences,
+			AllowedClients:   cur.InboundAuth.JWT.AllowedClients,
+			AllowedScopes:    cur.InboundAuth.JWT.AllowedScopes,
+			PrincipalClaim:   cur.InboundAuth.JWT.PrincipalClaim,
+		}
+	}
+	return ia
+}
+
+// latestVersion fetches the runtime's current version spec: the entry with the
+// highest version number, scanning every page of the versions list (each
+// update appends a new immutable version, so the last one is the live spec).
+func latestVersion(ctx context.Context, client *runtimepkg.Client, id string) (*runtimepkg.AgentRuntimeVersionDto, error) {
+	const size = 100
+	var latest *runtimepkg.AgentRuntimeVersionDto
+	for page := 1; page <= 100; page++ {
+		resp, err := client.ListVersions(ctx, id, page, size)
+		if err != nil {
+			return nil, fmt.Errorf("read current version: %w", err)
+		}
+		for i := range resp.ListData {
+			if latest == nil || resp.ListData[i].Version > latest.Version {
+				latest = &resp.ListData[i]
+			}
+		}
+		if page >= resp.TotalPage || len(resp.ListData) == 0 {
+			break
+		}
+	}
+	if latest == nil {
+		return nil, fmt.Errorf("runtime %s has no versions to carry fields over from", id)
+	}
+	return latest, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -769,7 +1058,7 @@ func loadRuntimeSpec(data []byte, requireName bool) (*runtimepkg.CreateAgentRunt
 // Sub-resources (Slice 4): endpoints / runtime-level ops / tracing
 // ---------------------------------------------------------------------------
 
-var runtimeEndpointCmd = &cobra.Command{Use: "endpoint", Short: "Manage a runtime's endpoints"}
+var runtimeEndpointCmd = &cobra.Command{Use: "endpoint", Short: "Manage a runtime's endpoints", RunE: requireSubcommand}
 var runtimeTraceCmd = &cobra.Command{
 	Use:   "trace",
 	Short: "Query the tracing backend (raw passthrough)",
@@ -779,6 +1068,7 @@ These are Google-AIP custom verbs that forward arbitrary query params to the
 tracing backend and return that backend's raw JSON. Use --param key=value
 (repeatable) to pass query params through verbatim; the response is printed
 raw (use -o json for clean stdout).`,
+	RunE: requireSubcommand,
 }
 
 // --- endpoint list/create/update/delete/start/stop ---
