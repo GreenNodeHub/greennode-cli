@@ -6,10 +6,14 @@ Create a new agent runtime.
 
 Create a new agent runtime.
 
-By default the runtime is built from flags (the simple path). For environment
-variables, private-registry auth, network placement (VPC), inbound auth (IAM or
-JWT), a CIDR allowlist, an MCP protocol runtime, or multi-element command/args,
-use `--file` with a template produced by [generate](generate.md).
+By default the runtime is built from flags: `--name` is prompted for when
+missing, `--command`/`--args`/`--env` are repeatable, `--network-mode VPC`
+places the runtime in a VPC, `--inbound-mode IAM|JWT` configures inbound auth,
+`--allowed-cidrs` restricts inbound CIDRs, and `--protocol MCP` selects the
+MCP protocol. `imageAuth` is required by the API: with no `--image-auth-*`
+flags the CLI sends `{enabled: false}` (public image). Prefer `--file` with a
+template produced by [generate](generate.md) to keep the image-auth password
+out of the shell history.
 
 The runtime is created asynchronously; this command returns as soon as the
 service accepts the spec (state `CREATING`). Converge with

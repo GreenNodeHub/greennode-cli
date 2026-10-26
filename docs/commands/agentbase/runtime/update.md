@@ -1,20 +1,31 @@
 # runtime update
 
-Update an agent runtime (full-spec replacement).
+Update an agent runtime (new immutable version).
 
 ## Description
 
-Update an agent runtime. Unlike gateway, this is a FULL-SPEC replacement, not a
-merge-patch: every field is required server-side (the create spec minus `name`).
-Updating creates a new version and rolls the default endpoint forward.
+Update an agent runtime. Updating creates a new immutable version and rolls
+the default endpoint forward.
 
-For anything beyond the simple path, use `--file` with the create template
-([generate](generate.md)) minus the `name` field.
+The API is a full-spec replacement, but the flag path is merge-like: a field
+whose flags are left unset is **carried over** from the current version (a
+stderr note lists the carried fields), and a set flag replaces its field
+wholesale (no element-level merge). Set flags only for what you intend to
+change — e.g. a bare `--env K=V` replaces the whole environment map, it does
+not add one key.
 
-When `--file` is set it is authoritative — every flag below is ignored. The file
-is validated as a full create spec, so `name` must be present (and non-empty) in
-the file even though it is not sent; the runtime is addressed by the `<id>`
-positional argument.
+`imageAuth` is the exception — the API never returns the stored password, so
+username/password image auth cannot be carried over: re-supply
+`--image-auth-username`/`--image-auth-password` (or use `--file` with a full
+spec). Without image auth the update re-sends `{enabled: false}`.
+
+When `--file` is set it is authoritative — every flag below is ignored, and
+the spec is applied as-is. The file must contain `imageUrl` and `flavorId`; a
+`name` in the file is ignored (the runtime is addressed by the `<id>`
+positional argument and the name is immutable). The file **must include
+`imageAuth` explicitly**: a missing `imageAuth` would silently wipe the stored
+credentials, so it is rejected — `{enabled: false}` drops them deliberately,
+`username`/`password` or `useAgentBaseRegistryCredentials` keeps them.
 
 > **Notes:** `--min-replicas` is gone (the platform owns the autoscaling floor —
 > always 1); only `--max-replicas` is configurable. `--poc` is create-only and
@@ -58,16 +69,18 @@ grn agentbase runtime update <id>
 
 **`--image-url`** (string)
 
-Container image URL.
+Container image URL. Unset = carried over from the current version; explicitly
+set but empty is rejected.
 
-- Required: Yes
+- Required: No (carried over from the current version when unset)
 - Default: (empty)
 
 **`--flavor-id`** (string)
 
-Flavor id.
+Flavor id. Unset = carried over from the current version; explicitly set but
+empty is rejected.
 
-- Required: Yes
+- Required: No (carried over from the current version when unset)
 - Default: (empty)
 
 **`--description`** (string)
@@ -158,10 +171,12 @@ Autoscaling: memory scale-up threshold % (10-90).
 
 **`--network-mode`** (string)
 
-`networkConfig` mode: `PUBLIC` or `VPC` (unset = `PUBLIC`).
+`networkConfig` mode: `PUBLIC` or `VPC`. Unset (with `--vpc-id`/`--subnet-id`/
+`--route-cidrs` also unset) = the current version's `networkConfig` is carried
+over; setting any network flag replaces the whole `networkConfig`.
 
-- Required: No
-- Default: `PUBLIC`
+- Required: No (carried over from the current version when unset)
+- Default: (empty = carried over)
 - Constraints: `VPC` requires `--vpc-id` and `--subnet-id`.
 
 **`--vpc-id`** (string)
@@ -196,10 +211,11 @@ Inbound CIDR allowlist (repeatable, max 20).
 
 **`--inbound-mode`** (string)
 
-`inboundAuth` mode: `NONE`, `IAM`, or `JWT` (unset = `NONE`).
+`inboundAuth` mode: `NONE`, `IAM`, or `JWT`. Unset = the current version's
+`inboundAuth` is carried over.
 
-- Required: No
-- Default: (empty = `NONE`)
+- Required: No (carried over from the current version when unset)
+- Default: (empty = carried over)
 - Constraints: `JWT` requires the `--inbound-jwt-*` flags; cannot be combined
   with them when set to `IAM`/`NONE`.
 
@@ -256,10 +272,10 @@ Prefer `--file` — the value is a full JSON document.
 
 **`--protocol`** (string)
 
-Runtime protocol: `HTTP` or `MCP` (unset = `HTTP`).
+Runtime protocol: `HTTP` or `MCP`.
 
-- Required: No
-- Default: (empty = `HTTP`)
+- Required: No (carried over from the current version when unset)
+- Default: (empty = carried over)
 
 **`--file`** (string)
 
@@ -267,7 +283,11 @@ Apply a full-spec file (create template minus `name`); authoritative when set.
 
 - Required: No
 - Default: (empty)
-- Constraints: when set, the flags above are ignored; `name` must be present in the file.
+- Constraints: when set, the flags above are ignored; `name` must be present
+  in the file; `imageAuth` must be present in the file (a missing `imageAuth`
+  would wipe the stored credentials — set `{enabled: false}` to drop them
+  deliberately, or `username`/`password` / `useAgentBaseRegistryCredentials`
+  to keep them).
 
 ## Global options
 
@@ -280,15 +300,22 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Update from a full-spec file (recommended):
+Change only the image (everything else is carried over from the current
+version, listed on stderr):
+
+```bash
+grn agentbase runtime update <id> --image-url registry.example.com/my-agent:v2
+```
+
+Update from a full-spec file (recommended for password/JWKS-carrying specs):
 
 ```bash
 grn agentbase runtime generate > rt.yaml
-# ...edit rt.yaml (keep name)...
+# ...edit rt.yaml (keep name; keep imageAuth)...
 grn agentbase runtime update <id> --file rt.yaml
 ```
 
-Update from flags:
+Update several fields from flags:
 
 ```bash
 grn agentbase runtime update <id> \

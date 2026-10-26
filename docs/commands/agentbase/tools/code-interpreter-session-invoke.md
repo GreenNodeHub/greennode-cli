@@ -18,7 +18,7 @@ truth and rejects bad shapes with a 400 listing the accepted values).
 | `executeCode` | `--language`, `--code` (both required) |
 | `executeCommand` | `--command` (required) |
 | `startCommandExecution` | `--command` (required; async variant) |
-| `listFiles` | `--directory-path` (optional) |
+| `listFiles` | `--directory-path` (optional; defaults to `.`, the session working directory) |
 | `writeFiles` | `--content path=content` (the CLI base64-encodes it) or `--content-b64 path=<base64>` (repeatable, at least one) |
 | `readFiles` | `--path` (repeatable, at least one) |
 | `getTask` | `--task-id` (required) |
@@ -68,7 +68,7 @@ grn agentbase tools code-interpreter session invoke <code-interpreter-id> <sessi
 **`--command`** (string) — `executeCommand`/`startCommandExecution`: the
 command to run (required).
 
-**`--directory-path`** (string) — `listFiles`: directory to list (optional).
+**`--directory-path`** (string) — `listFiles`: directory to list (optional; defaults to `.`, the session working directory).
 
 **`--content`** (string slice) — `writeFiles`: a file to write as
 `path=content` (repeatable; split on the **first** `=`). The content is
