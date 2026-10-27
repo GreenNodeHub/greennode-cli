@@ -356,7 +356,7 @@ func deployApplyRuntime(ctx context.Context, d *deployClients, mfst *deploypkg.M
 	}
 	pctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	rt, err = pollRuntimeToTerminal(pctx, rc, rt.ID, interval)
+	rt, err = pollRuntimeToTerminal(pctx, rc, rt.ID, interval, false)
 	if err != nil {
 		return rt, err
 	}
@@ -531,7 +531,7 @@ The runtime deletion is asynchronous, so destroy waits for it to reach DELETED
 		} else {
 			pctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			if _, werr := pollRuntimeToTerminal(pctx, d.runtime(), rt.ID, interval); werr != nil {
+			if _, werr := pollRuntimeToTerminal(pctx, d.runtime(), rt.ID, interval, true); werr != nil {
 				steps = append(steps, deployStep{"runtime", "error", "deleted but " + werr.Error()})
 			} else {
 				steps = append(steps, deployStep{"runtime", "deleted", rt.ID})

@@ -3,7 +3,9 @@ package agentbase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 
+	clientpkg "github.com/greennodehub/greennode-cli/internal/agentbase/client"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
 	gatewaypkg "github.com/greennodehub/greennode-cli/internal/agentbase/gateway"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
@@ -561,7 +564,9 @@ var gatewayWaitCmd = &cobra.Command{
 	Use:   "wait <name>",
 	Short: "Wait for a gateway to reach a terminal state",
 	Long: `Poll a gateway until it reaches a terminal state: ACTIVE / DELETED (success)
-or CREATE_ERROR / UPDATE_ERROR / ERROR (failure). Use after create/update/delete.`,
+or CREATE_ERROR / UPDATE_ERROR / ERROR (failure). Use after create/update/delete.
+A completed delete removes the gateway record, so a 404 (no longer present)
+while waiting counts as DELETED.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
@@ -575,26 +580,53 @@ or CREATE_ERROR / UPDATE_ERROR / ERROR (failure). Use after create/update/delete
 			return err
 		}
 		name := args[0]
-		for {
-			gw, err := client.Get(ctx, name)
-			if err != nil {
-				return err
-			}
-			if gatewayTerminalFailure[gw.State] {
-				return fmt.Errorf("gateway %q failed: state=%s %s", name, gw.State, lastErrStr(gw.LastError))
-			}
-			if gatewayTerminalSuccess[gw.State] {
-				fmt.Fprintf(os.Stderr, "Gateway %q reached state %s.\n", name, gw.State)
-				return output.PrintResource(gw, func() string { return gw.Name }, func() error { return renderGatewayDetail(gw) })
-			}
-			fmt.Fprintf(os.Stderr, "Gateway %q state: %s ...\n", name, gw.State)
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("timed out waiting for gateway %q (last state %s)", name, gw.State)
-			case <-time.After(interval):
-			}
+		gw, err := pollGatewayToTerminal(ctx, client, name, interval)
+		if err != nil {
+			return err
 		}
+		return output.PrintResource(gw, func() string { return gw.Name }, func() error { return renderGatewayDetail(gw) })
 	},
+}
+
+// pollGatewayToTerminal polls a gateway by name until it reaches a terminal
+// state (ACTIVE/DELETED = success, *_ERROR = failure) or ctx expires. Progress
+// lines go to stderr; on success the caller renders the returned gateway.
+//
+// A completed delete removes the gateway record, so Get returns 404 instead of
+// a DELETED state — a 404 mid-poll counts as the DELETED terminal success
+// (documented in `gateway wait --help`). When it arrives before any successful
+// poll, a minimal {name, DELETED} snapshot is returned — the record is gone,
+// there is nothing better to report.
+func pollGatewayToTerminal(ctx context.Context, client *gatewaypkg.Client, name string, interval time.Duration) (*gatewaypkg.GatewayResponse, error) {
+	var last *gatewaypkg.GatewayResponse
+	for {
+		gw, err := client.Get(ctx, name)
+		if err != nil {
+			var apiErr *clientpkg.APIError
+			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+				fmt.Fprintf(os.Stderr, "Gateway %q deleted (no longer present, HTTP 404).\n", name)
+				if last == nil {
+					last = &gatewaypkg.GatewayResponse{Name: name, State: "DELETED"}
+				}
+				return last, nil
+			}
+			return nil, err
+		}
+		last = gw
+		if gatewayTerminalFailure[gw.State] {
+			return nil, fmt.Errorf("gateway %q failed: state=%s %s", name, gw.State, lastErrStr(gw.LastError))
+		}
+		if gatewayTerminalSuccess[gw.State] {
+			fmt.Fprintf(os.Stderr, "Gateway %q reached state %s.\n", name, gw.State)
+			return gw, nil
+		}
+		fmt.Fprintf(os.Stderr, "Gateway %q state: %s ...\n", name, gw.State)
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("timed out waiting for gateway %q (last state %s)", name, gw.State)
+		case <-time.After(interval):
+		}
+	}
 }
 
 // gatewayTerminalSuccess / gatewayTerminalFailure partition the State enum.

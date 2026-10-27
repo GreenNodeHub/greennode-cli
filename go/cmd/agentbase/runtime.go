@@ -3,7 +3,9 @@ package agentbase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	clientpkg "github.com/greennodehub/greennode-cli/internal/agentbase/client"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 	runtimepkg "github.com/greennodehub/greennode-cli/internal/agentbase/runtime"
@@ -933,7 +936,9 @@ var runtimeWaitCmd = &cobra.Command{
 	Use:   "wait <id>",
 	Short: "Wait for an agent runtime to reach a terminal state",
 	Long: `Poll an agent runtime until it reaches a terminal state: ACTIVE / DELETED
-(success) or ERROR / SERVICE_ACCOUNT_ERROR (failure). Use after create/update/delete.`,
+(success) or ERROR / SERVICE_ACCOUNT_ERROR (failure). Use after create/update/delete.
+A completed delete removes the runtime record, so a 404 (no longer present)
+while waiting counts as DELETED.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
@@ -945,7 +950,7 @@ var runtimeWaitCmd = &cobra.Command{
 		}
 		pctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		rt, err := pollRuntimeToTerminal(pctx, client, args[0], interval)
+		rt, err := pollRuntimeToTerminal(pctx, client, args[0], interval, true)
 		if err != nil {
 			return err
 		}
@@ -959,12 +964,31 @@ var runtimeWaitCmd = &cobra.Command{
 // is one polling loop. Progress lines go to stderr. Returns the last-fetched
 // runtime and a non-nil error on failure/timeout (the caller decides whether to
 // render it).
-func pollRuntimeToTerminal(ctx context.Context, client *runtimepkg.Client, id string, interval time.Duration) (*runtimepkg.AgentRuntime, error) {
+//
+// A completed delete removes the runtime record, so Get returns 404 instead of
+// a DELETED status. notFoundIsDeleted maps that 404 onto the DELETED terminal
+// success: pass true for the delete flows (`runtime wait`, which is documented
+// for use after delete, and `deploy destroy`); pass false for `deploy up`,
+// which waits for ACTIVE, where a vanishing runtime stays an error. When the
+// 404 arrives before any successful poll, the returned runtime is a minimal
+// {id, DELETED} snapshot — the record is gone, there is nothing better to
+// report.
+func pollRuntimeToTerminal(ctx context.Context, client *runtimepkg.Client, id string, interval time.Duration, notFoundIsDeleted bool) (*runtimepkg.AgentRuntime, error) {
+	var last *runtimepkg.AgentRuntime
 	for {
 		rt, err := client.Get(ctx, id)
 		if err != nil {
+			var apiErr *clientpkg.APIError
+			if notFoundIsDeleted && errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+				fmt.Fprintf(os.Stderr, "Runtime %q deleted (no longer present, HTTP 404).\n", id)
+				if last == nil {
+					last = &runtimepkg.AgentRuntime{ID: id, Status: "DELETED"}
+				}
+				return last, nil
+			}
 			return nil, err
 		}
+		last = rt
 		if runtimeTerminalFailure[rt.Status] {
 			return rt, fmt.Errorf("runtime %q failed: state=%s %s", id, rt.Status, rt.StatusReason)
 		}
