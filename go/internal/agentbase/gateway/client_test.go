@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/greennodehub/greennode-cli/internal/agentbase/client"
@@ -460,5 +461,190 @@ func TestRepairServiceAccount(t *testing.T) {
 	}
 	if out.Name != "gw" || out.State != "ACTIVE" {
 		t.Errorf("decode: %+v", out)
+	}
+}
+
+// TestListMCPConnectors verifies the mcp-connectors list path, the optional
+// gatewayName/state filters (sent only when set), and the {items, pagination}
+// envelope decode.
+func TestListMCPConnectors(t *testing.T) {
+	var gotGateway, gotState, gotPage, gotPageSize string
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/mcp-connectors" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		q := r.URL.Query()
+		gotGateway, gotState = q.Get("gatewayName"), q.Get("state")
+		gotPage, gotPageSize = q.Get("page"), q.Get("pageSize")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(MCPConnectorListResponse{
+			Items: []MCPConnectorResponse{{
+				Name:       "gh",
+				Type:       "GITHUB",
+				ConnectURL: "https://gw.example/mcp/gh",
+				Gateway:    MCPConnectorGatewayRef{Name: "gw-one", State: "ACTIVE", InboundAuth: MCPConnectorInboundAuthDTO{Mode: "IAM"}},
+				OutboundAuth: MCPConnectorOutboundAuthDTO{
+					Type: "OAUTH", Flow: "3LO", Provider: "github", Scopes: []string{"repo"},
+				},
+			}},
+			Pagination: Pagination{Page: 1, PageSize: 50, TotalItems: 1, HasMore: false},
+		})
+	})
+	out, err := c.ListMCPConnectors(context.Background(), "gw-one", "ACTIVE", 1, 50)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotGateway != "gw-one" || gotState != "ACTIVE" || gotPage != "1" || gotPageSize != "50" {
+		t.Errorf("query gateway=%q state=%q page=%q pageSize=%q", gotGateway, gotState, gotPage, gotPageSize)
+	}
+	it := out.Items[0]
+	if it.Name != "gh" || it.Type != "GITHUB" || it.Gateway.Name != "gw-one" ||
+		it.OutboundAuth.Type != "OAUTH" || it.OutboundAuth.Flow != "3LO" || len(it.OutboundAuth.Scopes) != 1 {
+		t.Errorf("unexpected item: %+v", it)
+	}
+}
+
+// TestListMCPConnectors_OmitsEmptyFilters verifies unset filters and zero
+// paging are not sent.
+func TestListMCPConnectors_OmitsEmptyFilters(t *testing.T) {
+	var gotQuery url.Values
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(MCPConnectorListResponse{})
+	})
+	if _, err := c.ListMCPConnectors(context.Background(), "", "", 0, 0); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, k := range []string{"gatewayName", "state", "page", "pageSize"} {
+		if gotQuery.Get(k) != "" {
+			t.Errorf("query should omit %s, got %q", k, gotQuery.Get(k))
+		}
+	}
+}
+
+// TestGetMCPConnector verifies the composite-key path.
+func TestGetMCPConnector(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/mcp-connectors/gw-one/gh" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(MCPConnectorResponse{Name: "gh", Type: "CUSTOM"})
+	})
+	out, err := c.GetMCPConnector(context.Background(), "gw-one", "gh")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Name != "gh" || out.Type != "CUSTOM" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+// TestListMCPServerTemplates verifies the template-catalog path, the three
+// substring filters, and the envelope decode (authOptions + endpointVariables).
+func TestListMCPServerTemplates(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/mcp-server-templates" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		q := r.URL.Query()
+		if q.Get("displayName") != "GitHub" || q.Get("vendor") != "" || q.Get("id") != "github" {
+			t.Errorf("unexpected filters: %v", q)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(MCPServerTemplateListResponse{
+			Items: []MCPServerTemplateResponse{{
+				ID: "github", DisplayName: "GitHub MCP", Vendor: "github",
+				Endpoint: "https://api.githubcopilot.com/mcp/",
+				AuthOptions: []MCPServerTemplateAuthOption{{
+					Type: "OAUTH", Flow: "3LO", Label: "GitHub OAuth",
+					RecommendedScopes: []string{"repo"},
+				}},
+				EndpointVariables: []EndpointVariable{{Key: "tenant", Sample: "acme"}},
+			}},
+			Pagination: Pagination{Page: 1, PageSize: 50, TotalItems: 1},
+		})
+	})
+	out, err := c.ListMCPServerTemplates(context.Background(), "GitHub", "", "github", 1, 50)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	it := out.Items[0]
+	if it.ID != "github" || len(it.AuthOptions) != 1 || it.AuthOptions[0].Flow != "3LO" ||
+		len(it.EndpointVariables) != 1 || it.EndpointVariables[0].Key != "tenant" {
+		t.Errorf("unexpected item: %+v", it)
+	}
+}
+
+// TestTargetTools verifies the last-synced tools GET.
+func TestTargetTools(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/gateways/gw-one/targets/gh/tools" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(SyncResponse{
+			Status: "ok", ToolCount: 1, LastSyncedAt: "2026-02-03T00:00:00Z",
+			Tools: []SyncedTool{{
+				Name: "search", Title: "Search",
+				InputSchema: map[string]interface{}{"type": "object"},
+			}},
+		})
+	})
+	out, err := c.TargetTools(context.Background(), "gw-one", "gh")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Status != "ok" || out.ToolCount != 1 || len(out.Tools) != 1 || out.Tools[0].Name != "search" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+// TestSyncTarget verifies the sync POST path, the returnTo body, and the
+// authorization_required shape (status + authorizeUrl, no tools).
+func TestSyncTarget(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/gateways/gw-one/targets/gh/sync" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(SyncResponse{
+			Status:       "authorization_required",
+			AuthorizeURL: "https://gw.example/authorize?session=1",
+		})
+	})
+	out, err := c.SyncTarget(context.Background(), "gw-one", "gh", &SyncRequest{ReturnTo: "http://localhost/done"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var got SyncRequest
+	if err := json.Unmarshal(gotBody, &got); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if got.ReturnTo != "http://localhost/done" {
+		t.Errorf("returnTo=%q", got.ReturnTo)
+	}
+	if out.Status != "authorization_required" || out.AuthorizeURL == "" {
+		t.Errorf("unexpected: %+v", out)
+	}
+}
+
+// TestSyncTarget_NilRequest verifies nil req sends an empty body object, not
+// a JSON null.
+func TestSyncTarget_NilRequest(t *testing.T) {
+	var gotBody []byte
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(SyncResponse{Status: "ok"})
+	})
+	if _, err := c.SyncTarget(context.Background(), "gw", "t", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(gotBody) != "{}" {
+		t.Errorf("body=%q, want {}", gotBody)
 	}
 }

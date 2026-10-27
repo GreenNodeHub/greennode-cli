@@ -376,3 +376,27 @@ func TestApplyAgentbaseQuery(t *testing.T) {
 		t.Errorf("empty query must reset, got %q", got)
 	}
 }
+
+// TestToolsInvokeToolArgs_ListFiles_DefaultsDirectoryPath: the backend
+// requires directoryPath (400 with -32602 when omitted) and the platform MCP
+// server defaults it to "." — a bare listFiles must list the session working
+// directory instead of erroring (34837).
+func TestToolsInvokeToolArgs_ListFiles_DefaultsDirectoryPath(t *testing.T) {
+	cmd := newInvokeArgsCmd(t, nil) // no --directory-path at all
+	args, err := toolsInvokeToolArgs(cmd, "listFiles")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if args.DirectoryPath != "." {
+		t.Errorf("directoryPath: got %q, want \".\"", args.DirectoryPath)
+	}
+
+	cmd = newInvokeArgsCmd(t, map[string][]string{"directory-path": {"/tmp/work"}})
+	args, err = toolsInvokeToolArgs(cmd, "listFiles")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if args.DirectoryPath != "/tmp/work" {
+		t.Errorf("explicit directoryPath: got %q, want /tmp/work", args.DirectoryPath)
+	}
+}

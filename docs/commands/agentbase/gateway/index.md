@@ -35,6 +35,9 @@ terminal state.
 | [inbound-auth](inbound-auth-jwt-idp-app-set.md) | [`jwt idp-app set`](inbound-auth-jwt-idp-app-set.md) · [`jwt idp-app clear`](inbound-auth-jwt-idp-app-clear.md) |
 | [private-network](private-network-routes-get.md) | [`routes get`](private-network-routes-get.md) · [`routes set`](private-network-routes-set.md) |
 | [service-account](service-account-repair.md) | [`repair`](service-account-repair.md) |
+| [mcp-connectors](mcp-connectors-list.md) | [`list`](mcp-connectors-list.md) · [`get`](mcp-connectors-get.md) |
+| [mcp-server-templates](mcp-server-templates-list.md) | [`list`](mcp-server-templates-list.md) |
+| [target](target-tools.md) | [`tools`](target-tools.md) · [`sync`](target-sync.md) |
 
 ## Recommended workflow for complex specs
 

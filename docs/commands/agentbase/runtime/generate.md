@@ -7,6 +7,12 @@ Print a runtime create template (YAML or JSON).
 Print a commented agent-runtime create template to stdout. Save it, fill it in,
 and apply with `grn agentbase runtime create --file <file>`.
 
+The template ships with `imageAuth: {enabled: false}` — the API requires the
+field, and `enabled: false` is the public-image default. For a private
+registry, enable it and fill in `username`/`password` (send-only) or set
+`useAgentBaseRegistryCredentials`. The same file (minus the create-only `poc`,
+keeping `name`) feeds `runtime update --file`.
+
 Defaults to YAML (with comments); pass `-o json` for a JSON skeleton.
 
 ## Synopsis

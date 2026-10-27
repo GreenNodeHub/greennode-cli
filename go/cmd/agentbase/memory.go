@@ -41,6 +41,7 @@ template, fill it in, and apply with --file:
     grn agentbase memory generate > mem.yaml
 
 Memories share the ~/.greennode profile like the rest of agentbase.`,
+	RunE: requireSubcommand,
 }
 
 // newMemoryClient mirrors newRuntimeClient: resolve the shared profile + env,
@@ -443,11 +444,11 @@ func loadMemorySpec(data []byte) (*memorypkg.CreateMemoryRequest, error) {
 // sub-resources (Slice 3): actor / session / event / strategy / record
 // ---------------------------------------------------------------------------
 
-var memoryActorCmd = &cobra.Command{Use: "actor", Short: "Browse a memory's actors"}
-var memorySessionCmd = &cobra.Command{Use: "session", Short: "Browse a memory's sessions"}
-var memoryEventCmd = &cobra.Command{Use: "event", Short: "Manage a session's events"}
-var memoryStrategyCmd = &cobra.Command{Use: "strategy", Short: "Browse a memory's long-term-memory strategies"}
-var memoryRecordCmd = &cobra.Command{Use: "record", Short: "Manage a memory's long-term records"}
+var memoryActorCmd = &cobra.Command{Use: "actor", Short: "Browse a memory's actors", RunE: requireSubcommand}
+var memorySessionCmd = &cobra.Command{Use: "session", Short: "Browse a memory's sessions", RunE: requireSubcommand}
+var memoryEventCmd = &cobra.Command{Use: "event", Short: "Manage a session's events", RunE: requireSubcommand}
+var memoryStrategyCmd = &cobra.Command{Use: "strategy", Short: "Browse a memory's long-term-memory strategies", RunE: requireSubcommand}
+var memoryRecordCmd = &cobra.Command{Use: "record", Short: "Manage a memory's long-term records", RunE: requireSubcommand}
 
 // --- actor list ---
 

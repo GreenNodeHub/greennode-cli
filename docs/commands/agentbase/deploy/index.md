@@ -57,5 +57,5 @@ runtime:
   args: [--port, "8080"]
   env: {LOG_LEVEL: info}
   flavorId: agent.small
-  autoscaling: {minReplicas: 1, maxReplicas: 3, cpuUtilization: 70, memoryUtilization: 80}
+  autoscaling: {maxReplicas: 3, cpuUtilization: 70, memoryUtilization: 80}
 ```

@@ -19,6 +19,11 @@ stage) and exits non-zero. On timeout it exits non-zero with the last observed
 state. All non-terminal states (`WAITING_*`, `CREATING`, `UPDATING`,
 `DELETING`, `*_CLEANING`) keep polling.
 
+A completed delete removes the gateway record, so once the delete finishes the
+GET returns HTTP 404 (no longer present) instead of a `DELETED` state. That 404
+counts as the `DELETED` terminal success: `wait` reports the gateway as deleted
+and exits 0.
+
 ## Synopsis
 
 ```text
@@ -71,7 +76,8 @@ grn agentbase gateway create --file gw.yaml
 grn agentbase gateway wait my-gateway
 ```
 
-Wait for a deletion to finish (terminates on `DELETED`), polling every 10
+Wait for a deletion to finish (terminates on `DELETED` — once the record is
+gone the API returns 404, which counts as `DELETED`), polling every 10
 seconds up to 30 minutes:
 
 ```bash

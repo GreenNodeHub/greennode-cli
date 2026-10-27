@@ -29,6 +29,7 @@ Authentication is shared with the rest of the CLI: machine credentials come from
 login from 'grn login'. Use 'grn logout' to clear a login. There is no separate
 agentbase login/logout — the profile's auth_mode (user vs machine) selects the
 token source agentbase uses, exactly like vks/vserver.`,
+	RunE: requireSubcommand,
 }
 
 // identity whoami / config show were removed: agentbase defers config display to
@@ -42,6 +43,7 @@ var workloadCmd = &cobra.Command{
 	Use:   "agent-id",
 	Short: "Manage agent identities",
 	Long:  `Create, list, get, update, and delete agent identities used to represent digital identities for agents accessing external services.`,
+	RunE:  requireSubcommand,
 }
 
 var (
@@ -276,7 +278,10 @@ var workloadDeleteCmd = &cobra.Command{
 var outboundAuthCmd = &cobra.Command{
 	Use:   "outbound-auth",
 	Short: "Manage outbound authentication providers",
-	Long:  `Manage static API key, delegated API key, and OAuth2 providers for agent outbound authentication.`,
+	Long: `Manage static API key, delegated API key, and OAuth2 providers for agent
+outbound authentication, plus read-only access to platform-managed OAuth2
+providers.`,
+	RunE: requireSubcommand,
 }
 
 // --- outbound-auth static ---
@@ -285,6 +290,7 @@ var staticCmd = &cobra.Command{
 	Use:   "static",
 	Short: "Manage static API key providers",
 	Long:  `Create, list, get, update, and delete static API key providers for outbound authentication.`,
+	RunE:  requireSubcommand,
 }
 
 var staticCreateCmd = &cobra.Command{
@@ -491,6 +497,7 @@ var delegatedCmd = &cobra.Command{
 	Use:   "delegated",
 	Short: "Manage delegated API key providers",
 	Long:  `Create, list, get, and delete delegated API key providers for user-provided API keys for external services.`,
+	RunE:  requireSubcommand,
 }
 
 var delegatedCreateCmd = &cobra.Command{
@@ -688,6 +695,7 @@ var oauth2Cmd = &cobra.Command{
 	Use:   "oauth2",
 	Short: "Manage OAuth2 providers",
 	Long:  `Create, list, get, update, and delete OAuth2 providers, and retrieve M2M and 3-legged OAuth2 tokens.`,
+	RunE:  requireSubcommand,
 }
 
 var oauth2CreateCmd = &cobra.Command{
@@ -1035,6 +1043,174 @@ Optional flags: --session-id, --custom-parameters, --custom-state, --force-authe
 	},
 }
 
+// --- Managed OAuth2 providers (platform-managed, read-only) ---
+
+var managedOauth2Cmd = &cobra.Command{
+	Use:   "managed",
+	Short: "Platform-managed OAuth2 providers",
+	Long: `Platform-managed OAuth2 providers: credentials live server-side and are
+never exposed, so the CLI surface is read-only (list, get) plus 3LO token
+retrieval for an agent identity. Each provider has a fixed callbackUrl the
+delegated browser flow returns to.`,
+	RunE: requireSubcommand,
+}
+
+var managedOauth2ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List managed OAuth2 providers",
+	Long:  `Retrieve a paginated list of platform-managed OAuth2 providers.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		page, _ := cmd.Flags().GetInt("page")
+		size, _ := cmd.Flags().GetInt("size")
+
+		ctx := context.Background()
+		client, err := newIdentityClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListManagedOauth2Providers(ctx, page-1, size)
+		if err != nil {
+			return err
+		}
+
+		switch output.GetFormat() {
+		case output.FormatTable:
+			if len(resp.Content) == 0 {
+				fmt.Fprintln(cmd.ErrOrStderr(), "No items found.")
+				return nil
+			}
+			rows := make([][]string, len(resp.Content))
+			for i, p := range resp.Content {
+				rows[i] = []string{str(p.ID), str(p.Name), str(p.Status), str(p.CallbackURL)}
+			}
+			output.Table([]string{"ID", "Name", "Status", "Callback URL"}, rows)
+			if resp.Page != nil && resp.TotalPages != nil && resp.TotalElements != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Page %d of %d (%d total items)\n", *resp.Page+1, *resp.TotalPages, *resp.TotalElements)
+			}
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			if len(resp.Content) > 0 {
+				output.PrintID(str(resp.Content[0].ID))
+			}
+		}
+		return nil
+	},
+}
+
+var managedOauth2GetCmd = &cobra.Command{
+	Use:   "get <name>",
+	Short: "Get a managed OAuth2 provider",
+	Long:  `Retrieve a platform-managed OAuth2 provider summary by name.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newIdentityClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.GetManagedOauth2Provider(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		return output.PrintResource(resp, func() string { return str(resp.Name) }, func() error {
+			output.Table([]string{"Field", "Value"}, [][]string{
+				{"ID", output.StrOrDash(str(resp.ID))},
+				{"Name", output.StrOrDash(str(resp.Name))},
+				{"Status", output.StrOrDash(str(resp.Status))},
+				{"Callback URL", output.StrOrDash(str(resp.CallbackURL))},
+				{"Created", formatTime(resp.CreatedAt)},
+				{"Updated", formatTime(resp.UpdatedAt)},
+			})
+			return nil
+		})
+	},
+}
+
+var managedOauth2ThreeLoTokenCmd = &cobra.Command{
+	Use:   "3lo-token <provider-name> <identity-name>",
+	Short: "Get a 3-legged OAuth2 token (managed provider)",
+	Long: `Retrieve a 3-legged OAuth2 token for an agent identity via a
+platform-managed OAuth2 provider. The flow is delegated to the browser: the
+first call returns an authorizationUrl to open; the provider redirects to the
+managed provider's fixed callback, and the token is completed server-side.
+
+Required flags: --agent-user-id, --return-url, --scope.
+Optional flags: --session-id, --custom-parameters, --custom-state, --force-authentication.`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		agentUserID, _ := cmd.Flags().GetString("agent-user-id")
+		returnURL, _ := cmd.Flags().GetString("return-url")
+		scopes, _ := cmd.Flags().GetStringArray("scope")
+
+		var err error
+		agentUserID, err = cliinput.RequireOrPromptString(agentUserID, "--agent-user-id", "Agent user ID")
+		if err != nil {
+			return err
+		}
+		returnURL, err = cliinput.RequireOrPromptString(returnURL, "--return-url", "Return URL")
+		if err != nil {
+			return err
+		}
+		scopes, err = cliinput.RequireOrPromptStringSlice(scopes, "--scope", "OAuth2 scopes")
+		if err != nil {
+			return err
+		}
+
+		ctx := context.Background()
+		client, err := newIdentityClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		req := &identitypkg.ThreeLoTokenRequest{
+			AgentUserID: agentUserID,
+			ReturnURL:   returnURL,
+			Scopes:      jsonslice.Array[string](scopes),
+		}
+		if cmd.Flags().Changed("session-id") {
+			v, _ := cmd.Flags().GetString("session-id")
+			req.SessionID = &v
+		}
+		if cmd.Flags().Changed("custom-state") {
+			v, _ := cmd.Flags().GetString("custom-state")
+			req.CustomState = &v
+		}
+		if cmd.Flags().Changed("force-authentication") {
+			v, _ := cmd.Flags().GetBool("force-authentication")
+			req.ForceAuthentication = &v
+		}
+		customParams, _ := cmd.Flags().GetString("custom-parameters")
+		if customParams != "" {
+			var params map[string]string
+			if err := json.Unmarshal([]byte(customParams), &params); err != nil {
+				return fmt.Errorf("invalid --custom-parameters JSON: %w", err)
+			}
+			req.CustomParameters = &params
+		}
+
+		resp, err := client.GetManaged3LOToken(ctx, args[0], args[1], req)
+		if err != nil {
+			return err
+		}
+
+		switch output.GetFormat() {
+		case output.FormatTable:
+			output.Table([]string{"Field", "Value"}, [][]string{
+				{"Access Token", output.StrOrDash(str(resp.AccessToken))},
+				{"Token Type", output.StrOrDash(str(resp.TokenType))},
+				{"Authorization URL", output.StrOrDash(str(resp.AuthorizationURL))},
+				{"Session ID", output.StrOrDash(str(resp.SessionID))},
+				{"Status", output.StrOrDash(str(resp.Status))},
+			})
+		case output.FormatJSON:
+			return output.JSON(resp)
+		case output.FormatID:
+			output.PrintID(str(resp.AccessToken))
+		}
+		return nil
+	},
+}
+
 func init() {
 	AgentbaseCmd.AddCommand(identityCmd)
 
@@ -1137,6 +1313,24 @@ func init() {
 	oauth23LOTokenCmd.Flags().String("custom-state", "", "Custom state parameter")
 	oauth23LOTokenCmd.Flags().Bool("force-authentication", false, "Force re-authentication")
 	oauth2Cmd.AddCommand(oauth23LOTokenCmd)
+
+	// managed
+	outboundAuthCmd.AddCommand(managedOauth2Cmd)
+
+	managedOauth2ListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	managedOauth2ListCmd.Flags().Int("size", 20, "Page size")
+	managedOauth2Cmd.AddCommand(managedOauth2ListCmd)
+
+	managedOauth2Cmd.AddCommand(managedOauth2GetCmd)
+
+	managedOauth2ThreeLoTokenCmd.Flags().String("agent-user-id", "", "Agent user ID (required without --interactive)")
+	managedOauth2ThreeLoTokenCmd.Flags().String("return-url", "", "Return URL after authorization (required without --interactive)")
+	managedOauth2ThreeLoTokenCmd.Flags().StringArray("scope", nil, "OAuth2 scope (repeatable, required without --interactive)")
+	managedOauth2ThreeLoTokenCmd.Flags().String("session-id", "", "Session ID (UUID format)")
+	managedOauth2ThreeLoTokenCmd.Flags().String("custom-parameters", "", `Custom parameters as a JSON object, e.g. '{"key1":"value1"}'`)
+	managedOauth2ThreeLoTokenCmd.Flags().String("custom-state", "", "Custom state parameter")
+	managedOauth2ThreeLoTokenCmd.Flags().Bool("force-authentication", false, "Force re-authentication")
+	managedOauth2Cmd.AddCommand(managedOauth2ThreeLoTokenCmd)
 }
 
 // str safely dereferences a string pointer, returning an empty string if nil.

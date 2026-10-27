@@ -1,12 +1,13 @@
 // Package runtime is the typed client for the agent-core-runtime service
 // (`grn agentbase runtime`). The entity model mirrors the service's REST
-// contract (POST/GET/PATCH/DELETE /agent-runtimes), which the agentbase
+// contract (POST/GET/PATCH/DELETE /v1/agent-runtimes), which the agentbase
 // /runtime endpoint fronts.
 //
 // Note: agent-core-runtime is a Java/Spring Boot service (not Go), but the
 // wire contract is what matters here. Spring serializes fields by name
-// (camelCase); no /api/v1 version prefix; paging uses {listData, page,
-// pageSize, totalPage, totalItem} with ?page=&size= (1-based, defaults 1/10).
+// (camelCase); all paths are versioned under /v1 (the no-prefix routes are
+// legacy aliases); paging uses {listData, page, pageSize, totalPage,
+// totalItem} with ?page=&size= (1-based, defaults 1/10).
 //
 // Compiled into the default grn binary (the `-tags agentbase` gate was dropped at GA).
 package runtime
@@ -23,16 +24,21 @@ import (
 // ImageAuth is the optional private-registry credentials. Password is
 // send-only: it appears on create/update but is never present on a response
 // (AgentRuntime has no imageAuth field), so it never round-trips back.
+// UseAgentBaseRegistryCredentials (pointer: only sent when set) lets the
+// platform pull the image using its own registry credentials instead of
+// username/password.
 type ImageAuth struct {
-	Enabled  bool   `json:"enabled"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Enabled                         bool   `json:"enabled"`
+	UseAgentBaseRegistryCredentials *bool  `json:"useAgentBaseRegistryCredentials,omitempty"`
+	Username                        string `json:"username"`
+	Password                        string `json:"password"`
 }
 
 // Autoscaling is the HPA config. Bounds mirror the service's validation:
-// replicas 1-10, utilizations 10-90.
+// maxReplicas 1-10, utilizations 10-90. minReplicas was removed from the
+// contract — the platform owns the floor (always 1), so only maxReplicas and
+// the utilization targets are configurable.
 type Autoscaling struct {
-	MinReplicas       int `json:"minReplicas"`
 	MaxReplicas       int `json:"maxReplicas"`
 	CPUUtilization    int `json:"cpuUtilization"`
 	MemoryUtilization int `json:"memoryUtilization"`
@@ -44,8 +50,44 @@ type Autoscaling struct {
 // not a merge-patch.
 // ----------------------------------------------------------------------------
 
-// CreateAgentRuntimeRequest is the body for POST /agent-runtimes. name is
-// required and sealed; the rest is the mutable spec.
+// NetworkConfig is the create/update network placement. mode PUBLIC exposes
+// the runtime's endpoints on the public internet (default); mode VPC attaches
+// them to a VPC/subnet (vpcId and subnetId are then required server-side;
+// routeCidrs adds egress routes, max 20).
+type NetworkConfig struct {
+	Mode       string   `json:"mode"` // PUBLIC | VPC
+	VpcID      string   `json:"vpcId,omitempty"`
+	SubnetID   string   `json:"subnetId,omitempty"`
+	RouteCidrs []string `json:"routeCidrs,omitempty"`
+}
+
+// InboundAuthJWT is the JWT validation config (only read when
+// InboundAuth.Mode is JWT). source is required: DISCOVERY pulls keys from a
+// .well-known OIDC document (discoveryUrl, then required), JWKS inlines the
+// key set (jwks, then required, <=32KiB). Allowed* lists cap at 20/20/50.
+type InboundAuthJWT struct {
+	Source           string          `json:"source"` // DISCOVERY | JWKS
+	JWKS             json.RawMessage `json:"jwks,omitempty"`
+	DiscoveryURL     string          `json:"discoveryUrl,omitempty"`
+	AllowedAudiences []string        `json:"allowedAudiences,omitempty"`
+	AllowedClients   []string        `json:"allowedClients,omitempty"`
+	AllowedScopes    []string        `json:"allowedScopes,omitempty"`
+	PrincipalClaim   string          `json:"principalClaim,omitempty"`
+}
+
+// InboundAuth is the inbound authentication mode for a runtime's endpoints.
+// mode is required: NONE is open, IAM authenticates via the platform IAM
+// (Bearer token), JWT validates caller JWTs per the jwt config (then
+// required).
+type InboundAuth struct {
+	Mode string          `json:"mode"` // NONE | IAM | JWT
+	JWT  *InboundAuthJWT `json:"jwt,omitempty"`
+}
+
+// CreateAgentRuntimeRequest is the body for POST /v1/agent-runtimes. name is
+// required (5-50 chars, [a-zA-Z0-9._-]) and sealed; the rest is the mutable
+// spec. poc marks a proof-of-concept runtime (create-only — it cannot be
+// changed by update).
 type CreateAgentRuntimeRequest struct {
 	Name                 string            `json:"name"`
 	Description          string            `json:"description"`
@@ -54,14 +96,22 @@ type CreateAgentRuntimeRequest struct {
 	Command              []string          `json:"command"`
 	Args                 []string          `json:"args"`
 	EnvironmentVariables map[string]string `json:"environmentVariables"`
+	NetworkConfig        *NetworkConfig    `json:"networkConfig,omitempty"`
+	AllowedCidrs         []string          `json:"allowedCidrs,omitempty"`
+	InboundAuth          *InboundAuth      `json:"inboundAuth,omitempty"`
+	Protocol             string            `json:"protocol,omitempty"` // HTTP | MCP
 	FlavorID             string            `json:"flavorId"`
+	POC                  *bool             `json:"poc,omitempty"`
 	Autoscaling          Autoscaling       `json:"autoscaling"`
 }
 
-// UpdateAgentRuntimeRequest is the body for PATCH /agent-runtimes/{id}. Same as
-// create minus name (name is immutable). Every field is required (full-spec
-// replacement — updating creates a new version and rolls the default endpoint
-// forward), so this is NOT JSON Merge Patch semantics.
+// UpdateAgentRuntimeRequest is the body for PATCH /v1/agent-runtimes/{id}.
+// Same as create minus name (immutable) and poc (create-only). imageAuth is
+// required server-side; the API never returns the stored password, so the CLI
+// cannot blindly echo a version's imageAuth back on update. The server applies
+// the body as a full-spec replacement (updating creates a new immutable
+// version), so the CLI's update command carries fields whose flags are unset
+// over from the current version rather than resetting them to the defaults.
 type UpdateAgentRuntimeRequest struct {
 	Description          string            `json:"description"`
 	ImageURL             string            `json:"imageUrl"`
@@ -69,6 +119,10 @@ type UpdateAgentRuntimeRequest struct {
 	Command              []string          `json:"command"`
 	Args                 []string          `json:"args"`
 	EnvironmentVariables map[string]string `json:"environmentVariables"`
+	NetworkConfig        *NetworkConfig    `json:"networkConfig,omitempty"`
+	AllowedCidrs         []string          `json:"allowedCidrs,omitempty"`
+	InboundAuth          *InboundAuth      `json:"inboundAuth,omitempty"`
+	Protocol             string            `json:"protocol,omitempty"` // HTTP | MCP
 	FlavorID             string            `json:"flavorId"`
 	Autoscaling          Autoscaling       `json:"autoscaling"`
 }
@@ -77,21 +131,25 @@ type UpdateAgentRuntimeRequest struct {
 // Response types.
 // ----------------------------------------------------------------------------
 
-// AgentRuntime is the body returned by get/create and one element of list.
-// description/statusReason are declared but only populated transiently by get()
-// (statusReason when the IAM service account is unhealthy); list/create/update
-// return them empty. Model them anyway for forward compatibility.
+// AgentRuntime is the body returned by get/create and one element of list
+// (AgentRuntimeDto in the spec). description/statusReason are declared but
+// only populated transiently by get() (statusReason when the IAM service
+// account is unhealthy); list/create/update return them empty. Model them
+// anyway for forward compatibility. poc marks a proof-of-concept runtime
+// (create-only).
 type AgentRuntime struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	Description  string    `json:"description"`
-	Status       string    `json:"status"`
-	StatusReason string    `json:"statusReason"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	Status        string    `json:"status"`
+	DisplayStatus string    `json:"displayStatus"`
+	StatusReason  string    `json:"statusReason"`
+	POC           *bool     `json:"poc,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
-// ListAgentRuntimesResponse is the body of GET /agent-runtimes. Distinct from
+// ListAgentRuntimesResponse is the body of GET /v1/agent-runtimes. Distinct from
 // gateway's {items, pagination} and identity's PagedResponse: this service uses
 // {listData, page, pageSize, totalPage, totalItem} with 1-based page/size query
 // params (defaults 1/10).
@@ -119,6 +177,7 @@ type AgentRuntimeEndpointDto struct {
 	LiveVersion         int       `json:"liveVersion"`
 	CurrentReplicaCount int       `json:"currentReplicaCount"`
 	URL                 string    `json:"url"`
+	OutboundIps         []string  `json:"outboundIps"`
 	Status              string    `json:"status"`
 	DisplayStatus       string    `json:"displayStatus"`
 	CreatedAt           time.Time `json:"createdAt"`
@@ -126,7 +185,7 @@ type AgentRuntimeEndpointDto struct {
 }
 
 // AgentRuntimeEndpointCreateRequest is the body for POST
-// /agent-runtimes/{id}/endpoints. name is required; version is optional
+// /v1/agent-runtimes/{id}/endpoints. name is required; version is optional
 // (defaults server-side, minimum 1).
 type AgentRuntimeEndpointCreateRequest struct {
 	Name    string `json:"name"`

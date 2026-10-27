@@ -36,7 +36,7 @@ func TestList(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/agent-runtimes" {
+		if r.URL.Path != "/v1/agent-runtimes" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		gotPage = r.URL.Query().Get("page")
@@ -81,7 +81,7 @@ func TestList_OmittedPagingNotSent(t *testing.T) {
 func TestGet(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		// Keyed by id, bare path (no /api/v1).
-		if r.URL.Path != "/agent-runtimes/abc-123" {
+		if r.URL.Path != "/v1/agent-runtimes/abc-123" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -122,7 +122,7 @@ func TestCreate(t *testing.T) {
 		if got.EnvironmentVariables["K"] != "V" {
 			t.Errorf("unexpected env: %+v", got.EnvironmentVariables)
 		}
-		if got.Autoscaling.MinReplicas != 1 || got.Autoscaling.MaxReplicas != 3 {
+		if got.Autoscaling.MaxReplicas != 3 {
 			t.Errorf("unexpected autoscaling: %+v", got.Autoscaling)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -137,7 +137,7 @@ func TestCreate(t *testing.T) {
 		Args:                 []string{},
 		EnvironmentVariables: map[string]string{"K": "V"},
 		ImageAuth:            &ImageAuth{Enabled: true, Username: "u", Password: pw},
-		Autoscaling:          Autoscaling{MinReplicas: 1, MaxReplicas: 3, CPUUtilization: 70, MemoryUtilization: 70},
+		Autoscaling:          Autoscaling{MaxReplicas: 3, CPUUtilization: 70, MemoryUtilization: 70},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -162,7 +162,7 @@ func TestCreate_OmitsNilImageAuth(t *testing.T) {
 	_, _ = c.Create(context.Background(), &CreateAgentRuntimeRequest{
 		Name: "rt", ImageURL: "img", FlavorID: "f",
 		Command: []string{}, Args: []string{}, EnvironmentVariables: map[string]string{},
-		Autoscaling: Autoscaling{MinReplicas: 1, MaxReplicas: 2},
+		Autoscaling: Autoscaling{MaxReplicas: 2},
 	})
 	var got map[string]json.RawMessage
 	if err := json.Unmarshal(gotBody, &got); err != nil {
@@ -182,7 +182,7 @@ func TestUpdate(t *testing.T) {
 		if r.Method != http.MethodPatch {
 			t.Errorf("expected PATCH, got %s", r.Method)
 		}
-		if r.URL.Path != "/agent-runtimes/abc-123" {
+		if r.URL.Path != "/v1/agent-runtimes/abc-123" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		gotBody, _ = io.ReadAll(r.Body)
@@ -196,7 +196,7 @@ func TestUpdate(t *testing.T) {
 		Command:              []string{"run"},
 		Args:                 []string{},
 		EnvironmentVariables: map[string]string{"K": "V"},
-		Autoscaling:          Autoscaling{MinReplicas: 1, MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
+		Autoscaling:          Autoscaling{MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -267,7 +267,7 @@ func wantMethodPath(t *testing.T, r *http.Request, method, path string) {
 
 func TestListEndpoints(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/endpoints")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes/r1/endpoints")
 		if r.URL.Query().Get("page") != "1" || r.URL.Query().Get("size") != "10" {
 			t.Errorf("query: %s", r.URL.Query().Encode())
 		}
@@ -287,7 +287,7 @@ func TestListEndpoints(t *testing.T) {
 func TestCreateEndpoint(t *testing.T) {
 	var gotBody []byte
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/endpoints")
+		wantMethodPath(t, r, http.MethodPost, "/v1/agent-runtimes/r1/endpoints")
 		gotBody, _ = io.ReadAll(r.Body)
 		_ = json.NewEncoder(w).Encode(AgentRuntimeEndpointDto{ID: "e1", Name: "ep"})
 	})
@@ -309,7 +309,7 @@ func TestCreateEndpoint(t *testing.T) {
 
 func TestUpdateEndpoint(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodPut, "/agent-runtimes/r1/endpoints/e1")
+		wantMethodPath(t, r, http.MethodPut, "/v1/agent-runtimes/r1/endpoints/e1")
 		if got := r.URL.Query().Get("version"); got != "3" {
 			t.Errorf("version: %q", got)
 		}
@@ -329,7 +329,7 @@ func TestUpdateEndpoint(t *testing.T) {
 
 func TestDeleteEndpoint(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodDelete, "/agent-runtimes/r1/endpoints/e1")
+		wantMethodPath(t, r, http.MethodDelete, "/v1/agent-runtimes/r1/endpoints/e1")
 		_ = json.NewEncoder(w).Encode(AgentRuntimeEndpointDto{ID: "e1", Status: "DELETED"})
 	})
 	out, err := c.DeleteEndpoint(context.Background(), "r1", "e1")
@@ -362,7 +362,7 @@ func TestStartStopEndpoint(t *testing.T) {
 func TestEndpointLogs(t *testing.T) {
 	var gotBody []byte
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/endpoints/e1/logs")
+		wantMethodPath(t, r, http.MethodPost, "/v1/agent-runtimes/r1/endpoints/e1/logs")
 		gotBody, _ = io.ReadAll(r.Body)
 		_ = json.NewEncoder(w).Encode(LogSearchResult{TotalCount: 1, Logs: []LogRecord{{Content: "hi"}}})
 	})
@@ -384,7 +384,7 @@ func TestEndpointLogs(t *testing.T) {
 
 func TestEndpointMetrics(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/endpoints/e1/metrics")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes/r1/endpoints/e1/metrics")
 		if got := r.URL.Query().Get("fromTimestamp"); got != "t0" {
 			t.Errorf("from: %q", got)
 		}
@@ -403,7 +403,7 @@ func TestEndpointMetrics(t *testing.T) {
 
 func TestEndpointEvents(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/endpoints/e1/events")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes/r1/endpoints/e1/events")
 		_ = json.NewEncoder(w).Encode([]KubeEventDto{{Message: "pulled"}})
 	})
 	out, err := c.EndpointEvents(context.Background(), "r1", "e1")
@@ -417,7 +417,7 @@ func TestEndpointEvents(t *testing.T) {
 
 func TestLogs(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/logs")
+		wantMethodPath(t, r, http.MethodPost, "/v1/agent-runtimes/r1/logs")
 		_ = json.NewEncoder(w).Encode(LogSearchResult{TotalCount: 2})
 	})
 	out, err := c.Logs(context.Background(), "r1", &LogSearchRequest{Limit: 100})
@@ -431,7 +431,7 @@ func TestLogs(t *testing.T) {
 
 func TestResetServiceAccount(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodPost, "/agent-runtimes/r1/reset-service-account")
+		wantMethodPath(t, r, http.MethodPost, "/v1/agent-runtimes/r1/reset-service-account")
 		w.WriteHeader(http.StatusOK)
 	})
 	if err := c.ResetServiceAccount(context.Background(), "r1"); err != nil {
@@ -441,7 +441,7 @@ func TestResetServiceAccount(t *testing.T) {
 
 func TestListVersions(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes/r1/versions")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes/r1/versions")
 		_ = json.NewEncoder(w).Encode(ListResponseAgentRuntimeVersionDto{
 			ListData: []AgentRuntimeVersionDto{{Version: 1, ImageURL: "img", FlavorID: "f1"}},
 		})
@@ -457,7 +457,7 @@ func TestListVersions(t *testing.T) {
 
 func TestGetTrace(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes:get-trace")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes:get-trace")
 		if got := r.URL.Query().Get("traceId"); got != "abc" {
 			t.Errorf("traceId: %q", got)
 		}
@@ -479,7 +479,7 @@ func TestGetTrace(t *testing.T) {
 
 func TestSearchTraces(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes:search-traces")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes:search-traces")
 		if got := r.URL.Query().Get("service"); got != "runtime" {
 			t.Errorf("param: %q", got)
 		}
@@ -498,7 +498,7 @@ func TestSearchTraces(t *testing.T) {
 
 func TestTraceTagValues(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		wantMethodPath(t, r, http.MethodGet, "/agent-runtimes:trace-search-tag-values")
+		wantMethodPath(t, r, http.MethodGet, "/v1/agent-runtimes:trace-search-tag-values")
 		if got := r.URL.Query().Get("tagKey"); got != "env" {
 			t.Errorf("tagKey: %q", got)
 		}

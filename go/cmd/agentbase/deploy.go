@@ -52,6 +52,7 @@ resolves the pull credentials from your auto-provisioned robot account.
 runtime to ACTIVE). ` + "`destroy`" + ` deletes runtime + memory; pass --purge to
 also delete the identity. ` + "`up`" + `/` + "`destroy`" + ` look resources up by
 name, so no state file is needed.`,
+	RunE: requireSubcommand,
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 					"env":       map[string]string{"LOG_LEVEL": "info"},
 					"flavorId":  "agent.small",
 					"autoscaling": map[string]any{
-						"minReplicas": 1, "maxReplicas": 3,
+						"maxReplicas":    3,
 						"cpuUtilization": 70, "memoryUtilization": 80,
 					},
 				},
@@ -215,7 +216,7 @@ runtime:
   args: [--port, "8080"]
   env: {LOG_LEVEL: info}
   flavorId: agent.small
-  autoscaling: {minReplicas: 1, maxReplicas: 3, cpuUtilization: 70, memoryUtilization: 80}
+  autoscaling: {maxReplicas: 3, cpuUtilization: 70, memoryUtilization: 80}
 `
 
 // ---------------------------------------------------------------------------
@@ -355,7 +356,7 @@ func deployApplyRuntime(ctx context.Context, d *deployClients, mfst *deploypkg.M
 	}
 	pctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	rt, err = pollRuntimeToTerminal(pctx, rc, rt.ID, interval)
+	rt, err = pollRuntimeToTerminal(pctx, rc, rt.ID, interval, false)
 	if err != nil {
 		return rt, err
 	}
@@ -410,7 +411,6 @@ func buildRuntimeCreateReq(ctx context.Context, d *deployClients, mfst *deploypk
 		EnvironmentVariables: nonNilMap(rs.Env),
 		FlavorID:             rs.FlavorID,
 		Autoscaling: runtimepkg.Autoscaling{
-			MinReplicas:       rs.Autoscaling.MinReplicas,
 			MaxReplicas:       rs.Autoscaling.MaxReplicas,
 			CPUUtilization:    rs.Autoscaling.CPUUtilization,
 			MemoryUtilization: rs.Autoscaling.MemoryUtilization,
@@ -531,7 +531,7 @@ The runtime deletion is asynchronous, so destroy waits for it to reach DELETED
 		} else {
 			pctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			if _, werr := pollRuntimeToTerminal(pctx, d.runtime(), rt.ID, interval); werr != nil {
+			if _, werr := pollRuntimeToTerminal(pctx, d.runtime(), rt.ID, interval, true); werr != nil {
 				steps = append(steps, deployStep{"runtime", "error", "deleted but " + werr.Error()})
 			} else {
 				steps = append(steps, deployStep{"runtime", "deleted", rt.ID})
@@ -677,19 +677,21 @@ func buildManifestFromFlags(cmd *cobra.Command) (*deploypkg.Manifest, error) {
 		}
 		mfst.Runtime.ImageAuth = deploypkg.ImageAuthSpec{Auto: true}
 	}
-	minReplicas, _ := f.GetInt("min-replicas")
+	// minReplicas was removed from the runtime API — the platform owns the
+	// floor (always 1). The flag stays (hidden, deprecated) for old scripts.
+	if f.Changed("min-replicas") {
+		fmt.Fprintln(os.Stderr, "warning: --min-replicas is deprecated and ignored; the platform owns the replica floor (always 1)")
+	}
 	maxReplicas, _ := f.GetInt("max-replicas")
 	cpuUtil, _ := f.GetInt("cpu-utilization")
 	memUtil, _ := f.GetInt("memory-utilization")
 	mfst.Runtime.Autoscaling = deploypkg.ManifestAutoscale{
-		MinReplicas:       minReplicas,
 		MaxReplicas:       maxReplicas,
 		CPUUtilization:    cpuUtil,
 		MemoryUtilization: memUtil,
 	}
-	if mfst.Runtime.Autoscaling.MaxReplicas < mfst.Runtime.Autoscaling.MinReplicas {
-		return nil, fmt.Errorf("--max-replicas (%d) must be >= --min-replicas (%d)",
-			mfst.Runtime.Autoscaling.MaxReplicas, mfst.Runtime.Autoscaling.MinReplicas)
+	if mfst.Runtime.Autoscaling.MaxReplicas < 1 {
+		return nil, fmt.Errorf("--max-replicas (%d) must be >= 1", mfst.Runtime.Autoscaling.MaxReplicas)
 	}
 	if strategies, _ := f.GetStringArray("memory-strategy"); len(strategies) > 0 {
 		mem := &deploypkg.MemorySpec{}
@@ -840,7 +842,8 @@ func init() {
 	up.Flags().StringArray("command", nil, "Container entrypoint element (repeatable)")
 	up.Flags().StringArray("args", nil, "Container arg (repeatable)")
 	up.Flags().StringArray("env", nil, "Environment variable KEY=VALUE (repeatable)")
-	up.Flags().Int("min-replicas", 1, "Autoscaling min replicas")
+	up.Flags().Int("min-replicas", 1, "Deprecated: ignored; the platform owns the replica floor (always 1)")
+	_ = up.Flags().MarkDeprecated("min-replicas", "minReplicas is platform-owned (always 1); the flag is ignored")
 	up.Flags().Int("max-replicas", 2, "Autoscaling max replicas")
 	up.Flags().Int("cpu-utilization", 70, "Autoscaling target CPU utilization (10-90)")
 	up.Flags().Int("memory-utilization", 70, "Autoscaling target memory utilization (10-90)")

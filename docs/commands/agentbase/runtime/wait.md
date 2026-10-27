@@ -11,6 +11,11 @@ Poll an agent runtime until it reaches a terminal state: `ACTIVE` / `DELETED`
 Progress lines are written to stderr. On failure or timeout the command returns a
 non-zero exit status.
 
+A completed delete removes the runtime record, so once the delete finishes the
+GET returns HTTP 404 (no longer present) instead of a `DELETED` status. That 404
+counts as the `DELETED` terminal success: `wait` reports the runtime as deleted
+and exits 0.
+
 ## Synopsis
 
 ```text
@@ -60,7 +65,8 @@ Wait with a custom timeout and poll interval:
 grn agentbase runtime wait agn-rt-abc123 --timeout 30m --interval 10s
 ```
 
-Wait for deletion to complete (reaches `DELETED`):
+Wait for deletion to complete (once the record is gone the API returns 404,
+which counts as `DELETED`):
 
 ```bash
 grn agentbase runtime delete agn-rt-abc123
