@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.14.0...v1.15.0) (2026-10-27)
+
+
+### Features
+
+* **agentbase:** hotfix gaps for agentbase CLI ([#23](https://github.com/GreenNodeHub/greennode-cli/issues/23)) ([4addee9](https://github.com/GreenNodeHub/greennode-cli/commit/4addee94daa993eaf94ca29060240c32329857d1))
+
 ## [1.14.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.13.0...v1.14.0) (2026-10-22)
 
 
