@@ -245,6 +245,9 @@ func TestReadRuntimeSpec_OK(t *testing.T) {
 	if s.ImageAuth == nil || s.ImageAuth.Enabled {
 		t.Errorf("imageAuth should default to &ImageAuth{Enabled:false}: %+v", s.ImageAuth)
 	}
+	if s.Inbound == nil || s.Inbound.Mode != "IAM" {
+		t.Errorf("inboundAuth should default to &InboundAuth{Mode: IAM} on create: %+v", s.Inbound)
+	}
 	// Ensure the returned spec round-trips into a request struct.
 	_ = runtimepkg.CreateAgentRuntimeRequest{
 		ImageURL: s.ImageURL, FlavorID: s.FlavorID, Autoscaling: s.Autoscaling,
@@ -291,21 +294,44 @@ func TestReadNetworkConfig(t *testing.T) {
 	})
 }
 
-// TestReadInboundAuth covers the --inbound-* flag group: unset → nil, NONE/IAM
-// happy paths, JWT validation matrix (source required; DISCOVERY needs URL;
-// JWKS needs valid inline JSON; jwt flags rejected for non-JWT modes).
+// TestReadInboundAuth covers the --inbound-* flag group: unset → IAM on create
+// (PUBLIC networks only — the API rejects inboundAuth in VPC mode) but nil on
+// update (carried over), NONE/IAM happy paths, JWT validation matrix (source
+// required; DISCOVERY needs URL; JWKS needs valid inline JSON; jwt flags
+// rejected for non-JWT modes, including the IAM default).
 func TestReadInboundAuth(t *testing.T) {
-	t.Run("unset_returns_nil", func(t *testing.T) {
+	t.Run("unset_create_defaults_to_iam", func(t *testing.T) {
 		cmd := newSpecCmd(t)
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
+		if err != nil || got == nil || got.Mode != "IAM" || got.JWT != nil {
+			t.Errorf("expected (&InboundAuth{Mode: IAM}, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("unset_create_vpc_stays_nil", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		got, err := readInboundAuth(cmd, false, &runtimepkg.NetworkConfig{Mode: "VPC"})
 		if err != nil || got != nil {
 			t.Errorf("expected (nil, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("unset_update_stays_nil", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		got, err := readInboundAuth(cmd, true, nil)
+		if err != nil || got != nil {
+			t.Errorf("expected (nil, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("unset_with_jwt_flags_errors", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
+			t.Error("expected error when jwt flags set with --inbound-mode unset (defaults to IAM)")
 		}
 	})
 	t.Run("none_ok", func(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "NONE")
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
 		if err != nil || got == nil || got.Mode != "NONE" || got.JWT != nil {
 			t.Errorf("unexpected: (%+v, %v)", got, err)
 		}
@@ -313,7 +339,7 @@ func TestReadInboundAuth(t *testing.T) {
 	t.Run("jwt_without_source_errors", func(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "JWT")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error when JWT without --inbound-jwt-source")
 		}
 	})
@@ -321,7 +347,7 @@ func TestReadInboundAuth(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "JWT")
 		mustSet(t, cmd, "inbound-jwt-source", "DISCOVERY")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error when DISCOVERY without --inbound-jwt-discovery-url")
 		}
 	})
@@ -332,7 +358,7 @@ func TestReadInboundAuth(t *testing.T) {
 		mustSet(t, cmd, "inbound-jwt-discovery-url", "https://idp/.well-known/openid-configuration")
 		mustSet(t, cmd, "inbound-jwt-audience", "aud1")
 		mustSet(t, cmd, "inbound-jwt-principal-claim", "sub")
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -346,7 +372,7 @@ func TestReadInboundAuth(t *testing.T) {
 		mustSet(t, cmd, "inbound-mode", "JWT")
 		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
 		mustSet(t, cmd, "inbound-jwt-jwks", "{not-json")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error for invalid JWKS JSON")
 		}
 	})
@@ -355,7 +381,7 @@ func TestReadInboundAuth(t *testing.T) {
 		mustSet(t, cmd, "inbound-mode", "JWT")
 		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
 		mustSet(t, cmd, "inbound-jwt-jwks", `{"keys":[]}`)
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -367,7 +393,7 @@ func TestReadInboundAuth(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "IAM")
 		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error when jwt flags set with --inbound-mode IAM")
 		}
 	})

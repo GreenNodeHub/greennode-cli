@@ -27,6 +27,10 @@ positional argument and the name is immutable). The file **must include
 credentials, so it is rejected — `{enabled: false}` drops them deliberately,
 `username`/`password` or `useAgentBaseRegistryCredentials` keeps them.
 
+Unlike create, update applies **no IAM default** to `inboundAuth`: a spec that
+omits it sends the field omitted — include `inboundAuth` explicitly to keep
+inbound auth on the new version (`inboundAuth` is `PUBLIC`-network only).
+
 > **Notes:** `--min-replicas` is gone (the platform owns the autoscaling floor —
 > always 1); only `--max-replicas` is configurable. `--poc` is create-only and
 > cannot be set or cleared on update.

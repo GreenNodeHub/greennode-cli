@@ -11,7 +11,8 @@ Defaults to YAML (with comments); pass `-o json` for a JSON skeleton.
 
 The template keys are the JSON (camelCase) field names, so the file round-trips
 through `create --file` exactly. Required keys: `name`, `networkMode`,
-`flavorId`, `replicas`, `inboundAuth.mode`. Sealed at create: `name`,
+`flavorId`, `replicas` (`inboundAuth.mode` is optional — omitted it defaults
+to `IAM`; the template ships with `mode: IAM`). Sealed at create: `name`,
 `networkMode`, `flavorId`, `replicas`, and (PRIVATE)
 `privateNetwork.vpcId`/`subnetId`.
 

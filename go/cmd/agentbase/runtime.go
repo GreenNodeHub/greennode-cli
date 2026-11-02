@@ -73,9 +73,12 @@ func newRuntimeClient(ctx context.Context, cmd *cobra.Command) (*runtimepkg.Clie
 // ---------------------------------------------------------------------------
 
 // runtimeSpec holds the mutable spec fields common to create and update.
-// networkConfig/inboundAuth/protocol/allowedCidrs are only populated when the
-// corresponding flags are set (they are optional server-side; omitting them
-// keeps the platform defaults: public network, no inbound auth, HTTP).
+// networkConfig/protocol/allowedCidrs are only populated when the corresponding
+// flags are set (they are optional server-side; omitting them keeps the
+// platform defaults: public network, HTTP). inboundAuth defaults to IAM on
+// create (PUBLIC networks only — the API rejects inboundAuth in VPC mode); on
+// update an unset --inbound-mode stays nil and the current value is carried
+// over by buildUpdateRequest.
 type runtimeSpec struct {
 	Description  string
 	ImageURL     string
@@ -159,7 +162,7 @@ func readRuntimeSpec(cmd *cobra.Command, forUpdate bool) (*runtimeSpec, error) {
 		return nil, err
 	}
 	allowedCidrs, _ := f.GetStringArray("allowed-cidrs")
-	inbound, err := readInboundAuth(cmd)
+	inbound, err := readInboundAuth(cmd, forUpdate, network)
 	if err != nil {
 		return nil, err
 	}
@@ -224,15 +227,27 @@ func readNetworkConfig(cmd *cobra.Command) (*runtimepkg.NetworkConfig, error) {
 	}, nil
 }
 
-// readInboundAuth builds *InboundAuth only when --inbound-mode is set. NONE is
+// readInboundAuth builds *InboundAuth from the --inbound-* flag group. NONE is
 // open, IAM authenticates callers via the platform IAM, JWT validates caller
 // JWTs (--inbound-jwt-* then required: DISCOVERY needs --inbound-jwt-discovery-url,
 // JWKS needs --inbound-jwt-jwks).
-func readInboundAuth(cmd *cobra.Command) (*runtimepkg.InboundAuth, error) {
+//
+// Defaulting: on create an unset --inbound-mode defaults to IAM (secure by
+// default), but only on PUBLIC networks — the API rejects inboundAuth in VPC
+// mode, so a VPC runtime keeps it unset. On update an unset mode stays nil and
+// the current version's inboundAuth is carried over by buildUpdateRequest.
+func readInboundAuth(cmd *cobra.Command, forUpdate bool, network *runtimepkg.NetworkConfig) (*runtimepkg.InboundAuth, error) {
 	f := cmd.Flags()
 	mode, _ := f.GetString("inbound-mode")
 	if mode == "" {
-		return nil, nil
+		if forUpdate {
+			return nil, nil
+		}
+		if network != nil && network.Mode == "VPC" {
+			// inboundAuth is PUBLIC-only: a VPC runtime must not carry it.
+			return nil, nil
+		}
+		mode = "IAM"
 	}
 	if mode != "NONE" && mode != "IAM" && mode != "JWT" {
 		return nil, fmt.Errorf("--inbound-mode must be NONE, IAM or JWT (got %q)", mode)
@@ -353,9 +368,9 @@ request sends {enabled: false} (public image).
 
 Network placement: --network-mode VPC with --vpc-id/--subnet-id and optional
 repeatable --route-cidrs (unset = PUBLIC). Inbound auth: --inbound-mode
-NONE/IAM/JWT (JWT adds --inbound-jwt-source DISCOVERY|JWKS and its flags).
-Inbound CIDR allowlist: repeatable --allowed-cidrs. Protocol: --protocol
-HTTP|MCP.
+NONE/IAM/JWT (unset = IAM on PUBLIC networks; not available in VPC mode; JWT
+adds --inbound-jwt-source DISCOVERY|JWKS and its flags). Inbound CIDR
+allowlist: repeatable --allowed-cidrs. Protocol: --protocol HTTP|MCP.
 
 --file applies a full spec instead ('grn agentbase runtime generate' template)
 — prefer it to keep the image-auth password (and inline JWKS key sets) out of
@@ -380,6 +395,13 @@ service accepts the spec (state CREATING). Converge with
 			// server 400 on a missing field.
 			if req.ImageAuth == nil {
 				req.ImageAuth = &runtimepkg.ImageAuth{Enabled: false}
+			}
+			// inboundAuth defaults to IAM on create (secure by default), but
+			// only on PUBLIC networks — the API rejects inboundAuth in VPC
+			// mode, so a VPC spec stays without it.
+			vpc := req.NetworkConfig != nil && req.NetworkConfig.Mode == "VPC"
+			if req.InboundAuth == nil && !vpc {
+				req.InboundAuth = &runtimepkg.InboundAuth{Mode: "IAM"}
 			}
 			return createRuntimeAndPrint(ctx, cmd, req)
 		}
@@ -460,7 +482,7 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 				EnvironmentVariables: map[string]string{},
 				NetworkConfig:        &runtimepkg.NetworkConfig{Mode: "PUBLIC"},
 				AllowedCidrs:         []string{},
-				InboundAuth:          &runtimepkg.InboundAuth{Mode: "NONE"},
+				InboundAuth:          &runtimepkg.InboundAuth{Mode: "IAM"},
 				Protocol:             "HTTP",
 				FlavorID:             "fill-flavor-id",
 				Autoscaling:          runtimepkg.Autoscaling{MaxReplicas: 2, CPUUtilization: 70, MemoryUtilization: 70},
@@ -513,8 +535,8 @@ environmentVariables:        # map; may be empty
 #   routeCidrs: []           # egress routes (max 20)
 # allowedCidrs:              # optional inbound CIDR allowlist (max 20)
 #   - 10.0.0.0/8
-# inboundAuth:               # optional inbound authentication (omit = NONE)
-#   mode: JWT                # NONE | IAM | JWT
+# inboundAuth:               # inbound authentication (PUBLIC networks only;
+#   mode: IAM                # default on create: IAM. NONE | IAM | JWT)
 #   jwt:                     # required when mode is JWT
 #     source: DISCOVERY      # DISCOVERY | JWKS
 #     discoveryUrl: https://idp.example.com/.well-known/openid-configuration
@@ -1707,8 +1729,10 @@ func addLogFlags(cmd *cobra.Command) {
 // addRuntimeSpecFlags registers the mutable spec flags shared by create and
 // update (everything except --name and --poc, which are create-only).
 // autoscaling has flag defaults so it is always populated without prompting.
-// The network/inbound flags stay unset by default (platform defaults: public
-// network, no inbound auth, HTTP).
+// The network flags stay unset by default (platform default: public network).
+// inbound-mode stays unset by default: create then defaults inboundAuth to
+// IAM (PUBLIC networks only — the API rejects inboundAuth in VPC mode), while
+// update carries the current version's inboundAuth over.
 func addRuntimeSpecFlags(cmd *cobra.Command) {
 	f := cmd.Flags()
 	f.String("description", "", "Description")
@@ -1725,7 +1749,7 @@ func addRuntimeSpecFlags(cmd *cobra.Command) {
 	f.String("subnet-id", "", "networkConfig subnetId (required with --network-mode VPC)")
 	f.StringArray("route-cidrs", nil, "networkConfig egress route CIDR (repeatable, max 20)")
 	f.StringArray("allowed-cidrs", nil, "Inbound CIDR allowlist (repeatable, max 20)")
-	f.String("inbound-mode", "", "inboundAuth mode: NONE, IAM or JWT (unset = NONE)")
+	f.String("inbound-mode", "", "inboundAuth mode: NONE, IAM or JWT (default IAM on create; carried over on update)")
 	f.String("inbound-jwt-source", "", "inboundAuth JWT key source: DISCOVERY or JWKS (with --inbound-mode JWT)")
 	f.String("inbound-jwt-jwks", "", "inboundAuth JWT inline key set JSON (with source JWKS, max 32KiB; prefer --file)")
 	f.String("inbound-jwt-discovery-url", "", "inboundAuth JWT OIDC discovery URL (with source DISCOVERY)")

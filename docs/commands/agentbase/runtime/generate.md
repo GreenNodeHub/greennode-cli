@@ -10,8 +10,10 @@ and apply with `grn agentbase runtime create --file <file>`.
 The template ships with `imageAuth: {enabled: false}` — the API requires the
 field, and `enabled: false` is the public-image default. For a private
 registry, enable it and fill in `username`/`password` (send-only) or set
-`useAgentBaseRegistryCredentials`. The same file (minus the create-only `poc`,
-keeping `name`) feeds `runtime update --file`.
+`useAgentBaseRegistryCredentials`. The template also ships `inboundAuth:
+{mode: IAM}` — the create-time default on `PUBLIC` networks (the field is not
+available in VPC mode). The same file (minus the create-only `poc`, keeping
+`name`) feeds `runtime update --file`.
 
 Defaults to YAML (with comments); pass `-o json` for a JSON skeleton.
 

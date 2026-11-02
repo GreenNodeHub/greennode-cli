@@ -8,7 +8,8 @@ Create a new agent runtime.
 
 By default the runtime is built from flags: `--name` is prompted for when
 missing, `--command`/`--args`/`--env` are repeatable, `--network-mode VPC`
-places the runtime in a VPC, `--inbound-mode IAM|JWT` configures inbound auth,
+places the runtime in a VPC, `--inbound-mode NONE|IAM|JWT` configures inbound
+auth (defaults to `IAM` on `PUBLIC` networks; not available in VPC mode),
 `--allowed-cidrs` restricts inbound CIDRs, and `--protocol MCP` selects the
 MCP protocol. `imageAuth` is required by the API: with no `--image-auth-*`
 flags the CLI sends `{enabled: false}` (public image). Prefer `--file` with a
@@ -20,7 +21,9 @@ service accepts the spec (state `CREATING`). Converge with
 `grn agentbase runtime wait <id>`.
 
 When `--file` is set it is authoritative — every flag below is ignored and the
-file must contain `name`, `imageUrl`, and `flavorId`.
+file must contain `name`, `imageUrl`, and `flavorId`. A spec that omits
+`inboundAuth` is sent with `inboundAuth: {mode: IAM}` unless the spec puts the
+runtime in a VPC (`inboundAuth` is `PUBLIC`-network only).
 
 > **Deprecation:** `--min-replicas` is gone. The platform owns the autoscaling
 > floor (minimum replicas is always 1); only `--max-replicas` is configurable.
@@ -213,12 +216,14 @@ traffic on `PUBLIC` networks.
 
 **`--inbound-mode`** (string)
 
-`inboundAuth` mode: `NONE`, `IAM`, or `JWT` (unset = `NONE`).
+`inboundAuth` mode: `NONE`, `IAM`, or `JWT`. `PUBLIC` networks only — the API
+rejects `inboundAuth` on VPC runtimes. Unset = `IAM` on create (callers
+authenticate via the platform IAM); pass `NONE` to open the runtime.
 
 - Required: No
-- Default: (empty = `NONE`)
+- Default: `IAM` on create (when the network is `PUBLIC` or unset)
 - Constraints: `JWT` requires the `--inbound-jwt-*` flags; cannot be combined
-  with them when set to `IAM`/`NONE`.
+  with them when set to `IAM`/`NONE`; not available with `--network-mode VPC`.
 
 **`--inbound-jwt-source`** (string)
 

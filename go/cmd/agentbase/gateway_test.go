@@ -7,6 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
+	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
 )
 
@@ -79,7 +82,7 @@ func TestGatewayGenerate_RoundTripsThroughLoadCreateSpec(t *testing.T) {
 	if req.Name != "my-gateway" || req.NetworkMode != "PUBLIC" || req.FlavorID != "fill-flavor-id" {
 		t.Errorf("round-trip decoded unexpected spec: %+v", req)
 	}
-	if req.Replicas != 1 || req.InboundAuth.Mode != "NONE" {
+	if req.Replicas != 1 || req.InboundAuth.Mode != "IAM" {
 		t.Errorf("round-trip decoded unexpected replicas/inbound: %+v", req)
 	}
 }
@@ -208,6 +211,143 @@ func TestLoadCreateSpec_MissingRequiredFails(t *testing.T) {
 	if !strings.Contains(err.Error(), "required") {
 		t.Errorf("expected required-field error, got: %v", err)
 	}
+}
+
+// TestLoadCreateSpec_InboundDefaultsToIAM verifies the inboundAuth defaulting
+// in the --file path: a spec without inboundAuth creates with mode IAM (the
+// secure default), while a jwt block without a mode is rejected instead of
+// being silently paired with the IAM default.
+func TestLoadCreateSpec_InboundDefaultsToIAM(t *testing.T) {
+	req, err := loadCreateSpec([]byte(`
+name: default-inbound-gw
+networkMode: PUBLIC
+flavorId: f1
+replicas: 1
+`))
+	if err != nil {
+		t.Fatalf("loadCreateSpec: %v", err)
+	}
+	if req.InboundAuth.Mode != "IAM" || req.InboundAuth.JWT != nil {
+		t.Errorf("inboundAuth should default to IAM, got: %+v", req.InboundAuth)
+	}
+
+	_, err = loadCreateSpec([]byte(`
+name: jwt-no-mode-gw
+networkMode: PUBLIC
+flavorId: f1
+replicas: 1
+inboundAuth:
+  jwt:
+    source: DISCOVERY
+    discoveryUrl: https://idp.example.com/.well-known/openid-configuration
+`))
+	if err == nil {
+		t.Fatal("expected error for inboundAuth.jwt without inboundAuth.mode")
+	}
+	if !strings.Contains(err.Error(), "inboundAuth.mode JWT") {
+		t.Errorf("expected inboundAuth.mode error, got: %v", err)
+	}
+}
+
+// newGatewayCreateCmd builds a fresh command with the create flags, for
+// testing buildCreateFromFlags in isolation (flag Changed state must not leak
+// between subtests).
+func newGatewayCreateCmd(t *testing.T) *cobra.Command {
+	t.Helper()
+	cmd := &cobra.Command{}
+	addGatewayCreateFlags(cmd)
+	return cmd
+}
+
+// TestBuildCreateFromFlags_InboundAuth covers the inbound-auth flag group on
+// the gateway create path: unset --inbound-mode defaults to IAM (no prompt),
+// NONE opts out (case-normalized), bad modes error, and the JWT / IAM-only
+// flags are rejected outside their modes.
+func TestBuildCreateFromFlags_InboundAuth(t *testing.T) {
+	cliinput.SetInteractive(false)
+	setBase := func(t *testing.T, cmd *cobra.Command) {
+		t.Helper()
+		mustSet(t, cmd, "name", "gw-1")
+		mustSet(t, cmd, "network-mode", "PUBLIC")
+		mustSet(t, cmd, "flavor-id", "f1")
+		mustSet(t, cmd, "replicas", "1")
+	}
+	t.Run("unset_defaults_to_iam", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		req, err := buildCreateFromFlags(cmd)
+		if err != nil {
+			t.Fatalf("buildCreateFromFlags: %v", err)
+		}
+		if req.InboundAuth.Mode != "IAM" || req.InboundAuth.JWT != nil || req.InboundAuth.IAMRequireOwner != nil {
+			t.Errorf("expected plain IAM default, got: %+v", req.InboundAuth)
+		}
+	})
+	t.Run("none_opt_out_normalized", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		mustSet(t, cmd, "inbound-mode", "none")
+		req, err := buildCreateFromFlags(cmd)
+		if err != nil {
+			t.Fatalf("buildCreateFromFlags: %v", err)
+		}
+		if req.InboundAuth.Mode != "NONE" {
+			t.Errorf("expected NONE (normalized), got: %+v", req.InboundAuth)
+		}
+	})
+	t.Run("bad_mode_errors", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		mustSet(t, cmd, "inbound-mode", "TUNNEL")
+		if _, err := buildCreateFromFlags(cmd); err == nil {
+			t.Error("expected error for bad --inbound-mode")
+		}
+	})
+	t.Run("jwt_flags_with_default_iam_error", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		mustSet(t, cmd, "jwt-source", "JWKS")
+		_, err := buildCreateFromFlags(cmd)
+		if err == nil || !strings.Contains(err.Error(), "only applies when --inbound-mode is JWT") {
+			t.Errorf("expected jwt-flag guard error, got: %v", err)
+		}
+	})
+	t.Run("iam_require_owner_with_none_errors", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		mustSet(t, cmd, "inbound-mode", "NONE")
+		mustSet(t, cmd, "iam-require-owner", "true")
+		if _, err := buildCreateFromFlags(cmd); err == nil {
+			t.Error("expected error for --iam-require-owner with NONE")
+		}
+	})
+	t.Run("iam_require_owner_ok", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		mustSet(t, cmd, "iam-require-owner", "true")
+		req, err := buildCreateFromFlags(cmd)
+		if err != nil {
+			t.Fatalf("buildCreateFromFlags: %v", err)
+		}
+		if req.InboundAuth.IAMRequireOwner == nil || !*req.InboundAuth.IAMRequireOwner {
+			t.Errorf("expected IAMRequireOwner=true, got: %+v", req.InboundAuth)
+		}
+	})
+	t.Run("jwt_ok", func(t *testing.T) {
+		cmd := newGatewayCreateCmd(t)
+		setBase(t, cmd)
+		mustSet(t, cmd, "inbound-mode", "JWT")
+		mustSet(t, cmd, "jwt-source", "DISCOVERY")
+		mustSet(t, cmd, "jwt-discovery-url", "https://idp/.well-known/openid-configuration")
+		req, err := buildCreateFromFlags(cmd)
+		if err != nil {
+			t.Fatalf("buildCreateFromFlags: %v", err)
+		}
+		if req.InboundAuth.Mode != "JWT" || req.InboundAuth.JWT == nil ||
+			req.InboundAuth.JWT.Source != "DISCOVERY" || req.InboundAuth.JWT.DiscoveryURL == "" {
+			t.Errorf("unexpected jwt config: %+v", req.InboundAuth)
+		}
+	})
 }
 
 // TestParseHostAliases covers the ip=host1,host2 flag parser.
