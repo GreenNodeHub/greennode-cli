@@ -1,8 +1,6 @@
 package backup
 
 import (
-	"strings"
-
 	"github.com/spf13/pflag"
 )
 
@@ -61,20 +59,6 @@ func boolOrDefault(flags *pflag.FlagSet, name string, fallback bool) bool {
 func mustString(flags *pflag.FlagSet, name string) string {
 	value, _ := flags.GetString(name)
 	return value
-}
-
-// subnetIDPrefix is what a restore request needs in netIds. A backup record may
-// carry a network ("net-") there instead, which the API rejects.
-const subnetIDPrefix = "sub-"
-
-func subnetIDsOnly(values []string) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		if strings.HasPrefix(value, subnetIDPrefix) {
-			out = append(out, value)
-		}
-	}
-	return out
 }
 
 func toInterfaces(values []string) []interface{} {

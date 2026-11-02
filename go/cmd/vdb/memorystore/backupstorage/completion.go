@@ -13,8 +13,8 @@ import (
 // cmd/vdb/relational/instance/completion.go.
 //
 // Both are API-backed and read the same endpoints the read commands use, which is why
-// the mapping is worth stating once: on THIS API, basePath lists the packages you can
-// buy and basePath the storage you own. MemoryStore inverts that pair.
+// the mapping is worth stating once: on THIS API, basePath lists the storage you own
+// and basePath+"/packages" the packages you can buy. Relational inverts that pair.
 
 func storageIDCompletion() cli.CompFunc {
 	return cli.FlagFromAPI(func(_ context.Context, cmd *cobra.Command) ([]string, error) {
@@ -22,7 +22,7 @@ func storageIDCompletion() cli.CompFunc {
 		if err != nil {
 			return nil, err
 		}
-		result, err := apiClient.Get(basePath+"/packages", nil)
+		result, err := apiClient.Get(basePath, nil)
 		if err != nil {
 			return nil, err
 		}

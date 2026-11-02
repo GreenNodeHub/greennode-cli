@@ -26,10 +26,10 @@ const SecruleResourceKey = "vdb:kafka-secrule"
 
 // Keys owned by other Kafka packages, consumed here.
 const (
-	kafkaVersionResource      = "vdb:kafka-version"
-	flavorResource            = "vdb:kafka-flavor"
-	volumeTypeResource        = "vdb:kafka-volume-type"
-	configGroupVersionResourc = "vdb:kafka-config-group-version"
+	kafkaVersionResource       = "vdb:kafka-version"
+	flavorResource             = "vdb:kafka-flavor"
+	volumeTypeResource         = "vdb:kafka-volume-type"
+	configGroupVersionResource = "vdb:kafka-config-group-version"
 )
 
 func init() {
@@ -108,5 +108,5 @@ func volumeTypeCompletion() cli.CompFunc {
 }
 
 func configGroupVersionCompletion() cli.CompFunc {
-	return cli.ResourceCompletion(configGroupVersionResourc)
+	return cli.ResourceCompletion(configGroupVersionResource)
 }

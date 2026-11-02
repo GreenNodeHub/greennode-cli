@@ -90,8 +90,9 @@ func printDeleteTarget(apiClient interface {
 		fmt.Printf("Warning: could not read PostgreSQL Cluster %s before deleting (%v).\n", clusterID, err)
 		return
 	}
-	cluster, ok := vdbclient.Unwrap(result).(map[string]interface{})
+	cluster, ok := vdbclient.PayloadObject(result)
 	if !ok {
+		fmt.Printf("Warning: could not read PostgreSQL Cluster %s before deleting (not found or empty payload).\n", clusterID)
 		return
 	}
 

@@ -104,7 +104,7 @@ func fetchClusterRows(cmd *cobra.Command) ([]interface{}, error) {
 		return nil, err
 	}
 
-	payload, ok := vdbclient.Unwrap(result).(map[string]interface{})
+	payload, ok := vdbclient.PayloadObject(result)
 	if !ok {
 		return nil, nil
 	}

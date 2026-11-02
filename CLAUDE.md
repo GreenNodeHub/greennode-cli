@@ -40,9 +40,9 @@ go/
 │   │   │   ├── backup/              # list/get/create/delete/restore/get-free-storage
 │   │   │   ├── configuration/       # config groups: list/get/create/update/delete/list-params
 │   │   │   └── backupstorage/       # quota: list/list-packages/create/resize/delete
-│   │   ├── memorystore/             # MemoryStore (Redis): 42 lệnh, 5 noun như relational
-│   │   │   │                        #   nhưng path khác gần hết; không có volume/resize-storage
-│   │   │   ├── instance/            # 16 commands (master password thay vì db user)
+│   │   ├── memorystore/             # MemoryStore (Redis): 42 commands, same 5 nouns as relational
+│   │   │   │                        #   but almost every path differs; no volume/resize-storage
+│   │   │   ├── instance/            # 16 commands (master password instead of a db user)
 │   │   │   ├── catalog/             # 9 lookups under /database/* (no zones/subnets)
 │   │   │   ├── backup/ configuration/ backupstorage/
 │   │   ├── postgresql/              # PostgreSQL Cluster: /vdb-postgresql + 7 relational endpoints
@@ -50,17 +50,17 @@ go/
 │   │   │   │                        #   config-group/reboot/delete (+ pg- ID guard)
 │   │   │   ├── catalog/             # versions/flavors/volume-types/config-groups/backup opts
 │   │   │   └── backup/              # list/get/list-restore-points/create (keyed by CLUSTER id)
-│   │   └── kafka/                   # Kafka: 36 lệnh / 35 endpoint, /vdb-kafka (KHÔNG có /v1)
-│   │       │                        #   không envelope (9/36), không phân trang, không backup
+│   │   └── kafka/                   # Kafka: 36 commands / 35 endpoints, /vdb-kafka (NO /v1)
+│   │       │                        #   envelope on 9/36 only, no pagination, no backups
 │   │       ├── cluster/             # 14: read + create/delete + resize-brokers/resize-storage/
 │   │       │                        #   update-volume-type + authentication/config-group/
 │   │       │                        #   public-access + secrule create/delete (list-secrules
-│   │       │                        #   đọc từ cluster get — API không có endpoint)
-│   │       ├── topic/               # list/get/create/update/delete (dưới cluster)
-│   │       ├── user/                # + get-creds/generate-creds; quyền theo TÊN topic
-│   │       ├── configuration/       # config group CÓ VERSION: create-version thay cho update
-│   │       └── catalog/             # flavors/families/codes/volume-types (versions lấy từ
-│   │                                #   /database/configs — endpoint này không có lệnh)
+│   │       │                        #   reads cluster get — the API has no endpoint)
+│   │       ├── topic/               # list/get/create/update/delete (under a cluster)
+│   │       ├── user/                # + get-creds/generate-creds; permissions by topic NAME
+│   │       ├── configuration/       # VERSIONED config groups: create-version instead of update
+│   │       └── catalog/             # flavors/families/codes/volume-types (versions come from
+│   │                                #   /database/configs, which has no command of its own)
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list

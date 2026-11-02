@@ -196,13 +196,6 @@ func TestRestoreIsRequiredToPlaceTheInstance(t *testing.T) {
 	}
 }
 
-func TestSubnetIDsOnly(t *testing.T) {
-	got := subnetIDsOnly([]string{"net-1", "sub-1", "", "sub-2", "db-1"})
-	if len(got) != 2 || got[0] != "sub-1" || got[1] != "sub-2" {
-		t.Errorf("subnetIDsOnly = %v, want the two sub- entries", got)
-	}
-}
-
 func TestRestoreBodyBackupSchedule(t *testing.T) {
 	base := map[string]string{"backup-id": "bk-1", "name": "r", "zone-id": "HCM03-1B", "subnet-ids": "sub-1"}
 	with := func(extra map[string]string) map[string]string {
