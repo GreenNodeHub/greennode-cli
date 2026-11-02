@@ -233,3 +233,31 @@ type GetDelegatedApiKeyResponse struct {
 	SessionID        *string `json:"sessionId"`
 	Status           *string `json:"status"`
 }
+
+// --- Managed OAuth2 providers ---
+
+// ManagedOauth2ProviderSummaryResponse is a platform-managed OAuth2 provider:
+// credentials live server-side and are never exposed, so the CLI surface is
+// read-only (list/get) plus 3LO token retrieval for an agent identity.
+type ManagedOauth2ProviderSummaryResponse struct {
+	ID          *string    `json:"id"`
+	Name        *string    `json:"name"`
+	Status      *string    `json:"status"`
+	CallbackURL *string    `json:"callbackUrl"`
+	CreatedAt   *time.Time `json:"createdAt"`
+	UpdatedAt   *time.Time `json:"updatedAt"`
+}
+
+// PagedResponseManagedOauth2ProviderSummaryResponse is a paginated list of
+// managed OAuth2 provider summaries.
+type PagedResponseManagedOauth2ProviderSummaryResponse struct {
+	Content       jsonslice.Array[ManagedOauth2ProviderSummaryResponse] `json:"content"`
+	Page          *int                                                  `json:"page"`
+	Size          *int                                                  `json:"size"`
+	TotalElements *int64                                                `json:"totalElements"`
+	TotalPages    *int                                                  `json:"totalPages"`
+	First         *bool                                                 `json:"first"`
+	Last          *bool                                                 `json:"last"`
+	HasNext       *bool                                                 `json:"hasNext"`
+	HasPrevious   *bool                                                 `json:"hasPrevious"`
+}

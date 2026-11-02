@@ -12,9 +12,11 @@ environment, autoscaling, and flavor. Runtimes converge asynchronously:
 `CREATING`/`UPDATING`) and reach `ACTIVE` (or `ERROR` / `SERVICE_ACCOUNT_ERROR`).
 Use [wait](wait.md) to block until terminal.
 
-Runtimes are addressed by `id` (the `name` is immutable after creation). `update`
-is a **full-spec replacement** — every field is required (the create spec minus
-`name`), not a merge-patch. For anything beyond the simple path, generate a
+Runtimes are addressed by `id` (the `name` is immutable after creation).
+`create` is fully flag-driven (see [create](create.md)). `update` is
+merge-like from the CLI side: fields whose flags are left unset are carried
+over from the current version (see [update](update.md)); to apply a full spec
+from a file — or keep the image-auth password out of the shell — generate a
 template with [generate](generate.md), fill it in, and apply with `--file`.
 
 ## Available commands
@@ -25,7 +27,7 @@ template with [generate](generate.md), fill it in, and apply with `--file`.
 | [generate](generate.md) | Print a runtime create template (YAML or JSON) |
 | [list](list.md) | List agent runtimes |
 | [get](get.md) | Show an agent runtime |
-| [update](update.md) | Update an agent runtime (full-spec replacement) |
+| [update](update.md) | Update an agent runtime (new immutable version) |
 | [delete](delete.md) | Delete an agent runtime |
 | [wait](wait.md) | Wait for an agent runtime to reach a terminal state |
 

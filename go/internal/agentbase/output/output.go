@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jmespath/go-jmespath"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -20,11 +21,22 @@ const (
 
 var currentFormat Format = FormatTable
 
+// currentQuery is the JMESPath query applied to JSON output (agentbase's
+// handling of grn's global --query flag); empty means no filtering.
+var currentQuery string
+
 // SetFormat sets the active output format. Called once from rootCmd.PersistentPreRun.
 func SetFormat(f Format) { currentFormat = f }
 
 // GetFormat returns the active output format.
 func GetFormat() Format { return currentFormat }
+
+// SetQuery sets the JMESPath query applied to JSON output. Called from the
+// agentbase subtree's PersistentPreRunE; empty disables filtering.
+func SetQuery(q string) { currentQuery = q }
+
+// GetQuery returns the active JMESPath query ("" = none).
+func GetQuery() string { return currentQuery }
 
 // ParseFormat parses an output format string, defaulting to table.
 func ParseFormat(s string) Format {
@@ -68,11 +80,30 @@ func PrintDeletedID(id string) error {
 	}
 }
 
-// JSON prints any value as indented JSON to stdout.
+// JSON prints any value as indented JSON to stdout. When a JMESPath query is
+// active (the global --query flag), the value is filtered through it first:
+// the value is marshalled then re-decoded to interface{} because jmespath
+// operates on decoded JSON, not on typed structs.
 func JSON(v interface{}) error {
+	data := v
+	if q := currentQuery; q != "" {
+		encoded, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var decoded interface{}
+		if err := json.Unmarshal(encoded, &decoded); err != nil {
+			return err
+		}
+		filtered, err := jmespath.Search(q, decoded)
+		if err != nil {
+			return fmt.Errorf("--query %q: %w", q, err)
+		}
+		data = filtered
+	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	return enc.Encode(v)
+	return enc.Encode(data)
 }
 
 // Table renders a table to stdout with the given headers and rows.

@@ -65,8 +65,9 @@ type RuntimeSpec struct {
 }
 
 // ManifestAutoscale is the HPA config (bounds enforced server-side).
+// minReplicas was removed from the runtime API (the platform owns the floor,
+// always 1); the field is tolerated in existing manifests but not forwarded.
 type ManifestAutoscale struct {
-	MinReplicas       int `json:"minReplicas,omitempty"`
 	MaxReplicas       int `json:"maxReplicas,omitempty"`
 	CPUUtilization    int `json:"cpuUtilization,omitempty"`
 	MemoryUtilization int `json:"memoryUtilization,omitempty"`

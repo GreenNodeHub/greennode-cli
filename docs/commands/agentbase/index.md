@@ -26,6 +26,7 @@ The AgentBase platform is served behind `agentbase.api.vngcloud.vn` (prod) /
 | `runtime` | Deploy the container that runs the agent code (image/command/args/env/autoscaling) |
 | `marketplace` | Browse the marketplace: runtime flavors, OpenClaw versions + workspaces |
 | `memory` | Long-term memory for agents (Mem0 vector store, semantic search) |
+| `tools` | Built-in tools agents invoke: headless browsers + code interpreters (dev-only service) |
 | `policy` | Cedar policy engine (policy-groups + policies + decision) |
 | `cr` | Wrapper for VNG Cloud Container Registry (vCR): auto-provisioned repo + robot account |
 | `deploy` | Orchestrator composing access + memory + runtime (+ cr) |
@@ -115,6 +116,7 @@ All commands accept the common flags `-o json|table|id` (output format) and
 | [runtime](runtime/index.md) | Deploy the agent container (image/command/args/env/autoscaling) |
 | [memory](memory/index.md) | Long-term memory container (Mem0 vector store, semantic search) |
 | [marketplace](marketplace/index.md) | Runtime placement flavors + OpenClaw versions/workspaces |
+| [tools](tools/index.md) | Built-in tools: headless browsers + code interpreters (sessions, streams, invoke + task-wait) |
 | [policy](policy/index.md) | Cedar policy engine (policy-groups + policies + decision) |
 | [cr](cr/index.md) | VNG Cloud Container Registry wrapper (auto-provisioned repo + robot account) |
 | [deploy](deploy/index.md) | Client-side orchestrator (access + memory + runtime + cr) |
@@ -136,6 +138,10 @@ in `~/.greennode/config` (the same fallback vks/vserver use), then to `table`.
 So `grn configure set output json` governs `grn agentbase` too. (`context current`
 uses a fixed table layout and is not affected by the output format.)
 
+`grn`'s global `--query` (a JMESPath expression filtering the output) works
+with `agentbase` commands **only with `-o json`**; with `table`/`id` it fails
+fast with an error instead of being silently ignored.
+
 ---
 
 ## Paging envelope reference
@@ -147,6 +153,7 @@ Each service uses a different pagination shape — a common source of confusion:
 | gateway | `{items, pagination}` | — |
 | runtime | `{listData, page, pageSize, totalPage, totalItem}` | `size` |
 | memory | `{listData, page, pageSize, totalPage, totalItem}` | `size` |
+| tools | `{listData, page, pageSize, totalPage, totalItem}` | `size` |
 | policy | `{content, page, pageSize, totalPage, totalItem}` | `page_size` (snake) |
 | cr | `{data, page, pageSize, totalItem, totalPage}` | `size` |
 | access | `{content, page, size, totalElements, totalPages, ...}` | `size` |

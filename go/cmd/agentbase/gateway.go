@@ -3,7 +3,9 @@ package agentbase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 
+	clientpkg "github.com/greennodehub/greennode-cli/internal/agentbase/client"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/cliinput"
 	gatewaypkg "github.com/greennodehub/greennode-cli/internal/agentbase/gateway"
 	"github.com/greennodehub/greennode-cli/internal/agentbase/output"
@@ -41,7 +44,13 @@ path, generate a template, fill it in, and apply it with --file:
     grn agentbase gateway create --file gw.yaml
     grn agentbase gateway wait my-gateway
 
-gateways share the ~/.greennode profile like the rest of agentbase.`,
+gateways share the ~/.greennode profile like the rest of agentbase.
+
+Besides the lifecycle, the group reads the connector catalog:
+'mcp-connectors' lists/gets the MCP servers attached across your gateways
+(with ready connectUrls), 'mcp-server-templates' lists the template catalog,
+and 'target tools'/'target sync' read or refresh a target's tools/list.`,
+	RunE: requireSubcommand,
 }
 
 // newGatewayClient mirrors newIdentityClient: resolve the shared profile +
@@ -555,7 +564,9 @@ var gatewayWaitCmd = &cobra.Command{
 	Use:   "wait <name>",
 	Short: "Wait for a gateway to reach a terminal state",
 	Long: `Poll a gateway until it reaches a terminal state: ACTIVE / DELETED (success)
-or CREATE_ERROR / UPDATE_ERROR / ERROR (failure). Use after create/update/delete.`,
+or CREATE_ERROR / UPDATE_ERROR / ERROR (failure). Use after create/update/delete.
+A completed delete removes the gateway record, so a 404 (no longer present)
+while waiting counts as DELETED.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
@@ -569,26 +580,53 @@ or CREATE_ERROR / UPDATE_ERROR / ERROR (failure). Use after create/update/delete
 			return err
 		}
 		name := args[0]
-		for {
-			gw, err := client.Get(ctx, name)
-			if err != nil {
-				return err
-			}
-			if gatewayTerminalFailure[gw.State] {
-				return fmt.Errorf("gateway %q failed: state=%s %s", name, gw.State, lastErrStr(gw.LastError))
-			}
-			if gatewayTerminalSuccess[gw.State] {
-				fmt.Fprintf(os.Stderr, "Gateway %q reached state %s.\n", name, gw.State)
-				return output.PrintResource(gw, func() string { return gw.Name }, func() error { return renderGatewayDetail(gw) })
-			}
-			fmt.Fprintf(os.Stderr, "Gateway %q state: %s ...\n", name, gw.State)
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("timed out waiting for gateway %q (last state %s)", name, gw.State)
-			case <-time.After(interval):
-			}
+		gw, err := pollGatewayToTerminal(ctx, client, name, interval)
+		if err != nil {
+			return err
 		}
+		return output.PrintResource(gw, func() string { return gw.Name }, func() error { return renderGatewayDetail(gw) })
 	},
+}
+
+// pollGatewayToTerminal polls a gateway by name until it reaches a terminal
+// state (ACTIVE/DELETED = success, *_ERROR = failure) or ctx expires. Progress
+// lines go to stderr; on success the caller renders the returned gateway.
+//
+// A completed delete removes the gateway record, so Get returns 404 instead of
+// a DELETED state — a 404 mid-poll counts as the DELETED terminal success
+// (documented in `gateway wait --help`). When it arrives before any successful
+// poll, a minimal {name, DELETED} snapshot is returned — the record is gone,
+// there is nothing better to report.
+func pollGatewayToTerminal(ctx context.Context, client *gatewaypkg.Client, name string, interval time.Duration) (*gatewaypkg.GatewayResponse, error) {
+	var last *gatewaypkg.GatewayResponse
+	for {
+		gw, err := client.Get(ctx, name)
+		if err != nil {
+			var apiErr *clientpkg.APIError
+			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+				fmt.Fprintf(os.Stderr, "Gateway %q deleted (no longer present, HTTP 404).\n", name)
+				if last == nil {
+					last = &gatewaypkg.GatewayResponse{Name: name, State: "DELETED"}
+				}
+				return last, nil
+			}
+			return nil, err
+		}
+		last = gw
+		if gatewayTerminalFailure[gw.State] {
+			return nil, fmt.Errorf("gateway %q failed: state=%s %s", name, gw.State, lastErrStr(gw.LastError))
+		}
+		if gatewayTerminalSuccess[gw.State] {
+			fmt.Fprintf(os.Stderr, "Gateway %q reached state %s.\n", name, gw.State)
+			return gw, nil
+		}
+		fmt.Fprintf(os.Stderr, "Gateway %q state: %s ...\n", name, gw.State)
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("timed out waiting for gateway %q (last state %s)", name, gw.State)
+		case <-time.After(interval):
+		}
+	}
 }
 
 // gatewayTerminalSuccess / gatewayTerminalFailure partition the State enum.
@@ -833,6 +871,30 @@ func init() {
 	// service-account / repair
 	gatewayServiceAccountCmd.AddCommand(gatewayServiceAccountRepairCmd)
 	gatewayCmd.AddCommand(gatewayServiceAccountCmd)
+
+	// mcp-connectors
+	gatewayMcpConnectorsListCmd.Flags().String("gateway-name", "", "Filter by parent gateway name")
+	gatewayMcpConnectorsListCmd.Flags().String("state", "", "Filter by parent gateway state (e.g. ACTIVE)")
+	gatewayMcpConnectorsListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	gatewayMcpConnectorsListCmd.Flags().Int("size", 50, "Page size (max 100)")
+	gatewayMcpConnectorsCmd.AddCommand(gatewayMcpConnectorsListCmd)
+	gatewayMcpConnectorsCmd.AddCommand(gatewayMcpConnectorsGetCmd)
+	gatewayCmd.AddCommand(gatewayMcpConnectorsCmd)
+
+	// mcp-server-templates
+	gatewayMcpServerTemplatesListCmd.Flags().String("display-name", "", "Filter by display name (substring)")
+	gatewayMcpServerTemplatesListCmd.Flags().String("vendor", "", "Filter by vendor (substring)")
+	gatewayMcpServerTemplatesListCmd.Flags().String("id", "", "Filter by template id (substring)")
+	gatewayMcpServerTemplatesListCmd.Flags().Int("page", 1, "Page number (1-based)")
+	gatewayMcpServerTemplatesListCmd.Flags().Int("size", 50, "Page size (max 100)")
+	gatewayMcpServerTemplatesCmd.AddCommand(gatewayMcpServerTemplatesListCmd)
+	gatewayCmd.AddCommand(gatewayMcpServerTemplatesCmd)
+
+	// target (tools + sync)
+	gatewayTargetSyncCmd.Flags().String("return-to", "", "URL the gateway redirects the browser to after interactive sync (optional)")
+	gatewayTargetCmd.AddCommand(gatewayTargetToolsCmd)
+	gatewayTargetCmd.AddCommand(gatewayTargetSyncCmd)
+	gatewayCmd.AddCommand(gatewayTargetCmd)
 }
 
 // gatewayCreateName holds the --name value for create (the other create flags
@@ -849,6 +911,7 @@ var gatewayCreateName string
 var gatewayFlavorsCmd = &cobra.Command{
 	Use:   "flavors",
 	Short: "Gateway placement flavors",
+	RunE:  requireSubcommand,
 }
 
 var gatewayFlavorsListCmd = &cobra.Command{
@@ -902,6 +965,7 @@ catalog. Filters are optional.`,
 var gatewayAccessLogsCmd = &cobra.Command{
 	Use:   "access-logs",
 	Short: "Gateway access logs",
+	RunE:  requireSubcommand,
 }
 
 // addAccessLogFilterFlags registers the shared access-log filter flags on a
@@ -1066,11 +1130,13 @@ func printCallerBuckets(buckets []gatewaypkg.AccessLogCallerBucket) {
 var gatewayInboundAuthCmd = &cobra.Command{
 	Use:   "inbound-auth",
 	Short: "Gateway inbound authentication",
+	RunE:  requireSubcommand,
 }
 
 var gatewayInboundAuthJwtCmd = &cobra.Command{
 	Use:   "jwt",
 	Short: "JWT inbound-auth configuration",
+	RunE:  requireSubcommand,
 }
 
 var gatewayInboundAuthJwtIdpAppCmd = &cobra.Command{
@@ -1079,6 +1145,7 @@ var gatewayInboundAuthJwtIdpAppCmd = &cobra.Command{
 	Long: `Manage the gateway's inbound-auth JWT IdP application credentials (the
 OAuth2 client/secret the gateway uses to talk to the IdP). The secret stays
 server-side after it is set.`,
+	RunE: requireSubcommand,
 }
 
 var gatewayInboundAuthJwtIdpAppSetCmd = &cobra.Command{
@@ -1135,11 +1202,13 @@ var gatewayInboundAuthJwtIdpAppClearCmd = &cobra.Command{
 var gatewayPrivateNetworkCmd = &cobra.Command{
 	Use:   "private-network",
 	Short: "PRIVATE-mode gateway private network",
+	RunE:  requireSubcommand,
 }
 
 var gatewayPrivateNetworkRoutesCmd = &cobra.Command{
 	Use:   "routes",
 	Short: "Private-network node routes (CIDRs)",
+	RunE:  requireSubcommand,
 }
 
 var gatewayPrivateNetworkRoutesGetCmd = &cobra.Command{
@@ -1228,6 +1297,7 @@ concurrency; omit to force the replace.`,
 var gatewayServiceAccountCmd = &cobra.Command{
 	Use:   "service-account",
 	Short: "Gateway IAM service account",
+	RunE:  requireSubcommand,
 }
 
 var gatewayServiceAccountRepairCmd = &cobra.Command{
@@ -1250,4 +1320,261 @@ the refreshed gateway.`,
 		}
 		return output.PrintResource(gw, func() string { return gw.Name }, func() error { return renderGatewayDetail(gw) })
 	},
+}
+
+// ---------------------------------------------------------------------------
+// mcp-connectors / mcp-server-templates / target (tools + sync)
+// ---------------------------------------------------------------------------
+
+// gatewayMcpConnectorsCmd groups the mcp-connectors read commands (every
+// target flattened across the caller's gateways, with ready connect URLs).
+var gatewayMcpConnectorsCmd = &cobra.Command{
+	Use:   "mcp-connectors",
+	Short: "List MCP connectors (targets across gateways)",
+	RunE:  requireSubcommand,
+}
+
+var gatewayMcpConnectorsListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List MCP connectors",
+	Long: `List every MCP connector (target) attached across your gateways,
+flattened into one list (GET /api/v1/mcp-connectors). Each item carries a
+ready-to-use connectUrl, the derived template type (or CUSTOM), the upstream
+outbound-auth descriptor, and parent-gateway context including inbound-auth
+mode. Filter with --gateway-name and --state.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		gatewayName, _ := f.GetString("gateway-name")
+		state, _ := f.GetString("state")
+		page, _ := f.GetInt("page")
+		size, _ := f.GetInt("size")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListMCPConnectors(ctx, gatewayName, state, page, size)
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(resp)
+		}
+		if len(resp.Items) == 0 {
+			fmt.Fprintln(os.Stderr, "No MCP connectors found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.Items))
+		for i := range resp.Items {
+			it := resp.Items[i]
+			rows = append(rows, []string{
+				it.Name, it.Type, it.Gateway.Name, it.Gateway.State,
+				output.StrOrDash(it.Template.DisplayName),
+				mcpConnectorAuthStr(it.OutboundAuth),
+				truncate(it.ConnectURL, 60),
+			})
+		}
+		output.Table([]string{"Name", "Type", "Gateway", "State", "Template", "Outbound Auth", "Connect URL"}, rows)
+		p := resp.Pagination
+		fmt.Fprintf(os.Stderr, "Page %d (size %d, %d total)\n", p.Page, p.PageSize, p.TotalItems)
+		return nil
+	},
+}
+
+// mcpConnectorAuthStr renders a connector's outbound-auth descriptor for a
+// table cell (e.g. "OAUTH/3LO github" or "NONE").
+func mcpConnectorAuthStr(a gatewaypkg.MCPConnectorOutboundAuthDTO) string {
+	if a.Type == "" {
+		return "-"
+	}
+	s := a.Type
+	if a.Flow != "" {
+		s += "/" + a.Flow
+	}
+	if a.Provider != "" {
+		s += " " + a.Provider
+	}
+	return s
+}
+
+var gatewayMcpConnectorsGetCmd = &cobra.Command{
+	Use:   "get <gateway> <target>",
+	Short: "Get one MCP connector",
+	Long: `Get a single MCP connector (one target on one caller-owned gateway)
+by composite key (GET /api/v1/mcp-connectors/{gatewayName}/{targetName}).
+Ownership is caller-scoped, so another user's gateway looks like a 404.`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		conn, err := client.GetMCPConnector(ctx, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(conn)
+		}
+		rows := [][]string{
+			{"Name", conn.Name},
+			{"Type", conn.Type},
+			{"Connect URL", conn.ConnectURL},
+			{"Template", output.StrOrDash(conn.Template.DisplayName)},
+			{"Template ID", output.StrOrDash(conn.Template.ID)},
+			{"Gateway", conn.Gateway.Name},
+			{"Gateway State", conn.Gateway.State},
+			{"Gateway Network", conn.Gateway.NetworkMode},
+			{"Gateway Endpoint", conn.Gateway.Endpoint},
+			{"Inbound Auth", conn.Gateway.InboundAuth.Mode},
+			{"Outbound Auth", mcpConnectorAuthStr(conn.OutboundAuth)},
+			{"Outbound Scopes", strings.Join(conn.OutboundAuth.Scopes, ",")},
+			{"Created At", output.StrOrDash(conn.CreatedAt)},
+			{"Updated At", output.StrOrDash(conn.UpdatedAt)},
+		}
+		output.Table([]string{"Field", "Value"}, rows)
+		return nil
+	},
+}
+
+// gatewayMcpServerTemplatesCmd groups the MCP server template catalog reads.
+var gatewayMcpServerTemplatesCmd = &cobra.Command{
+	Use:   "mcp-server-templates",
+	Short: "List MCP server templates",
+	RunE:  requireSubcommand,
+}
+
+var gatewayMcpServerTemplatesListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List MCP server templates",
+	Long: `List enabled MCP server templates from the catalog (GET
+/api/v1/mcp-server-templates). Each item carries auth options whose
+recommended* fields pre-fill a target-creation form; edits go through the
+gateway update path. displayName/vendor/id are case-insensitive substring
+filters that AND together.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		f := cmd.Flags()
+		displayName, _ := f.GetString("display-name")
+		vendor, _ := f.GetString("vendor")
+		id, _ := f.GetString("id")
+		page, _ := f.GetInt("page")
+		size, _ := f.GetInt("size")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.ListMCPServerTemplates(ctx, displayName, vendor, id, page, size)
+		if err != nil {
+			return err
+		}
+		if output.GetFormat() == output.FormatJSON {
+			return output.JSON(resp)
+		}
+		if len(resp.Items) == 0 {
+			fmt.Fprintln(os.Stderr, "No MCP server templates found.")
+			return nil
+		}
+		rows := make([][]string, 0, len(resp.Items))
+		for i := range resp.Items {
+			it := resp.Items[i]
+			rows = append(rows, []string{
+				it.ID, it.DisplayName, output.StrOrDash(it.Vendor),
+				output.StrOrDash(it.AuthVendor), it.Endpoint,
+				strconv.Itoa(len(it.AuthOptions)),
+			})
+		}
+		output.Table([]string{"ID", "Display Name", "Vendor", "Auth Vendor", "Endpoint", "Auth Options"}, rows)
+		p := resp.Pagination
+		fmt.Fprintf(os.Stderr, "Page %d (size %d, %d total)\n", p.Page, p.PageSize, p.TotalItems)
+		return nil
+	},
+}
+
+// gatewayTargetCmd groups per-target operations (last-synced tools, sync).
+var gatewayTargetCmd = &cobra.Command{
+	Use:   "target",
+	Short: "Target tools on a gateway",
+	RunE:  requireSubcommand,
+}
+
+var gatewayTargetToolsCmd = &cobra.Command{
+	Use:   "tools <gateway> <target>",
+	Short: "Get a target's last-synced tools",
+	Long: `Get a target's last-synced tools/list (GET
+/api/v1/gateways/{name}/targets/{target}/tools). This is the persisted
+snapshot; refresh it with 'target sync'.`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.TargetTools(ctx, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		return renderSyncResponse(resp)
+	},
+}
+
+var gatewayTargetSyncCmd = &cobra.Command{
+	Use:   "sync <gateway> <target>",
+	Short: "Sync a target's tools/list",
+	Long: `Fetch the live tools/list from the target's MCP endpoint and persist
+it (POST /api/v1/gateways/{name}/targets/{target}/sync).
+
+Non-interactive auth (NONE/2LO, or 3LO with cached consent) returns the tools
+directly. Interactive auth (3LO without consent, INBOUND_FORWARD) returns
+status=authorization_required plus an authorizeUrl — open it in a browser; on
+completion the gateway finishes tools/list server-side and redirects to
+--return-to (or a plain done page).`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		returnTo, _ := cmd.Flags().GetString("return-to")
+		client, err := newGatewayClient(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		resp, err := client.SyncTarget(ctx, args[0], args[1], &gatewaypkg.SyncRequest{ReturnTo: returnTo})
+		if err != nil {
+			return err
+		}
+		return renderSyncResponse(resp)
+	},
+}
+
+// renderSyncResponse prints a tools/sync response: the status line, then a
+// tools table (or the authorizeUrl hint for authorization_required).
+func renderSyncResponse(resp *gatewaypkg.SyncResponse) error {
+	if output.GetFormat() == output.FormatJSON {
+		return output.JSON(resp)
+	}
+	rows := [][]string{
+		{"Status", output.StrOrDash(resp.Status)},
+		{"Tool Count", strconv.Itoa(resp.ToolCount)},
+		{"Last Synced At", output.StrOrDash(resp.LastSyncedAt)},
+		{"Sync Session", output.StrOrDash(resp.SyncSessionID)},
+		{"Error", output.StrOrDash(resp.Error)},
+	}
+	output.Table([]string{"Field", "Value"}, rows)
+	if resp.AuthorizeURL != "" {
+		fmt.Fprintf(os.Stderr, "Authorization required — open this URL in a browser to finish the sync:\n  %s\n", resp.AuthorizeURL)
+	}
+	if len(resp.Tools) == 0 {
+		fmt.Fprintln(os.Stderr, "No tools in the synced list.")
+		return nil
+	}
+	trows := make([][]string, 0, len(resp.Tools))
+	for i := range resp.Tools {
+		t := resp.Tools[i]
+		trows = append(trows, []string{
+			t.Name, output.StrOrDash(t.Title), truncate(t.Description, 60),
+		})
+	}
+	output.Table([]string{"Tool", "Title", "Description"}, trows)
+	return nil
 }

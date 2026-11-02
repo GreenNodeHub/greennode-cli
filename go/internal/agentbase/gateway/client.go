@@ -216,3 +216,90 @@ func accessLogQueryValues(qy AccessLogQuery, stats bool) url.Values {
 	}
 	return q
 }
+
+// ListMCPConnectors returns every MCP connector (target) attached across the
+// caller's gateways, flattened into one list. gatewayName and state are
+// optional filters; page is 1-based.
+func (c *Client) ListMCPConnectors(ctx context.Context, gatewayName, state string, page, pageSize int) (*MCPConnectorListResponse, error) {
+	q := url.Values{}
+	if gatewayName != "" {
+		q.Set("gatewayName", gatewayName)
+	}
+	if state != "" {
+		q.Set("state", state)
+	}
+	if page > 0 {
+		q.Set("page", strconv.Itoa(page))
+	}
+	if pageSize > 0 {
+		q.Set("pageSize", strconv.Itoa(pageSize))
+	}
+	var out MCPConnectorListResponse
+	if err := c.http.Get(ctx, "/api/v1/mcp-connectors", q, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetMCPConnector returns a single connector by composite key (gatewayName,
+// targetName). Ownership is caller-scoped, so another user's gateway looks
+// like a 404.
+func (c *Client) GetMCPConnector(ctx context.Context, gatewayName, targetName string) (*MCPConnectorResponse, error) {
+	var out MCPConnectorResponse
+	if err := c.http.Get(ctx, fmt.Sprintf("/api/v1/mcp-connectors/%s/%s", gatewayName, targetName), nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ListMCPServerTemplates returns enabled MCP server templates from the
+// catalog. displayName/vendor/id are optional case-insensitive substring
+// filters (AND together); page is 1-based.
+func (c *Client) ListMCPServerTemplates(ctx context.Context, displayName, vendor, id string, page, pageSize int) (*MCPServerTemplateListResponse, error) {
+	q := url.Values{}
+	if displayName != "" {
+		q.Set("displayName", displayName)
+	}
+	if vendor != "" {
+		q.Set("vendor", vendor)
+	}
+	if id != "" {
+		q.Set("id", id)
+	}
+	if page > 0 {
+		q.Set("page", strconv.Itoa(page))
+	}
+	if pageSize > 0 {
+		q.Set("pageSize", strconv.Itoa(pageSize))
+	}
+	var out MCPServerTemplateListResponse
+	if err := c.http.Get(ctx, "/api/v1/mcp-server-templates", q, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// TargetTools returns a target's last-synced tools/list (GET). A target that
+// has never synced comes back empty.
+func (c *Client) TargetTools(ctx context.Context, name, target string) (*SyncResponse, error) {
+	var out SyncResponse
+	if err := c.http.Get(ctx, fmt.Sprintf("/api/v1/gateways/%s/targets/%s/tools", name, target), nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// SyncTarget fetches the live tools/list from the target's MCP endpoint and
+// persists it (POST). req may be nil (no returnTo). Non-interactive auth
+// returns the tools directly; interactive auth (3LO without consent,
+// INBOUND_FORWARD) returns status=authorization_required + authorizeUrl.
+func (c *Client) SyncTarget(ctx context.Context, name, target string, req *SyncRequest) (*SyncResponse, error) {
+	if req == nil {
+		req = &SyncRequest{}
+	}
+	var out SyncResponse
+	if err := c.http.Post(ctx, fmt.Sprintf("/api/v1/gateways/%s/targets/%s/sync", name, target), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

@@ -171,6 +171,9 @@ func TestOverrideEndpointHosts(t *testing.T) {
 	if dev.Runtime != "https://proxy.example.com/agent-core-runtime" {
 		t.Errorf("dev Runtime=%q, want https://proxy.example.com/agent-core-runtime", dev.Runtime)
 	}
+	if dev.BuiltInTools != "https://proxy.example.com/built-in-tools" {
+		t.Errorf("dev BuiltInTools=%q, want https://proxy.example.com/built-in-tools", dev.BuiltInTools)
+	}
 
 	// Invalid override (missing scheme/host) is rejected before any endpoint is
 	// mutated, so a bad --endpoint-url never leaves a half-overwritten ctx.

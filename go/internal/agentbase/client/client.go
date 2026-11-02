@@ -54,23 +54,42 @@ func (e *APIError) Error() string {
 // drives the HTTP call itself. A nil provider (construction tests) panics on
 // Do — never construct a Client with nil for a real request.
 func (c *Client) Do(ctx context.Context, method, path string, query url.Values, body, out interface{}) error {
-	return c.doReq(ctx, method, path, query, nil, body, out)
+	return c.DoWithHeaders(ctx, method, path, query, nil, body, out)
 }
 
 // DoWithHeaders is Do with extra request headers (e.g. If-Match for OCC PUTs).
 // headers may be nil. It is additive: Authorization/Content-Type/Accept are
 // still applied as in Do, and extra headers never overwrite those three.
 func (c *Client) DoWithHeaders(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}) error {
-	return c.doReq(ctx, method, path, query, headers, body, out)
-}
-
-// doReq is the single implementation behind Do and DoWithHeaders. Extra headers
-// are applied after the standard Auth/Content-Type/Accept set and never
-// overwrite those three.
-func (c *Client) doReq(ctx context.Context, method, path string, query url.Values, headers map[string]string, body, out interface{}) error {
-	token, err := c.auth.GetToken()
+	respBody, err := c.doReq(ctx, method, path, query, headers, body)
 	if err != nil {
 		return err
+	}
+	if out != nil && len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, out); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+	}
+	return nil
+}
+
+// GetRaw performs an authenticated GET and returns the raw response body
+// without JSON decoding — for endpoints that are not JSON (e.g. the built-in
+// tools browser session recording, application/x-ndjson). It shares doReq with
+// the JSON methods, so auth and the 401 refresh-retry-once backstop apply
+// verbatim. headers may be nil (e.g. X-End-User-ID).
+func (c *Client) GetRaw(ctx context.Context, path string, query url.Values, headers map[string]string) ([]byte, error) {
+	return c.doReq(ctx, http.MethodGet, path, query, headers, nil)
+}
+
+// doReq is the single implementation behind Do/DoWithHeaders/GetRaw. It sends
+// the request and returns the raw response body on 2xx. Extra headers are
+// applied after the standard Auth/Content-Type/Accept set and never overwrite
+// those three.
+func (c *Client) doReq(ctx context.Context, method, path string, query url.Values, headers map[string]string, body interface{}) ([]byte, error) {
+	token, err := c.auth.GetToken()
+	if err != nil {
+		return nil, err
 	}
 
 	fullURL := c.baseURL + path
@@ -82,24 +101,24 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 	if body != nil {
 		data, err = json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("failed to marshal request body: %w", err)
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 	}
 
 	req, err := c.buildRequest(ctx, method, fullURL, data, headers, token)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// 401 — force-refresh the token and retry once with the new bearer, mirroring
@@ -111,36 +130,30 @@ func (c *Client) doReq(ctx context.Context, method, path string, query url.Value
 	if resp.StatusCode == http.StatusUnauthorized {
 		token, err = c.auth.RefreshToken()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		req2, err := c.buildRequest(ctx, method, fullURL, data, headers, token)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		resp2, err := c.httpClient.Do(req2)
 		if err != nil {
-			return fmt.Errorf("request failed: %w", err)
+			return nil, fmt.Errorf("request failed: %w", err)
 		}
 		resp2Body, err := io.ReadAll(resp2.Body)
 		resp2.Body.Close()
 		if err != nil {
-			return fmt.Errorf("failed to read response body: %w", err)
+			return nil, fmt.Errorf("failed to read response body: %w", err)
 		}
 		resp = resp2
 		respBody = resp2Body
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Body: string(respBody)}
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(respBody)}
 	}
 
-	if out != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, out); err != nil {
-			return fmt.Errorf("failed to decode response: %w", err)
-		}
-	}
-
-	return nil
+	return respBody, nil
 }
 
 // buildRequest assembles the authenticated *http.Request for a given bearer

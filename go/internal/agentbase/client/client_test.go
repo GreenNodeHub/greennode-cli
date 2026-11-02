@@ -353,3 +353,79 @@ func TestDo_401RetryStill401IsTerminal(t *testing.T) {
 		t.Errorf("RefreshToken calls=%d, want 1 (no second refresh on retry-401)", got)
 	}
 }
+
+// TestGetRaw_ReturnsRawBody: GetRaw returns the response body verbatim — no
+// JSON decode — for non-JSON payloads (the browser session recording is
+// application/x-ndjson). Extra headers (X-End-User-ID) and Authorization are
+// applied as in the JSON methods.
+func TestGetRaw_ReturnsRawBody(t *testing.T) {
+	ndjson := "{\"t\":1,\"url\":\"https://example.test/\"}\n" + "{\"t\":2,\"url\":\"https://example.test/x\"}\n"
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("Authorization not applied: %q", got)
+		}
+		if got := r.Header.Get("X-End-User-ID"); got != "alice" {
+			t.Errorf("X-End-User-ID not applied: %q", got)
+		}
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		_, _ = w.Write([]byte(ndjson))
+	})
+	got, err := c.GetRaw(context.Background(), "/test", nil, map[string]string{"X-End-User-ID": "alice"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(got) != ndjson {
+		t.Errorf("raw body=%q, want %q (verbatim, no decode)", got, ndjson)
+	}
+}
+
+// TestGetRaw_401RefreshRetriesOnce: the raw path keeps the shared 401
+// refresh-retry-once backstop — same contract as the JSON methods.
+func TestGetRaw_401RefreshRetriesOnce(t *testing.T) {
+	var reqCount atomic.Int32
+	fp := &fakeTokenProvider{token: "stale-token", refreshToken: "refreshed-token"}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqCount.Add(1)
+		if r.Header.Get("Authorization") == "Bearer stale-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_, _ = w.Write([]byte("raw-ok"))
+	}))
+	t.Cleanup(srv.Close)
+	c := New(srv.URL, fp)
+
+	got, err := c.GetRaw(context.Background(), "/test", nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(got) != "raw-ok" {
+		t.Errorf("raw body=%q, want raw-ok", got)
+	}
+	if n := reqCount.Load(); n != 2 {
+		t.Errorf("upstream requests=%d, want 2 (initial 401 + retry)", n)
+	}
+	if got := fp.refreshCalls.Load(); got != 1 {
+		t.Errorf("RefreshToken calls=%d, want 1", got)
+	}
+}
+
+// TestGetRaw_APIErrorSurfaces: a non-2xx from the raw path is the same
+// *APIError the JSON methods surface (e.g. 404 while the recording is not yet
+// downloadable).
+func TestGetRaw_APIErrorSurfaces(t *testing.T) {
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"error":"recording not available"}`, http.StatusNotFound)
+	})
+	_, err := c.GetRaw(context.Background(), "/missing", nil, nil)
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err=%v, want *APIError", err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("status=%d, want 404", apiErr.StatusCode)
+	}
+}

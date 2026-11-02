@@ -164,7 +164,7 @@ func overrideEndpointHosts(eps *agentbaseconfig.Endpoints, endpointURL string) e
 	if override.Scheme == "" || override.Host == "" {
 		return fmt.Errorf("invalid --endpoint-url %q: want scheme://host[:port]", endpointURL)
 	}
-	for _, p := range []*string{&eps.Identity, &eps.Runtime, &eps.Memory, &eps.Gateway, &eps.Policy, &eps.Cr} {
+	for _, p := range []*string{&eps.Identity, &eps.Runtime, &eps.Memory, &eps.Gateway, &eps.Policy, &eps.Cr, &eps.BuiltInTools} {
 		u, err := url.Parse(*p)
 		if err != nil {
 			return fmt.Errorf("invalid agentbase endpoint %q: %w", *p, err)

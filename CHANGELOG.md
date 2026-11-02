@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.15.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.14.0...v1.15.0) (2026-10-27)
+
+
+### Features
+
+* **agentbase:** hotfix gaps for agentbase CLI ([#23](https://github.com/GreenNodeHub/greennode-cli/issues/23)) ([4addee9](https://github.com/GreenNodeHub/greennode-cli/commit/4addee94daa993eaf94ca29060240c32329857d1))
+
+## [1.14.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.13.0...v1.14.0) (2026-10-22)
+
+
+### Features
+
+* **agentbase:** add builtin tools services ([#21](https://github.com/GreenNodeHub/greennode-cli/issues/21)) ([c9e1e84](https://github.com/GreenNodeHub/greennode-cli/commit/c9e1e841eb3567d66cececbea5ae7f3d03844e6d))
+
+
+### Documentation
+
+* **CLAUDE.md:** point to vks-harness ([#20](https://github.com/GreenNodeHub/greennode-cli/issues/20)) ([e591ea9](https://github.com/GreenNodeHub/greennode-cli/commit/e591ea9da580d5e0aee999d0738851ce2c8d7d3f))
+
 ## [1.13.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.12.0...v1.13.0) (2026-09-04)
 
 

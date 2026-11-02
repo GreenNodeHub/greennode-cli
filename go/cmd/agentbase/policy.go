@@ -37,6 +37,7 @@ here as a probe:
 
 Policy resources are synchronous (no WAITING_* FSM), so there is no 'wait'.
 Policy shares the ~/.greennode profile like the rest of agentbase.`,
+	RunE: requireSubcommand,
 }
 
 // newPolicyClient mirrors newMemoryClient: resolve the shared profile + env,
@@ -66,6 +67,7 @@ var policyGroupCmd = &cobra.Command{
 A group owns a set of policies and is what a gateway binds via its
 policyGroupId. Max 20 groups per user; deleting a group cascades to its
 policies.`,
+	RunE: requireSubcommand,
 }
 
 var policyGroupFile string
@@ -276,6 +278,7 @@ var policyPolicyCmd = &cobra.Command{
 Each policy is a permit/forbid rule compiled to Cedar. Max 10 policies per
 group. The group-id is the first positional argument of each subcommand (it
 maps to /policy-groups/<group-id>/policies).`,
+	RunE: requireSubcommand,
 }
 
 var policyFile string

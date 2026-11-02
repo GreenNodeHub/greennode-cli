@@ -412,3 +412,85 @@ func TestNewClient(t *testing.T) {
 		t.Fatal("expected non-nil client")
 	}
 }
+
+func TestListManagedOauth2Providers(t *testing.T) {
+	var gotPath string
+	var gotPage, gotSize string
+	resp := PagedResponseManagedOauth2ProviderSummaryResponse{
+		Content: jsonslice.Array[ManagedOauth2ProviderSummaryResponse]{{
+			ID: sp("1"), Name: sp("google"), Status: sp("ACTIVE"),
+			CallbackURL: sp("https://agentbase.api.vngcloud.vn/outbound-auth/callback"),
+		}},
+	}
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotPage, gotSize = r.URL.Query().Get("page"), r.URL.Query().Get("size")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	out, err := c.ListManagedOauth2Providers(context.Background(), 0, 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotPath != "/api/v1/outbound-auth/managed-oauth2-providers" {
+		t.Errorf("unexpected path: %s", gotPath)
+	}
+	if gotPage != "0" || gotSize != "10" {
+		t.Errorf("query page=%q size=%q, want 0/10", gotPage, gotSize)
+	}
+	if len(out.Content) != 1 || out.Content[0].Name == nil || *out.Content[0].Name != "google" {
+		t.Errorf("unexpected content: %v", out.Content)
+	}
+}
+
+func TestGetManagedOauth2Provider(t *testing.T) {
+	var gotPath string
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ManagedOauth2ProviderSummaryResponse{ID: sp("1"), Name: sp("google")})
+	})
+	out, err := c.GetManagedOauth2Provider(context.Background(), "google")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotPath != "/api/v1/outbound-auth/managed-oauth2-providers/google" {
+		t.Errorf("unexpected path: %s", gotPath)
+	}
+	if out.Name == nil || *out.Name != "google" {
+		t.Errorf("unexpected name: %v", out.Name)
+	}
+}
+
+func TestGetManaged3LOToken(t *testing.T) {
+	var gotPath string
+	var gotBody []byte
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ThreeLoTokenResponse{
+			Status:           sp("authorization_required"),
+			AuthorizationURL: sp("https://accounts.google.com/o/oauth2/auth"),
+			SessionID:        sp("sess-1"),
+		})
+	})
+	out, err := c.GetManaged3LOToken(context.Background(), "google", "agent-1",
+		&ThreeLoTokenRequest{AgentUserID: "user-1", ReturnURL: "http://localhost/done", Scopes: jsonslice.Array[string]{"repo"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotPath != "/api/v1/outbound-auth/managed-oauth2-providers/google/agent-identities/agent-1/tokens/3lo" {
+		t.Errorf("unexpected path: %s", gotPath)
+	}
+	var body ThreeLoTokenRequest
+	if err := json.Unmarshal(gotBody, &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.AgentUserID != "user-1" || body.ReturnURL != "http://localhost/done" || len(body.Scopes) != 1 {
+		t.Errorf("unexpected body: %+v", body)
+	}
+	if out.Status == nil || *out.Status != "authorization_required" || out.AuthorizationURL == nil || *out.AuthorizationURL == "" {
+		t.Errorf("unexpected response: %+v", out)
+	}
+}

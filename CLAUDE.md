@@ -9,6 +9,11 @@ GreenNode CLI (`grn`) is a unified command-line tool for managing GreenNode serv
 - **Language**: Go (using cobra CLI framework)
 - **Binary**: Single file, zero runtime dependencies
 
+## Operational context
+
+Operational context (incidents, invariants, farms, the Redmine task workflow) lives in the **vks-harness**
+repo (`knowledge/`, `AGENTS.md`). Management farms are read-only for agents.
+
 ## Project structure
 
 ```
@@ -21,7 +26,9 @@ go/
 │   │   ├── agentbase.go             # AgentbaseCmd subcommand root (self-registers)
 │   │   ├── access.go                # access group (agent-id/outbound-auth)
 │   │   ├── context.go               # context group (switch/current/headers/decorators)
-│   │   └── helpers.go               # mustLoadConfig / newAuthProvider
+│   │   ├── helpers.go               # mustLoadConfig / newAuthProvider
+│   │   ├── tools.go                 # tools group: built-in browsers (+ sessions, streams, recording; delete has confirm/--force/--dry-run)
+│   │   └── tools_code_interpreter.go # tools code-interpreter + sessions + session invoke (+ async task-wait)
 │   ├── vdb/                         # grn vdb (behind !vks_only tag, in development)
 │   │   ├── vdb.go                   # VdbCmd parent + --user-type persistent flag
 │   │   ├── CLAUDE.md                # vDB API quirks (differ from BOTH vks and vserver)
@@ -78,7 +85,6 @@ go/
 │       ├── list_cluster_versions.go      # Available k8s versions
 │       ├── config_auto_healing.go        # Configure auto-healing
 │       ├── get_cluster_events.go         # Cluster events (paginated)
-│       ├── get_nodegroup_events.go       # Node group events (paginated)
 │       ├── generate_kubeconfig.go        # Request kubeconfig (async)
 │       ├── update_kubeconfig.go          # Fetch + merge kubeconfig
 │       ├── completion.go            # registerCompletions() — wires all VKS flag value completers
@@ -114,6 +120,7 @@ go/
 │   │   ├── identity/                # access (agent identities) API client + models
 │   │   ├── cliinput/                # interactive prompts
 │   │   ├── jsonslice/               # typed JSON slice helper
+│   │   ├── tools/                   # built-in tools (browsers + code interpreters) API client + models
 │   │   └── output/                  # table/json/id + color + banner
 │   └── validator/validator.go       # ID format validation
 ├── go.mod, go.sum

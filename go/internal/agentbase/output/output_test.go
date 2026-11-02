@@ -271,3 +271,73 @@ func TestPrintDeletedID_Table(t *testing.T) {
 		t.Errorf("expected empty stdout in table mode, got %q", out)
 	}
 }
+
+func TestSetGetQuery(t *testing.T) {
+	t.Cleanup(func() { SetQuery("") })
+	SetQuery("items[0].id")
+	if got := GetQuery(); got != "items[0].id" {
+		t.Errorf("GetQuery() = %q, want items[0].id", got)
+	}
+	SetQuery("")
+	if got := GetQuery(); got != "" {
+		t.Errorf("GetQuery() after reset = %q, want empty", got)
+	}
+}
+
+// TestJSON_WithQuery: a JMESPath query filters JSON output.
+func TestJSON_WithQuery(t *testing.T) {
+	t.Cleanup(func() { SetQuery("") })
+	SetQuery("items[*].id")
+	out := captureStdout(t, func() {
+		err := JSON(map[string]interface{}{
+			"items": []interface{}{
+				map[string]interface{}{"id": "a"},
+				map[string]interface{}{"id": "b"},
+			},
+		})
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+	var ids []string
+	if err := json.Unmarshal([]byte(out), &ids); err != nil {
+		t.Fatalf("output is not a JSON array of ids: %v (got %q)", err, out)
+	}
+	if len(ids) != 2 || ids[0] != "a" || ids[1] != "b" {
+		t.Errorf("expected [a b], got %v", ids)
+	}
+}
+
+// TestJSON_WithQueryOnStruct proves the marshal→decode round-trip: the query
+// is written against JSON field names, not Go struct fields.
+func TestJSON_WithQueryOnStruct(t *testing.T) {
+	t.Cleanup(func() { SetQuery("") })
+	type item struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	SetQuery("items[0].name")
+	out := captureStdout(t, func() {
+		err := JSON(map[string]interface{}{"items": []item{{ID: "1", Name: "alpha"}}})
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+	if strings.TrimSpace(out) != `"alpha"` {
+		t.Errorf(`expected "alpha", got %q`, out)
+	}
+}
+
+// TestJSON_WithQueryInvalid: a bad JMESPath expression fails with an error
+// naming the --query flag.
+func TestJSON_WithQueryInvalid(t *testing.T) {
+	t.Cleanup(func() { SetQuery("") })
+	SetQuery("items[")
+	err := JSON(map[string]interface{}{"id": "a"})
+	if err == nil {
+		t.Fatal("expected an error for an invalid JMESPath expression")
+	}
+	if !strings.Contains(err.Error(), "--query") {
+		t.Errorf("error must name the offending flag, got %q", err)
+	}
+}
