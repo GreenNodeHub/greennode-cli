@@ -200,6 +200,13 @@ func readNetworkConfig(cmd *cobra.Command) (*runtimepkg.NetworkConfig, error) {
 	f := cmd.Flags()
 	mode, _ := f.GetString("network-mode")
 	if mode == "" {
+		if f.Changed("network-mode") {
+			// Set-but-empty is a scripting hazard (an empty $NETWORK_MODE
+			// expansion): it read as unset, which on create silently meant
+			// PUBLIC while the script meant to set a network. Refuse it like
+			// --image-url/--flavor-id.
+			return nil, fmt.Errorf("--network-mode cannot be empty (PUBLIC or VPC; unset means PUBLIC on create and carries the current network over on update)")
+		}
 		// A dangling --vpc-id/--subnet-id/--route-cidrs without --network-mode
 		// used to be silently ignored — refuse it instead (it would otherwise
 		// read as "leave the network public" while the user meant VPC).
@@ -236,10 +243,18 @@ func readNetworkConfig(cmd *cobra.Command) (*runtimepkg.NetworkConfig, error) {
 // default), but only on PUBLIC networks — the API rejects inboundAuth in VPC
 // mode, so a VPC runtime keeps it unset. On update an unset mode stays nil and
 // the current version's inboundAuth is carried over by buildUpdateRequest.
+//
+// A set-but-empty mode is refused on both paths (35388): an empty $INBOUND_MODE
+// expansion is a scripting hazard — on update it read as unset and silently
+// dropped inboundAuth (the API's full-spec replacement then reset the mode to
+// NONE), on create it silently took the IAM default.
 func readInboundAuth(cmd *cobra.Command, forUpdate bool, network *runtimepkg.NetworkConfig) (*runtimepkg.InboundAuth, error) {
 	f := cmd.Flags()
 	mode, _ := f.GetString("inbound-mode")
 	if mode == "" {
+		if f.Changed("inbound-mode") {
+			return nil, fmt.Errorf("--inbound-mode cannot be empty (NONE, IAM or JWT; unset defaults to IAM on create and carries the current mode over on update)")
+		}
 		if forUpdate {
 			return nil, nil
 		}
@@ -535,8 +550,8 @@ environmentVariables:        # map; may be empty
 #   routeCidrs: []           # egress routes (max 20)
 # allowedCidrs:              # optional inbound CIDR allowlist (max 20)
 #   - 10.0.0.0/8
-# inboundAuth:               # inbound authentication (PUBLIC networks only;
-#   mode: IAM                # default on create: IAM. NONE | IAM | JWT)
+inboundAuth:                 # inbound authentication (PUBLIC networks only;
+  mode: IAM                  # default: IAM. NONE | IAM | JWT)
 #   jwt:                     # required when mode is JWT
 #     source: DISCOVERY      # DISCOVERY | JWKS
 #     discoveryUrl: https://idp.example.com/.well-known/openid-configuration
@@ -647,9 +662,19 @@ username/password image auth cannot be carried over: re-supply
 --image-auth-username/--image-auth-password (or --file with a full spec).
 Without image auth the update re-sends {enabled: false}.
 
+An unset --inbound-mode carries the current version's inbound auth over, and
+the carried value follows the target network: moving the runtime to VPC drops
+it (inbound auth does not apply on a private network; --inbound-mode is an
+error there), and opening a VPC runtime up to PUBLIC defaults it to IAM (never
+silently to NONE) — say --inbound-mode NONE to open it deliberately.
+
 --file applies a full spec instead ('grn agentbase runtime generate' template
 minus name) — it must include imageAuth explicitly, since a missing imageAuth
-would silently wipe stored credentials.
+would silently wipe stored credentials. An omitted inboundAuth block is not a
+reset either: it is carried over from the current version (defaulted to IAM
+when there is nothing to carry). Drop the inboundAuth block only when the spec
+moves networkConfig to VPC — inboundAuth is PUBLIC-only and the API rejects it
+in VPC mode (the CLI errors on that combination).
 
 The update is asynchronous; converge with 'grn agentbase runtime wait <id>'.`,
 	Args: cobra.ExactArgs(1),
@@ -677,22 +702,28 @@ The update is asynchronous; converge with 'grn agentbase runtime wait <id>'.`,
 			if createReq.ImageAuth == nil {
 				return fmt.Errorf("spec is missing required field: imageAuth (the API never returns the stored password, so it cannot be carried over; set imageAuth explicitly: {enabled: false} drops it, username/password or useAgentBaseRegistryCredentials keeps it)")
 			}
+			// inboundAuth carry-over (35379): an omitted block used to be
+			// forwarded as omitted and the API's full-spec replacement reset
+			// the mode to NONE. Fetch the current version only when there is
+			// something to resolve — an explicit block or a VPC spec needs
+			// no round-trip.
+			var cur *runtimepkg.AgentRuntimeVersionDto
+			if createReq.InboundAuth == nil && !specTargetsVPC(createReq.NetworkConfig) {
+				cur, err = latestVersion(ctx, client, id)
+				if err != nil {
+					return err
+				}
+			}
+			req, note, err := updateRequestFromFileSpec(createReq, cur)
+			if err != nil {
+				return err
+			}
+			if note != "" {
+				fmt.Fprintf(os.Stderr, "Carrying over: %s\n", note)
+			}
 			// poc is create-only: a spec file carrying poc is accepted for
 			// convenience but the field is not forwarded on update.
-			return updateRuntimeAndPrint(ctx, client, cmd, id, &runtimepkg.UpdateAgentRuntimeRequest{
-				Description:          createReq.Description,
-				ImageURL:             createReq.ImageURL,
-				ImageAuth:            createReq.ImageAuth,
-				Command:              createReq.Command,
-				Args:                 createReq.Args,
-				EnvironmentVariables: createReq.EnvironmentVariables,
-				NetworkConfig:        createReq.NetworkConfig,
-				AllowedCidrs:         createReq.AllowedCidrs,
-				InboundAuth:          createReq.InboundAuth,
-				Protocol:             createReq.Protocol,
-				FlavorID:             createReq.FlavorID,
-				Autoscaling:          createReq.Autoscaling,
-			})
+			return updateRuntimeAndPrint(ctx, client, cmd, id, req)
 		}
 		spec, err := readRuntimeSpec(cmd, true)
 		if err != nil {
@@ -726,6 +757,56 @@ func updateRuntimeAndPrint(ctx context.Context, client *runtimepkg.Client, cmd *
 	return output.PrintResource(rt, func() string { return rt.ID }, func() error { return renderRuntimeDetail(rt) })
 }
 
+// specTargetsVPC reports whether a spec's networkConfig pins the runtime to
+// VPC. A nil networkConfig (or PUBLIC) is a public network — including on
+// update, where the API's full-spec replacement resets an omitted
+// networkConfig to the PUBLIC default rather than keeping the current one.
+func specTargetsVPC(network *runtimepkg.NetworkConfig) bool {
+	return network != nil && network.Mode == "VPC"
+}
+
+// updateRequestFromFileSpec assembles the update request for the --file path.
+// The spec is authoritative for the fields it sets; for an inboundAuth it
+// omits, it matches the flag path (35379) instead of forwarding the omission:
+// the current version's inboundAuth is carried over (cur may be nil when the
+// caller determined no round-trip was needed, or when the current version has
+// none — then IAM is the default, never a silent NONE), and a VPC spec keeps
+// it unset (inboundAuth is PUBLIC-only; an explicit block on a VPC spec is an
+// error). Unit-tested in runtime_test.go.
+func updateRequestFromFileSpec(createReq *runtimepkg.CreateAgentRuntimeRequest, cur *runtimepkg.AgentRuntimeVersionDto) (*runtimepkg.UpdateAgentRuntimeRequest, string, error) {
+	vpc := specTargetsVPC(createReq.NetworkConfig)
+	if createReq.InboundAuth != nil && vpc {
+		return nil, "", fmt.Errorf("spec sets inboundAuth on a VPC networkConfig: inboundAuth is PUBLIC-only — drop the inboundAuth block (a VPC runtime carries no inbound auth)")
+	}
+	req := &runtimepkg.UpdateAgentRuntimeRequest{
+		Description:          createReq.Description,
+		ImageURL:             createReq.ImageURL,
+		ImageAuth:            createReq.ImageAuth,
+		Command:              createReq.Command,
+		Args:                 createReq.Args,
+		EnvironmentVariables: createReq.EnvironmentVariables,
+		NetworkConfig:        createReq.NetworkConfig,
+		AllowedCidrs:         createReq.AllowedCidrs,
+		Protocol:             createReq.Protocol,
+		FlavorID:             createReq.FlavorID,
+		Autoscaling:          createReq.Autoscaling,
+	}
+	var note string
+	switch {
+	case createReq.InboundAuth != nil:
+		req.InboundAuth = createReq.InboundAuth
+	case vpc:
+		// A VPC spec must not carry inboundAuth — leave it unset.
+	case cur != nil && cur.InboundAuth != nil:
+		req.InboundAuth = versionInboundAuth(cur)
+		note = fmt.Sprintf("inboundAuth (from version %d)", cur.Version)
+	default:
+		req.InboundAuth = &runtimepkg.InboundAuth{Mode: "IAM"}
+		note = "inboundAuth (defaulted to IAM; current version has none)"
+	}
+	return req, note, nil
+}
+
 // imageAuthFlags are the flags that explicitly set the imageAuth spec; any of
 // them marks it as user-provided on update (otherwise it is derived from the
 // current version).
@@ -757,6 +838,12 @@ func anyChanged(changed func(string) bool, names ...string) bool {
 // imageAuth is the exception: the API never returns the stored password and an
 // update with enabled=false wipes the stored credentials, so it cannot be
 // carried over blindly — see carriedImageAuth.
+//
+// inboundAuth is PUBLIC-only (the API rejects it in VPC mode) and the carried
+// value follows the target network: a VPC target drops it (the PUBLIC→VPC
+// transition; an explicit --inbound-mode on a VPC target is an error), and a
+// PUBLIC target with nothing to carry (a VPC version opening up) defaults to
+// IAM like create does instead of silently opening the runtime (35379).
 func buildUpdateRequest(spec *runtimeSpec, cur *runtimepkg.AgentRuntimeVersionDto, changed func(string) bool) (*runtimepkg.UpdateAgentRuntimeRequest, []string, error) {
 	req := &runtimepkg.UpdateAgentRuntimeRequest{}
 	var carried []string
@@ -804,10 +891,28 @@ func buildUpdateRequest(spec *runtimeSpec, cur *runtimepkg.AgentRuntimeVersionDt
 		carried = append(carried, "allowedCidrs")
 	}
 	if changed("inbound-mode") {
+		if req.NetworkConfig != nil && req.NetworkConfig.Mode == "VPC" {
+			return nil, nil, fmt.Errorf("--inbound-mode only applies to PUBLIC networks (the update targets VPC; a VPC runtime carries no inbound auth)")
+		}
 		req.InboundAuth = spec.Inbound
 	} else {
-		req.InboundAuth = versionInboundAuth(cur)
-		carried = append(carried, "inboundAuth")
+		switch {
+		case req.NetworkConfig != nil && req.NetworkConfig.Mode == "VPC":
+			// PUBLIC→VPC: inbound auth does not apply on a private network —
+			// drop the current version's instead of letting the API 400.
+			if cur.InboundAuth != nil {
+				carried = append(carried, "inboundAuth (dropped: target network is VPC)")
+			}
+		case cur.InboundAuth != nil:
+			req.InboundAuth = versionInboundAuth(cur)
+			carried = append(carried, "inboundAuth")
+		default:
+			// VPC→PUBLIC (or a version with no inboundAuth at all): nothing to
+			// carry — default to IAM like create instead of letting the
+			// omitted field reset the mode to NONE.
+			req.InboundAuth = &runtimepkg.InboundAuth{Mode: "IAM"}
+			carried = append(carried, "inboundAuth (defaulted to IAM; current version has none)")
+		}
 	}
 	if changed("protocol") {
 		req.Protocol = spec.Protocol

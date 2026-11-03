@@ -181,7 +181,8 @@ Autoscaling: memory scale-up threshold % (10-90).
 
 - Required: No
 - Default: `PUBLIC`
-- Constraints: `VPC` requires `--vpc-id` and `--subnet-id`.
+- Constraints: `VPC` requires `--vpc-id` and `--subnet-id`; explicitly set but
+  empty is rejected (an empty `$NETWORK_MODE` expansion used to read as unset).
 
 **`--vpc-id`** (string)
 
@@ -223,7 +224,9 @@ authenticate via the platform IAM); pass `NONE` to open the runtime.
 - Required: No
 - Default: `IAM` on create (when the network is `PUBLIC` or unset)
 - Constraints: `JWT` requires the `--inbound-jwt-*` flags; cannot be combined
-  with them when set to `IAM`/`NONE`; not available with `--network-mode VPC`.
+  with them when set to `IAM`/`NONE`; not available with `--network-mode VPC`;
+  explicitly set but empty is rejected (an empty `$INBOUND_MODE` expansion
+  used to read as unset and default to `IAM`).
 
 **`--inbound-jwt-source`** (string)
 
