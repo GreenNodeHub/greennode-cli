@@ -29,6 +29,38 @@ go/
 │   │   ├── helpers.go               # mustLoadConfig / newAuthProvider
 │   │   ├── tools.go                 # tools group: built-in browsers (+ sessions, streams, recording; delete has confirm/--force/--dry-run)
 │   │   └── tools_code_interpreter.go # tools code-interpreter + sessions + session invoke (+ async task-wait)
+│   ├── vdb/                         # grn vdb (behind !vks_only tag, in development)
+│   │   ├── vdb.go                   # VdbCmd parent + --user-type persistent flag
+│   │   ├── CLAUDE.md                # vDB API quirks (differ from BOTH vks and vserver)
+│   │   ├── relational/              # /vdb-relational — one subpackage per engine family
+│   │   │   ├── instance/            # 18 commands: read + lifecycle (create/resize/start/
+│   │   │   │                        #   stop/reboot/delete) + replicas + settings/secrules
+│   │   │   ├── catalog/             # read-only lookups: engines/datastores/flavors/families/
+│   │   │   │                        #   codes/zones/networks/subnets/volume-types/config-groups
+│   │   │   ├── backup/              # list/get/create/delete/restore/get-free-storage
+│   │   │   ├── configuration/       # config groups: list/get/create/update/delete/list-params
+│   │   │   └── backupstorage/       # quota: list/list-packages/create/resize/delete
+│   │   ├── memorystore/             # MemoryStore (Redis): 42 commands, same 5 nouns as relational
+│   │   │   │                        #   but almost every path differs; no volume/resize-storage
+│   │   │   ├── instance/            # 16 commands (master password instead of a db user)
+│   │   │   ├── catalog/             # 9 lookups under /database/* (no zones/subnets)
+│   │   │   ├── backup/ configuration/ backupstorage/
+│   │   ├── postgresql/              # PostgreSQL Cluster: /vdb-postgresql + 7 relational endpoints
+│   │   │   ├── cluster/             # list/get/histories/secrules/create/resize/settings/
+│   │   │   │                        #   config-group/reboot/delete (+ pg- ID guard)
+│   │   │   ├── catalog/             # versions/flavors/volume-types/config-groups/backup opts
+│   │   │   └── backup/              # list/get/list-restore-points/create (keyed by CLUSTER id)
+│   │   └── kafka/                   # Kafka: 36 commands / 35 endpoints, /vdb-kafka (NO /v1)
+│   │       │                        #   envelope on 9/36 only, no pagination, no backups
+│   │       ├── cluster/             # 14: read + create/delete + resize-brokers/resize-storage/
+│   │       │                        #   update-volume-type + authentication/config-group/
+│   │       │                        #   public-access + secrule create/delete (list-secrules
+│   │       │                        #   reads cluster get — the API has no endpoint)
+│   │       ├── topic/               # list/get/create/update/delete (under a cluster)
+│   │       ├── user/                # + get-creds/generate-creds; permissions by topic NAME
+│   │       ├── configuration/       # VERSIONED config groups: create-version instead of update
+│   │       └── catalog/             # flavors/families/codes/volume-types (versions come from
+│   │                                #   /database/configs, which has no command of its own)
 │   ├── configure/
 │   │   ├── configure.go             # Interactive setup
 │   │   ├── list.go                  # grn configure list
@@ -77,6 +109,10 @@ go/
 │   ├── resources/
 │   │   └── vserver/
 │   │       └── vserver.go           # vserver resource completers (vpc/subnet/ssh-key/security-group/disk-type)
+│   ├── vdbclient/
+│   │   ├── client.go                # BuildClient(cmd) + user-type header
+│   │   ├── query.go                 # BuildListQuery — 1-based pageNumber, flat filters
+│   │   └── output.go                # Unwrap({code,message,data}) + Output/OutputWithColumns
 │   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
 │   │   ├── auth/                    # OAuth2 v2 clientcredentials
 │   │   ├── client/                  # bearer-token HTTP client (401 refresh + retry-once, mirrors internal/client)
@@ -110,8 +146,24 @@ scripts/
 ## GreenNode API quirks
 
 - **IAM API uses camelCase**: `grantType`, `accessToken`, `expiresIn`
-- **VKS API pagination is 0-based**: page 0 = first page
 - **`--version` conflict**: Use `--k8s-version` for Kubernetes version
+- **Pagination differs per service** — check before writing a list command:
+
+  | Service | Params | First page |
+  |---------|--------|------------|
+  | vks | `page`, `pageSize` | `0` |
+  | vserver | `page`, `size` | `1` |
+  | vdb | `pageNumber`, `pageSize` | `1` |
+  | vdb Kafka | — | **no pagination at all** |
+
+- **vDB wraps every response** in `{code, message, data}`, with a second `data`
+  nested inside for paginated lists — except Kafka, which has no consistent
+  envelope. Use `vdbclient.Unwrap`; see `go/cmd/vdb/CLAUDE.md`.
+- **`client.GreennodeClient` has `Request`/`RequestRaw`** for method+params+body in
+  one call, and for responses that must not be JSON-parsed. Both were added for vDB
+  Kafka, whose mutating endpoints take their arguments in the query string of a
+  body-less PUT and answer with an empty body. The verb helpers are still the right
+  choice everywhere else.
 
 ## Adding a new command
 
@@ -132,7 +184,25 @@ Static command/flag completion is automatic (cobra: `grn completion <shell>`). F
 - API-backed: `cli.FlagFromAPI(func(ctx, cmd) ([]string,error))` — bounded timeout, fails silently
 - Cross-service resource: consumer uses `cli.ResourceCompletion("<svc>:<resource>")`; the owning service registers a provider via `cli.RegisterResourceCompleter("<svc>:<resource>", ...)` (e.g. `internal/resources/vserver/`, blank-imported in `cmd/register.go`)
 
-VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`.
+VKS wires its flags centrally in `cmd/vks/completion.go` `registerCompletions()`,
+called from `vks.go`'s `init()`. That works because every direct subcommand of
+`VksCmd` lives in a file sorted before `vks.go`, so its flags already exist —
+`init()` functions run in filename order within a package. (`wait.go` sorts after,
+but its flags are on *sub*subcommands, which `registerCompletions` does not walk;
+`grn vks wait … --cluster-id` therefore has no value completion.)
+
+**Prefer binding a flag to its completer in the `init()` of the file that defines
+the flag** — that is what `cmd/vdb/**` does. A central binding that
+runs too early fails inside `RegisterFlagCompletionFunc`, and the error is
+discarded by the usual `//nolint:errcheck`, leaving completion that looks wired
+but does nothing. Assert bindings with `cmd.GetFlagCompletionFunc` in a test.
+
+Better still, assert the whole tree: `cmd/vdb/completion_test.go` walks every command
+under `VdbCmd` and fails for any id/version/zone/package flag with no completer, with an
+explicit exception list. It caught 11 missing bindings that per-file tests had not covered.
+Note that a bound completer can still return nothing — ids that arrive as JSON numbers need
+`vdbclient.ExtractIDValues`, since `cli.ExtractIDs` collects only strings — so confirm new
+completers with `grn __complete …`.
 
 ## Adding a new service
 
@@ -236,6 +306,8 @@ Code without docs is not done.
 | `cmd/root.go` | Root command, global flags, --version |
 | `cmd/vks/helpers.go` | Client creation, output formatting, label/taint parsing |
 | `internal/config/config.go` | Config loading from ~/.greennode/, REGIONS map |
+| `internal/vdbclient/` | vDB client + error enrichment, envelope unwrap, 1-based list query, ID guard, action/resize bodies, security-rule parsing, dry-run preview |
+| `go/cmd/vdb/CLAUDE.md` | vDB API quirks — read before touching `grn vdb` |
 | `internal/config/writer.go` | INI file writer with 0600 perms |
 | `internal/auth/token.go` | TokenManager — OAuth2 with IAM (camelCase) |
 | `internal/client/client.go` | HTTP client with retry (3x backoff) + 401 refresh |

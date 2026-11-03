@@ -4,9 +4,10 @@ package cmd
 // here is the ONLY change needed to mount a new product CLI — root.go iterates
 // the registry and never needs editing.
 //
-// vServer is registered in register_vserver.go behind the "!vks_only" build tag,
-// so the public release binary (built with `-tags vks_only`) ships VKS only while
-// vServer is still under development.
+// vServer is registered in register_vserver.go and vDB in register_vdb.go, both
+// behind the "!vks_only" build tag, so the public release binary (built with
+// `-tags vks_only`) ships VKS only while those products are still under
+// development.
 import (
 	_ "github.com/greennodehub/greennode-cli/cmd/vks"
 	_ "github.com/greennodehub/greennode-cli/cmd/vserver"

@@ -21,3 +21,6 @@
 /go/cmd/vserver/            @GreenNodeHub/vserver
 /go/internal/vserverclient/ @GreenNodeHub/vserver
 /docs/commands/vserver/     @GreenNodeHub/vserver
+/go/cmd/vdb/             @GreenNodeHub/vdb
+/go/internal/vdbclient/  @GreenNodeHub/vdb
+/docs/commands/vdb/      @GreenNodeHub/vdb

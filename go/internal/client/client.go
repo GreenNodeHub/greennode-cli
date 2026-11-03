@@ -63,6 +63,7 @@ type GreennodeClient struct {
 	tokenProvider TokenProvider
 	httpClient    *http.Client
 	debug         bool
+	extraHeaders  map[string]string
 }
 
 // NewGreennodeClient creates a new API client. connectTimeout bounds the TCP
@@ -97,6 +98,30 @@ func NewGreennodeClient(baseURL string, tokenProvider TokenProvider, connectTime
 	}
 }
 
+// SetHeaders registers extra headers sent on every request, alongside the
+// built-in Authorization/Content-Type/User-Agent. Needed by services whose API
+// takes request metadata in headers rather than the body — vdb's "user-type"
+// (ROOT_USER/IAM_USER) on its billing endpoints, for example. Values are applied
+// on both the initial request and the post-401 retry. Returns the client so it
+// can be chained onto a constructor call.
+func (c *GreennodeClient) SetHeaders(headers map[string]string) *GreennodeClient {
+	c.extraHeaders = headers
+	return c
+}
+
+// applyHeaders sets the standard headers plus any registered extras. Extras are
+// applied last so a service can override Content-Type if it ever needs to.
+func (c *GreennodeClient) applyHeaders(req *http.Request, token string) {
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", UserAgent)
+	for k, v := range c.extraHeaders {
+		if v != "" {
+			req.Header.Set(k, v)
+		}
+	}
+}
+
 // Get performs a GET request.
 func (c *GreennodeClient) Get(path string, params map[string]string) (interface{}, error) {
 	return c.request("GET", path, params, nil)
@@ -125,6 +150,30 @@ func (c *GreennodeClient) Delete(path string, params map[string]string) (interfa
 // GetRaw performs a GET request and returns the raw response body.
 func (c *GreennodeClient) GetRaw(path string, params map[string]string) (string, error) {
 	return c.requestRaw("GET", path, params, nil)
+}
+
+// Request performs any method with both query parameters and a JSON body.
+//
+// The verb-named helpers above each fix one of the two: Put/Post take a body but
+// no params, Delete takes params but no body. vDB's Kafka API needs both at once —
+// its mutating endpoints put their arguments in the QUERY STRING of a PUT
+// (?count=&rebalance=, ?mtlsAuthen=&saslAuthen=), which no existing helper can
+// express. Additive: nothing else changes behaviour.
+func (c *GreennodeClient) Request(method, path string, params map[string]string, body interface{}) (interface{}, error) {
+	return c.request(method, path, params, body)
+}
+
+// RequestRaw is Request without the JSON parse, returning the response body as
+// text.
+//
+// It exists for endpoints whose success response is not a JSON document. Eleven
+// Kafka operations declare a bare `string` in the spec; in practice they answer
+// 200 or 204 with an EMPTY body (verified live 2026-08-17), and a non-JSON body
+// would make request() fail on a call that actually succeeded. Skipping the parse
+// makes the outcome depend on the HTTP status alone. Errors are still returned as
+// *APIError, exactly as for Request.
+func (c *GreennodeClient) RequestRaw(method, path string, params map[string]string, body interface{}) (string, error) {
+	return c.requestRaw(method, path, params, body)
 }
 
 // GetAllPages fetches all pages and merges items into a single result.
@@ -223,9 +272,7 @@ func (c *GreennodeClient) requestRaw(method, path string, params map[string]stri
 			return "", fmt.Errorf("failed to create request: %w", err)
 		}
 
-		req.Header.Set("Authorization", "Bearer "+token)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("User-Agent", UserAgent)
+		c.applyHeaders(req, token)
 
 		if c.debug {
 			fmt.Fprintf(os.Stderr, "[debug] %s %s\n", method, fullURL)
@@ -264,9 +311,7 @@ func (c *GreennodeClient) requestRaw(method, path string, params map[string]stri
 				retryBody = bytes.NewReader(jsonBody)
 			}
 			req2, _ := http.NewRequest(method, fullURL, retryBody)
-			req2.Header.Set("Authorization", "Bearer "+token)
-			req2.Header.Set("Content-Type", "application/json")
-			req2.Header.Set("User-Agent", UserAgent)
+			c.applyHeaders(req2, token)
 			resp2, err := c.httpClient.Do(req2)
 			if err != nil {
 				return "", err
