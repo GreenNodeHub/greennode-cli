@@ -14,18 +14,34 @@ wholesale (no element-level merge). Set flags only for what you intend to
 change — e.g. a bare `--env K=V` replaces the whole environment map, it does
 not add one key.
 
+An unset `--inbound-mode` carries the current version's inbound auth over,
+and the carried value follows the target network: moving the runtime to `VPC`
+drops it (inbound auth does not apply on a private network; `--inbound-mode`
+is an error there), and opening a `VPC` runtime up to `PUBLIC` defaults it to
+`IAM` — never silently to `NONE` (say `--inbound-mode NONE` to open it
+deliberately). An explicitly-set-but-empty `--inbound-mode` (e.g. an empty
+`$INBOUND_MODE` expansion) is rejected instead of being read as unset.
+
 `imageAuth` is the exception — the API never returns the stored password, so
 username/password image auth cannot be carried over: re-supply
 `--image-auth-username`/`--image-auth-password` (or use `--file` with a full
 spec). Without image auth the update re-sends `{enabled: false}`.
 
 When `--file` is set it is authoritative — every flag below is ignored, and
-the spec is applied as-is. The file must contain `imageUrl` and `flavorId`; a
+the spec is applied as-is except for an omitted `inboundAuth` (see below). The
+file must contain `imageUrl` and `flavorId`; a
 `name` in the file is ignored (the runtime is addressed by the `<id>`
 positional argument and the name is immutable). The file **must include
 `imageAuth` explicitly**: a missing `imageAuth` would silently wipe the stored
 credentials, so it is rejected — `{enabled: false}` drops them deliberately,
 `username`/`password` or `useAgentBaseRegistryCredentials` keeps them.
+
+A spec that omits `inboundAuth` gets the same treatment as an unset
+`--inbound-mode`: the current version's `inboundAuth` is carried over (a
+stderr note names the source version), defaulting to `IAM` when there is
+nothing to carry (`PUBLIC`-network specs only; drop the `inboundAuth` block
+when the spec moves `networkConfig` to `VPC` — `inboundAuth` is
+`PUBLIC`-network only, and the CLI rejects a spec that combines the two).
 
 > **Notes:** `--min-replicas` is gone (the platform owns the autoscaling floor —
 > always 1); only `--max-replicas` is configurable. `--poc` is create-only and
@@ -177,7 +193,8 @@ over; setting any network flag replaces the whole `networkConfig`.
 
 - Required: No (carried over from the current version when unset)
 - Default: (empty = carried over)
-- Constraints: `VPC` requires `--vpc-id` and `--subnet-id`.
+- Constraints: `VPC` requires `--vpc-id` and `--subnet-id`; explicitly set but
+  empty is rejected.
 
 **`--vpc-id`** (string)
 
@@ -212,12 +229,14 @@ Inbound CIDR allowlist (repeatable, max 20).
 **`--inbound-mode`** (string)
 
 `inboundAuth` mode: `NONE`, `IAM`, or `JWT`. Unset = the current version's
-`inboundAuth` is carried over.
+`inboundAuth` is carried over; on a `VPC` target (set or carried) unset drops
+it, and when there is nothing to carry it defaults to `IAM`.
 
 - Required: No (carried over from the current version when unset)
-- Default: (empty = carried over)
+- Default: (empty = carried over; `IAM` when nothing to carry)
 - Constraints: `JWT` requires the `--inbound-jwt-*` flags; cannot be combined
-  with them when set to `IAM`/`NONE`.
+  with them when set to `IAM`/`NONE`; explicitly set but empty is rejected;
+  rejected on a `VPC` target (inbound auth is `PUBLIC`-network only).
 
 **`--inbound-jwt-source`** (string)
 
@@ -283,11 +302,14 @@ Apply a full-spec file (create template minus `name`); authoritative when set.
 
 - Required: No
 - Default: (empty)
-- Constraints: when set, the flags above are ignored; `name` must be present
-  in the file; `imageAuth` must be present in the file (a missing `imageAuth`
+- Constraints: when set, the flags above are ignored; `name` is optional in
+  the file (ignored — the runtime is addressed by the `<id>` positional
+  argument); `imageAuth` must be present in the file (a missing `imageAuth`
   would wipe the stored credentials — set `{enabled: false}` to drop them
   deliberately, or `username`/`password` / `useAgentBaseRegistryCredentials`
-  to keep them).
+  to keep them); an omitted `inboundAuth` is carried over from the current
+  version (defaulted to `IAM` when there is nothing to carry), and a spec that
+  combines `inboundAuth` with a `VPC` `networkConfig` is rejected.
 
 ## Global options
 

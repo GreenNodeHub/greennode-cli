@@ -86,6 +86,9 @@ By default the gateway is built from flags (the simple path: no inline targets).
 For targets, outbound auth, JWT inbound auth, or anything nested, use --file
 with a template produced by 'grn agentbase gateway generate'.
 
+Inbound auth defaults to IAM (callers authenticate via the platform IAM); pass
+--inbound-mode NONE to open the gateway or JWT to validate caller JWTs.
+
 The gateway is created asynchronously; this command returns as soon as the
 service accepts the spec (state WAITING_CREATING). Converge with
 'grn agentbase gateway wait <name>'.`,
@@ -156,12 +159,13 @@ func buildCreateFromFlags(cmd *cobra.Command) (*gatewaypkg.CreateGatewayRequest,
 		}
 	}
 
+	// Inbound auth defaults to IAM (secure by default — the flag default does
+	// it); the flag only needs to be set to opt out (NONE) or switch to JWT.
 	inboundMode, _ := f.GetString("inbound-mode")
-	inboundMode, err = cliinput.RequireOrPromptString(inboundMode, "--inbound-mode", "Inbound auth mode (NONE|IAM|JWT)")
-	if err != nil {
-		return nil, err
+	inboundMode = strings.ToUpper(strings.TrimSpace(inboundMode))
+	if inboundMode != "NONE" && inboundMode != "IAM" && inboundMode != "JWT" {
+		return nil, fmt.Errorf("--inbound-mode must be NONE, IAM or JWT (got %q)", inboundMode)
 	}
-	inboundMode = strings.ToUpper(inboundMode)
 
 	req := &gatewaypkg.CreateGatewayRequest{
 		Name:        name,
@@ -183,11 +187,22 @@ func buildCreateFromFlags(cmd *cobra.Command) (*gatewaypkg.CreateGatewayRequest,
 		req.InboundAuth.ClientRedirectURIs = v
 	}
 	if f.Changed("iam-require-owner") {
+		if inboundMode != "IAM" {
+			return nil, fmt.Errorf("--iam-require-owner only applies when --inbound-mode is IAM")
+		}
 		b, _ := f.GetBool("iam-require-owner")
 		req.InboundAuth.IAMRequireOwner = &b
 	}
-	if inboundMode == "JWT" || f.Changed("jwt-source") || f.Changed("jwt-discovery-url") || f.Changed("jwt-jwks") {
+	if inboundMode == "JWT" {
 		req.InboundAuth.JWT = buildJWTFromFlags(cmd)
+	} else {
+		// Dangling --jwt-*/--allowed-*/--principal-claim flags would otherwise
+		// be silently dropped (they only mean anything in JWT mode).
+		for _, flagName := range []string{"jwt-source", "jwt-discovery-url", "jwt-jwks", "allowed-audience", "allowed-client", "allowed-scope", "principal-claim"} {
+			if f.Changed(flagName) {
+				return nil, fmt.Errorf("--%s only applies when --inbound-mode is JWT", flagName)
+			}
+		}
 	}
 
 	// PRIVATE-mode private network (vpcId/subnetId sealed at create).
@@ -298,7 +313,7 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 				NetworkMode: "PUBLIC",
 				FlavorID:    "fill-flavor-id",
 				Replicas:    1,
-				InboundAuth: gatewaypkg.InboundAuthRequest{Mode: "NONE"},
+				InboundAuth: gatewaypkg.InboundAuthRequest{Mode: "IAM"},
 			}
 			b, err := json.MarshalIndent(example, "", "  ")
 			if err != nil {
@@ -318,7 +333,8 @@ Defaults to YAML (with comments); pass -o json for a JSON skeleton.`,
 const gatewayCreateTemplateYAML = `# Gateway create spec.
 # Fill in and apply with:  grn agentbase gateway create --file <this-file>
 #
-# Required: name, networkMode, flavorId, replicas, inboundAuth.mode
+# Required: name, networkMode, flavorId, replicas (inboundAuth.mode defaults
+# to IAM)
 # Sealed at create (recreate to change): name, networkMode, flavorId, replicas,
 #   and (PRIVATE) privateNetwork.vpcId/subnetId.
 name: my-gateway            # 3-40 chars, [a-z0-9-]
@@ -331,7 +347,7 @@ policyGroupId: ""           # optional; bind a policy group (FK)
 
 # Inbound (caller) authentication.
 inboundAuth:
-  mode: NONE                # NONE | IAM | JWT  (required)
+  mode: IAM                 # NONE | IAM | JWT  (default IAM)
   # clientRedirectUris:       # DCR/authorize allowlist
   #   - https://app.example.com/callback
   # iamRequireOwner: true     # IAM mode only
@@ -761,43 +777,59 @@ func loadCreateSpec(data []byte) (*gatewaypkg.CreateGatewayRequest, error) {
 		return nil, fmt.Errorf("invalid gateway spec: %w", err)
 	}
 	if req.Name == "" || req.NetworkMode == "" || req.FlavorID == "" {
-		return nil, fmt.Errorf("spec is missing required field(s): name, networkMode, flavorId (and replicas/inboundAuth.mode)")
+		return nil, fmt.Errorf("spec is missing required field(s): name, networkMode, flavorId (and replicas)")
+	}
+	// inboundAuth.mode defaults to IAM (secure by default — the API requires
+	// the field). A jwt block without a mode is a spec error: the mode must
+	// say JWT for the jwt config to mean anything.
+	if req.InboundAuth.Mode == "" {
+		if req.InboundAuth.JWT != nil {
+			return nil, fmt.Errorf("spec inboundAuth.jwt requires inboundAuth.mode JWT")
+		}
+		req.InboundAuth.Mode = "IAM"
 	}
 	return &req, nil
 }
 
 // ---------------------------------------------------------------------------
 
+// addGatewayCreateFlags registers the gateway create flags (kept as a helper
+// so tests can register the identical flag set on a scratch command; the
+// --file var is shared with update).
+func addGatewayCreateFlags(cmd *cobra.Command) {
+	f := cmd.Flags()
+	f.StringVarP(&gatewayCreateName, "name", "n", "", "Gateway name (required without --interactive)")
+	f.String("display-name", "", "Display name")
+	f.String("description", "", "Description")
+	f.String("network-mode", "", "Network mode: PUBLIC | PRIVATE (required, sealed)")
+	f.String("flavor-id", "", "Flavor id (required, sealed)")
+	f.Int("replicas", 0, "Replica count 1-10 (required, sealed)")
+	f.String("inbound-mode", "IAM", "Inbound auth mode: NONE | IAM | JWT (default IAM)")
+	f.StringArray("client-redirect-uri", nil, "Allowed client redirect URI (repeatable)")
+	f.Bool("iam-require-owner", false, "IAM mode: require the caller to own the resource")
+	f.String("jwt-source", "", "JWT source: DISCOVERY | JWKS")
+	f.String("jwt-discovery-url", "", "JWT OIDC discovery URL (DISCOVERY)")
+	f.String("jwt-jwks", "", "JWT inline JWKS (JWKS)")
+	f.StringArray("allowed-audience", nil, "Allowed JWT audience (repeatable)")
+	f.StringArray("allowed-client", nil, "Allowed JWT client id (repeatable)")
+	f.StringArray("allowed-scope", nil, "Allowed JWT scope (repeatable)")
+	f.String("principal-claim", "", "JWT principal claim (default sub)")
+	f.String("policy-group-id", "", "Policy group id to bind (FK)")
+	f.String("private-vpc-id", "", "PRIVATE mode: VPC id (sealed)")
+	f.String("private-subnet-id", "", "PRIVATE mode: subnet id (sealed)")
+	f.StringArray("private-route", nil, "PRIVATE mode: node route CIDR (repeatable)")
+	f.Bool("public-endpoint-enabled", false, "PRIVATE mode: expose a public endpoint")
+	f.StringArray("allowed-cidr", nil, "Inbound client-IP allowlist CIDR (repeatable)")
+	f.StringArray("host-alias", nil, "/etc/hosts override: ip=host1,host2 (repeatable)")
+	f.StringVar(&gatewayCreateFile, "file", "", "Apply a spec file (see 'generate'); authoritative when set")
+}
+
 func init() {
 	AgentbaseCmd.AddCommand(gatewayCmd)
 
 	// create
-	create := gatewayCreateCmd
-	create.Flags().StringVarP(&gatewayCreateName, "name", "n", "", "Gateway name (required without --interactive)")
-	create.Flags().String("display-name", "", "Display name")
-	create.Flags().String("description", "", "Description")
-	create.Flags().String("network-mode", "", "Network mode: PUBLIC | PRIVATE (required, sealed)")
-	create.Flags().String("flavor-id", "", "Flavor id (required, sealed)")
-	create.Flags().Int("replicas", 0, "Replica count 1-10 (required, sealed)")
-	create.Flags().String("inbound-mode", "", "Inbound auth mode: NONE | IAM | JWT (required)")
-	create.Flags().StringArray("client-redirect-uri", nil, "Allowed client redirect URI (repeatable)")
-	create.Flags().Bool("iam-require-owner", false, "IAM mode: require the caller to own the resource")
-	create.Flags().String("jwt-source", "", "JWT source: DISCOVERY | JWKS")
-	create.Flags().String("jwt-discovery-url", "", "JWT OIDC discovery URL (DISCOVERY)")
-	create.Flags().String("jwt-jwks", "", "JWT inline JWKS (JWKS)")
-	create.Flags().StringArray("allowed-audience", nil, "Allowed JWT audience (repeatable)")
-	create.Flags().StringArray("allowed-client", nil, "Allowed JWT client id (repeatable)")
-	create.Flags().StringArray("allowed-scope", nil, "Allowed JWT scope (repeatable)")
-	create.Flags().String("principal-claim", "", "JWT principal claim (default sub)")
-	create.Flags().String("policy-group-id", "", "Policy group id to bind (FK)")
-	create.Flags().String("private-vpc-id", "", "PRIVATE mode: VPC id (sealed)")
-	create.Flags().String("private-subnet-id", "", "PRIVATE mode: subnet id (sealed)")
-	create.Flags().StringArray("private-route", nil, "PRIVATE mode: node route CIDR (repeatable)")
-	create.Flags().Bool("public-endpoint-enabled", false, "PRIVATE mode: expose a public endpoint")
-	create.Flags().StringArray("allowed-cidr", nil, "Inbound client-IP allowlist CIDR (repeatable)")
-	create.Flags().StringArray("host-alias", nil, "/etc/hosts override: ip=host1,host2 (repeatable)")
-	create.Flags().StringVar(&gatewayCreateFile, "file", "", "Apply a spec file (see 'generate'); authoritative when set")
-	gatewayCmd.AddCommand(create)
+	addGatewayCreateFlags(gatewayCreateCmd)
+	gatewayCmd.AddCommand(gatewayCreateCmd)
 
 	// generate
 	gatewayCmd.AddCommand(gatewayGenerateCmd)

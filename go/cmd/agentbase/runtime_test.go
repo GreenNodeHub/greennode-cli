@@ -45,6 +45,11 @@ func TestRuntimeGenerate_RoundTripsThroughLoadRuntimeSpec(t *testing.T) {
 	if req.Name != "my-runtime" || req.ImageURL != "registry.example.com/my-agent:latest" || req.FlavorID != "fill-flavor-id" {
 		t.Errorf("round-trip decoded unexpected spec: %+v", req)
 	}
+	// 35379: the template ships an explicit inboundAuth block (mode IAM) — it
+	// must decode too, so a template-driven update never relies on carry-over.
+	if req.InboundAuth == nil || req.InboundAuth.Mode != "IAM" {
+		t.Errorf("template inboundAuth should decode to {mode: IAM}: %+v", req.InboundAuth)
+	}
 }
 
 // TestRuntimeGenerate_PrintsJSONSkeleton verifies -o json prints a JSON skeleton.
@@ -245,6 +250,9 @@ func TestReadRuntimeSpec_OK(t *testing.T) {
 	if s.ImageAuth == nil || s.ImageAuth.Enabled {
 		t.Errorf("imageAuth should default to &ImageAuth{Enabled:false}: %+v", s.ImageAuth)
 	}
+	if s.Inbound == nil || s.Inbound.Mode != "IAM" {
+		t.Errorf("inboundAuth should default to &InboundAuth{Mode: IAM} on create: %+v", s.Inbound)
+	}
 	// Ensure the returned spec round-trips into a request struct.
 	_ = runtimepkg.CreateAgentRuntimeRequest{
 		ImageURL: s.ImageURL, FlavorID: s.FlavorID, Autoscaling: s.Autoscaling,
@@ -259,6 +267,15 @@ func TestReadNetworkConfig(t *testing.T) {
 		got, err := readNetworkConfig(cmd)
 		if err != nil || got != nil {
 			t.Errorf("expected (nil, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("set_but_empty_errors", func(t *testing.T) {
+		// Hardening: an empty $NETWORK_MODE expansion used to read as unset
+		// (PUBLIC on create) while the script meant to set a network.
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "network-mode", "")
+		if _, err := readNetworkConfig(cmd); err == nil {
+			t.Error("expected error for explicitly-set-but-empty --network-mode")
 		}
 	})
 	t.Run("vpc_without_ids_errors", func(t *testing.T) {
@@ -291,21 +308,61 @@ func TestReadNetworkConfig(t *testing.T) {
 	})
 }
 
-// TestReadInboundAuth covers the --inbound-* flag group: unset → nil, NONE/IAM
-// happy paths, JWT validation matrix (source required; DISCOVERY needs URL;
-// JWKS needs valid inline JSON; jwt flags rejected for non-JWT modes).
+// TestReadInboundAuth covers the --inbound-* flag group: unset → IAM on create
+// (PUBLIC networks only — the API rejects inboundAuth in VPC mode) but nil on
+// update (carried over), NONE/IAM happy paths, JWT validation matrix (source
+// required; DISCOVERY needs URL; JWKS needs valid inline JSON; jwt flags
+// rejected for non-JWT modes, including the IAM default).
 func TestReadInboundAuth(t *testing.T) {
-	t.Run("unset_returns_nil", func(t *testing.T) {
+	t.Run("unset_create_defaults_to_iam", func(t *testing.T) {
 		cmd := newSpecCmd(t)
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
+		if err != nil || got == nil || got.Mode != "IAM" || got.JWT != nil {
+			t.Errorf("expected (&InboundAuth{Mode: IAM}, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("unset_create_vpc_stays_nil", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		got, err := readInboundAuth(cmd, false, &runtimepkg.NetworkConfig{Mode: "VPC"})
 		if err != nil || got != nil {
 			t.Errorf("expected (nil, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("unset_update_stays_nil", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		got, err := readInboundAuth(cmd, true, nil)
+		if err != nil || got != nil {
+			t.Errorf("expected (nil, nil), got (%+v, %v)", got, err)
+		}
+	})
+	t.Run("set_but_empty_update_errors", func(t *testing.T) {
+		// 35388: an empty $INBOUND_MODE expansion used to read as unset and
+		// silently dropped inboundAuth on update (the API's full-spec
+		// replacement then reset the mode to NONE).
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "inbound-mode", "")
+		if _, err := readInboundAuth(cmd, true, nil); err == nil {
+			t.Error("expected error for explicitly-set-but-empty --inbound-mode on update")
+		}
+	})
+	t.Run("set_but_empty_create_errors", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "inbound-mode", "")
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
+			t.Error("expected error for explicitly-set-but-empty --inbound-mode on create")
+		}
+	})
+	t.Run("unset_with_jwt_flags_errors", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
+			t.Error("expected error when jwt flags set with --inbound-mode unset (defaults to IAM)")
 		}
 	})
 	t.Run("none_ok", func(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "NONE")
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
 		if err != nil || got == nil || got.Mode != "NONE" || got.JWT != nil {
 			t.Errorf("unexpected: (%+v, %v)", got, err)
 		}
@@ -313,7 +370,7 @@ func TestReadInboundAuth(t *testing.T) {
 	t.Run("jwt_without_source_errors", func(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "JWT")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error when JWT without --inbound-jwt-source")
 		}
 	})
@@ -321,7 +378,7 @@ func TestReadInboundAuth(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "JWT")
 		mustSet(t, cmd, "inbound-jwt-source", "DISCOVERY")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error when DISCOVERY without --inbound-jwt-discovery-url")
 		}
 	})
@@ -332,7 +389,7 @@ func TestReadInboundAuth(t *testing.T) {
 		mustSet(t, cmd, "inbound-jwt-discovery-url", "https://idp/.well-known/openid-configuration")
 		mustSet(t, cmd, "inbound-jwt-audience", "aud1")
 		mustSet(t, cmd, "inbound-jwt-principal-claim", "sub")
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -346,7 +403,7 @@ func TestReadInboundAuth(t *testing.T) {
 		mustSet(t, cmd, "inbound-mode", "JWT")
 		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
 		mustSet(t, cmd, "inbound-jwt-jwks", "{not-json")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error for invalid JWKS JSON")
 		}
 	})
@@ -355,7 +412,7 @@ func TestReadInboundAuth(t *testing.T) {
 		mustSet(t, cmd, "inbound-mode", "JWT")
 		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
 		mustSet(t, cmd, "inbound-jwt-jwks", `{"keys":[]}`)
-		got, err := readInboundAuth(cmd)
+		got, err := readInboundAuth(cmd, false, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -367,7 +424,7 @@ func TestReadInboundAuth(t *testing.T) {
 		cmd := newSpecCmd(t)
 		mustSet(t, cmd, "inbound-mode", "IAM")
 		mustSet(t, cmd, "inbound-jwt-source", "JWKS")
-		if _, err := readInboundAuth(cmd); err == nil {
+		if _, err := readInboundAuth(cmd, false, nil); err == nil {
 			t.Error("expected error when jwt flags set with --inbound-mode IAM")
 		}
 	})
@@ -513,8 +570,11 @@ func testVersion() *runtimepkg.AgentRuntimeVersionDto {
 		Command:              []string{"cur-cmd"},
 		Args:                 []string{"cur-arg"},
 		EnvironmentVariables: map[string]string{"CUR": "1"},
+		// PUBLIC + inboundAuth is the only real-world combo that carries one
+		// (the API rejects inboundAuth in VPC mode, so a VPC version never has
+		// it).
 		NetworkConfig: &runtimepkg.AgentRuntimeNetworkConfigEntity{
-			Mode: "VPC", VpcID: "cur-vpc", SubnetID: "cur-sub", RouteCidrs: []string{"10.0.0.0/8"},
+			Mode: "PUBLIC",
 		},
 		AllowedCidrs: []string{"10.0.0.0/8"},
 		InboundAuth: &runtimepkg.AgentRuntimeInboundAuthDto{
@@ -528,6 +588,17 @@ func testVersion() *runtimepkg.AgentRuntimeVersionDto {
 		FlavorID:    "cur-flavor",
 		Autoscaling: runtimepkg.Autoscaling{MaxReplicas: 3},
 	}
+}
+
+// testVPCVersion is the VPC twin of testVersion: a VPC version never carries
+// inboundAuth (PUBLIC-only field), so VPC carry/drop tests use it.
+func testVPCVersion() *runtimepkg.AgentRuntimeVersionDto {
+	cur := testVersion()
+	cur.NetworkConfig = &runtimepkg.AgentRuntimeNetworkConfigEntity{
+		Mode: "VPC", VpcID: "cur-vpc", SubnetID: "cur-sub", RouteCidrs: []string{"10.0.0.0/8"},
+	}
+	cur.InboundAuth = nil
+	return cur
 }
 
 // specFromFlags assembles the update-path spec from a flag command.
@@ -559,8 +630,7 @@ func TestBuildUpdateRequest(t *testing.T) {
 			req.Autoscaling.MaxReplicas != 3 {
 			t.Errorf("carry-over mismatch: %+v", req)
 		}
-		if req.NetworkConfig == nil || req.NetworkConfig.Mode != "VPC" || req.NetworkConfig.VpcID != "cur-vpc" ||
-			req.NetworkConfig.SubnetID != "cur-sub" || req.NetworkConfig.RouteCidrs[0] != "10.0.0.0/8" {
+		if req.NetworkConfig == nil || req.NetworkConfig.Mode != "PUBLIC" || req.NetworkConfig.VpcID != "" {
 			t.Errorf("networkConfig carry-over mismatch: %+v", req.NetworkConfig)
 		}
 		if req.InboundAuth == nil || req.InboundAuth.Mode != "JWT" || req.InboundAuth.JWT == nil ||
@@ -661,6 +731,91 @@ func TestBuildUpdateRequest(t *testing.T) {
 			t.Errorf("autoscaling should be the flag spec: %+v", req.Autoscaling)
 		}
 	})
+	t.Run("carried_none_stays_none", func(t *testing.T) {
+		// A PUBLIC runtime running open (mode NONE) must not be flipped to IAM
+		// by a routine update — NONE carries verbatim (35379).
+		cur := testVersion()
+		cur.InboundAuth = &runtimepkg.AgentRuntimeInboundAuthDto{Mode: "NONE"}
+		cmd := newSpecCmd(t)
+		req, carried, err := buildUpdateRequest(specFromFlags(t, cmd), cur, cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "NONE" {
+			t.Errorf("NONE should carry verbatim, not default to IAM: %+v", req.InboundAuth)
+		}
+		if !slices.Contains(carried, "inboundAuth") {
+			t.Errorf("carried list missing inboundAuth: %v", carried)
+		}
+	})
+	t.Run("nothing_set_on_vpc_carries_network_without_inbound", func(t *testing.T) {
+		// A VPC version never has inboundAuth: an unchanged update carries the
+		// VPC networkConfig and keeps inboundAuth unset (no IAM default on a
+		// VPC target).
+		cmd := newSpecCmd(t)
+		req, carried, err := buildUpdateRequest(specFromFlags(t, cmd), testVPCVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.NetworkConfig == nil || req.NetworkConfig.Mode != "VPC" || req.NetworkConfig.VpcID != "cur-vpc" ||
+			req.NetworkConfig.SubnetID != "cur-sub" || req.NetworkConfig.RouteCidrs[0] != "10.0.0.0/8" {
+			t.Errorf("VPC networkConfig should carry over: %+v", req.NetworkConfig)
+		}
+		if req.InboundAuth != nil {
+			t.Errorf("a VPC target must not carry or default inboundAuth: %+v", req.InboundAuth)
+		}
+		if slices.Contains(carried, "inboundAuth") {
+			t.Errorf("carried list should not mention inboundAuth: %v", carried)
+		}
+	})
+	t.Run("vpc_to_public_defaults_inbound_to_iam", func(t *testing.T) {
+		// Opening a VPC runtime up to PUBLIC: nothing to carry — default to
+		// IAM like create instead of letting the omitted field reset the mode
+		// to NONE (35379 / hardening).
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "network-mode", "PUBLIC")
+		req, carried, err := buildUpdateRequest(specFromFlags(t, cmd), testVPCVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.NetworkConfig == nil || req.NetworkConfig.Mode != "PUBLIC" {
+			t.Errorf("target network should be PUBLIC: %+v", req.NetworkConfig)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "IAM" || req.InboundAuth.JWT != nil {
+			t.Errorf("inboundAuth should default to IAM: %+v", req.InboundAuth)
+		}
+		if !slices.Contains(carried, "inboundAuth (defaulted to IAM; current version has none)") {
+			t.Errorf("carried list should note the IAM default: %v", carried)
+		}
+	})
+	t.Run("public_to_vpc_drops_carried_inbound", func(t *testing.T) {
+		// Moving to VPC: inbound auth does not apply on a private network —
+		// drop the current version's instead of letting the API 400.
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "network-mode", "VPC")
+		mustSet(t, cmd, "vpc-id", "v1")
+		mustSet(t, cmd, "subnet-id", "s1")
+		req, carried, err := buildUpdateRequest(specFromFlags(t, cmd), testVersion(), cmd.Flags().Changed)
+		if err != nil {
+			t.Fatalf("buildUpdateRequest: %v", err)
+		}
+		if req.InboundAuth != nil {
+			t.Errorf("inboundAuth should be dropped on a VPC target: %+v", req.InboundAuth)
+		}
+		if !slices.Contains(carried, "inboundAuth (dropped: target network is VPC)") {
+			t.Errorf("carried list should note the drop: %v", carried)
+		}
+	})
+	t.Run("explicit_inbound_mode_on_vpc_target_errors", func(t *testing.T) {
+		cmd := newSpecCmd(t)
+		mustSet(t, cmd, "network-mode", "VPC")
+		mustSet(t, cmd, "vpc-id", "v1")
+		mustSet(t, cmd, "subnet-id", "s1")
+		mustSet(t, cmd, "inbound-mode", "NONE")
+		if _, _, err := buildUpdateRequest(specFromFlags(t, cmd), testVersion(), cmd.Flags().Changed); err == nil {
+			t.Error("expected error for --inbound-mode on a VPC target")
+		}
+	})
 }
 
 // TestCarriedImageAuth_UnsetVersion returns {enabled:false} (imageAuth is
@@ -673,4 +828,124 @@ func TestCarriedImageAuth_UnsetVersion(t *testing.T) {
 	if ia == nil || ia.Enabled || ia.Username != "" {
 		t.Errorf("expected &ImageAuth{Enabled:false}, got %+v", ia)
 	}
+}
+
+// TestUpdateRequestFromFileSpec covers the --file update path (35379): an
+// omitted inboundAuth block is carried over from the current version (or
+// defaulted to IAM when there is nothing to carry) instead of being forwarded
+// as an omission that the API's full-spec replacement resets to NONE; a VPC
+// spec keeps inboundAuth unset and refuses an explicit block.
+func TestUpdateRequestFromFileSpec(t *testing.T) {
+	newSpec := func(mutate func(*runtimepkg.CreateAgentRuntimeRequest)) *runtimepkg.CreateAgentRuntimeRequest {
+		req := &runtimepkg.CreateAgentRuntimeRequest{
+			ImageURL:  "img:2",
+			ImageAuth: &runtimepkg.ImageAuth{Enabled: false},
+			FlavorID:  "f2",
+		}
+		if mutate != nil {
+			mutate(req)
+		}
+		return req
+	}
+	t.Run("omitted_inbound_carries_from_current", func(t *testing.T) {
+		req, note, err := updateRequestFromFileSpec(newSpec(nil), testVersion())
+		if err != nil {
+			t.Fatalf("updateRequestFromFileSpec: %v", err)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "JWT" || req.InboundAuth.JWT == nil ||
+			req.InboundAuth.JWT.Source != "JWKS" || string(req.InboundAuth.JWT.JWKS) != `{"keys": []}` ||
+			req.InboundAuth.JWT.AllowedAudiences[0] != "aud" || req.InboundAuth.JWT.PrincipalClaim != "sub" {
+			t.Errorf("inboundAuth should carry the JWT config verbatim: %+v", req.InboundAuth)
+		}
+		if !strings.Contains(note, "from version 7") {
+			t.Errorf("note should name the source version: %q", note)
+		}
+	})
+	t.Run("omitted_inbound_defaults_to_iam_when_nothing_to_carry", func(t *testing.T) {
+		cur := testVersion()
+		cur.InboundAuth = nil
+		req, note, err := updateRequestFromFileSpec(newSpec(nil), cur)
+		if err != nil {
+			t.Fatalf("updateRequestFromFileSpec: %v", err)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "IAM" || req.InboundAuth.JWT != nil {
+			t.Errorf("inboundAuth should default to IAM, never NONE: %+v", req.InboundAuth)
+		}
+		if !strings.Contains(note, "defaulted to IAM") {
+			t.Errorf("note should name the IAM default: %q", note)
+		}
+	})
+	t.Run("explicit_inbound_forwarded_verbatim", func(t *testing.T) {
+		req, note, err := updateRequestFromFileSpec(newSpec(func(r *runtimepkg.CreateAgentRuntimeRequest) {
+			r.InboundAuth = &runtimepkg.InboundAuth{Mode: "NONE"}
+		}), testVersion())
+		if err != nil {
+			t.Fatalf("updateRequestFromFileSpec: %v", err)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "NONE" {
+			t.Errorf("explicit inboundAuth should replace the current one: %+v", req.InboundAuth)
+		}
+		if note != "" {
+			t.Errorf("explicit inboundAuth needs no carry note: %q", note)
+		}
+	})
+	t.Run("vpc_spec_keeps_inbound_unset", func(t *testing.T) {
+		req, note, err := updateRequestFromFileSpec(newSpec(func(r *runtimepkg.CreateAgentRuntimeRequest) {
+			r.NetworkConfig = &runtimepkg.NetworkConfig{Mode: "VPC", VpcID: "v1", SubnetID: "s1"}
+		}), testVersion())
+		if err != nil {
+			t.Fatalf("updateRequestFromFileSpec: %v", err)
+		}
+		if req.InboundAuth != nil {
+			t.Errorf("a VPC spec must not carry or default inboundAuth: %+v", req.InboundAuth)
+		}
+		if note != "" {
+			t.Errorf("a VPC spec needs no carry note: %q", note)
+		}
+	})
+	t.Run("vpc_spec_on_vpc_current_keeps_inbound_unset_without_current", func(t *testing.T) {
+		// cur == nil: the caller skips the version round-trip on a VPC spec.
+		req, note, err := updateRequestFromFileSpec(newSpec(func(r *runtimepkg.CreateAgentRuntimeRequest) {
+			r.NetworkConfig = &runtimepkg.NetworkConfig{Mode: "VPC", VpcID: "v1", SubnetID: "s1"}
+		}), nil)
+		if err != nil {
+			t.Fatalf("updateRequestFromFileSpec: %v", err)
+		}
+		if req.InboundAuth != nil || note != "" {
+			t.Errorf("VPC spec with no current version: inboundAuth=%+v note=%q", req.InboundAuth, note)
+		}
+	})
+	t.Run("vpc_spec_with_inbound_errors", func(t *testing.T) {
+		_, _, err := updateRequestFromFileSpec(newSpec(func(r *runtimepkg.CreateAgentRuntimeRequest) {
+			r.NetworkConfig = &runtimepkg.NetworkConfig{Mode: "VPC", VpcID: "v1", SubnetID: "s1"}
+			r.InboundAuth = &runtimepkg.InboundAuth{Mode: "IAM"}
+		}), nil)
+		if err == nil {
+			t.Error("expected error for an inboundAuth block on a VPC spec")
+		}
+	})
+	t.Run("spec_fields_map_to_request", func(t *testing.T) {
+		req, _, err := updateRequestFromFileSpec(newSpec(func(r *runtimepkg.CreateAgentRuntimeRequest) {
+			r.Description = "d"
+			r.Command = []string{"c"}
+			r.Args = []string{"a"}
+			r.EnvironmentVariables = map[string]string{"K": "V"}
+			r.NetworkConfig = &runtimepkg.NetworkConfig{Mode: "PUBLIC"}
+			r.AllowedCidrs = []string{"10.0.0.0/8"}
+			r.Protocol = "MCP"
+			r.Autoscaling = runtimepkg.Autoscaling{MaxReplicas: 4}
+		}), nil)
+		if err != nil {
+			t.Fatalf("updateRequestFromFileSpec: %v", err)
+		}
+		if req.Description != "d" || req.ImageURL != "img:2" || req.Command[0] != "c" || req.Args[0] != "a" ||
+			req.EnvironmentVariables["K"] != "V" || req.AllowedCidrs[0] != "10.0.0.0/8" ||
+			req.Protocol != "MCP" || req.FlavorID != "f2" || req.Autoscaling.MaxReplicas != 4 ||
+			req.ImageAuth == nil || req.ImageAuth.Enabled {
+			t.Errorf("spec fields not mapped to the update request: %+v", req)
+		}
+		if req.InboundAuth == nil || req.InboundAuth.Mode != "IAM" {
+			t.Errorf("PUBLIC spec with no inbound block should default to IAM: %+v", req.InboundAuth)
+		}
+	})
 }

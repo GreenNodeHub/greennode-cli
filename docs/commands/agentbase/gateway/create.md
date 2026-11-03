@@ -10,6 +10,10 @@ By default the gateway is built from flags (the simple path: no inline targets).
 For targets, outbound auth, JWT inbound auth, or anything nested, use `--file`
 with a template produced by `grn agentbase gateway generate`.
 
+Inbound auth defaults to `IAM` (callers authenticate via the platform IAM);
+pass `--inbound-mode NONE` to open the gateway or `JWT` to validate caller
+JWTs.
+
 The gateway is created asynchronously; this command returns as soon as the
 service accepts the spec (state `WAITING_CREATING`). Converge with
 `grn agentbase gateway wait <name>`.
@@ -17,7 +21,8 @@ service accepts the spec (state `WAITING_CREATING`). Converge with
 When `--file` is set it is authoritative and the individual flags below are
 ignored. `--file` (produced by [generate](generate.md)) is the recommended path
 for complex nested configuration (targets / outboundAuth / inboundAuth /
-privateNetwork).
+privateNetwork). A spec that omits `inboundAuth` (or its `mode`) is defaulted
+to `{mode: IAM}`; a `jwt` block without `mode: JWT` is rejected.
 
 ## Synopsis
 
@@ -95,10 +100,13 @@ Replica count. Sealed at create.
 
 **`--inbound-mode`** (string)
 
-Inbound (caller) authentication mode.
+Inbound (caller) authentication mode. Callers authenticate via the platform
+IAM by default; `NONE` opens the gateway, `JWT` validates caller JWTs (the
+`--jwt-*` flags below then build the config).
 
-- Required: Yes (or `--interactive`)
-- Possible values: `NONE`, `IAM`, `JWT`
+- Required: No
+- Default: `IAM`
+- Possible values: `NONE`, `IAM`, `JWT` (case-insensitive)
 
 **`--client-redirect-uri`** (list&lt;string&gt;)
 
@@ -110,52 +118,56 @@ Allowed client redirect URI for DCR/authorize. *(repeatable)*
 **`--iam-require-owner`** (boolean)
 
 IAM mode only: require the caller to own the resource. Only sent when explicitly
-set.
+set; rejected unless `--inbound-mode` is `IAM` (the default).
 
 - Required: No
 - Default: `false`
 
 **`--jwt-source`** (string)
 
-JWT inbound-auth source. Triggers JWT config assembly when set (or when
-`--inbound-mode` is `JWT`).
+JWT inbound-auth source. Only applies when `--inbound-mode` is `JWT` (error
+otherwise); with `JWT` it triggers the JWT config assembly.
 
 - Required: No
 - Possible values: `DISCOVERY`, `JWKS`
 
 **`--jwt-discovery-url`** (string)
 
-JWT OIDC discovery URL (used when `--jwt-source` is `DISCOVERY`).
+JWT OIDC discovery URL (used when `--jwt-source` is `DISCOVERY`). Only applies
+when `--inbound-mode` is `JWT`.
 
 - Required: No
 
 **`--jwt-jwks`** (string)
 
-JWT inline JWKS document (used when `--jwt-source` is `JWKS`).
+JWT inline JWKS document (used when `--jwt-source` is `JWKS`). Only applies
+when `--inbound-mode` is `JWT`.
 
 - Required: No
 
 **`--allowed-audience`** (list&lt;string&gt;)
 
-Allowed JWT audience. *(repeatable)*
+Allowed JWT audience. *(repeatable)* Only applies when `--inbound-mode` is
+`JWT`.
 
 - Required: No
 
 **`--allowed-client`** (list&lt;string&gt;)
 
-Allowed JWT client id. *(repeatable)*
+Allowed JWT client id. *(repeatable)* Only applies when `--inbound-mode` is
+`JWT`.
 
 - Required: No
 
 **`--allowed-scope`** (list&lt;string&gt;)
 
-Allowed JWT scope. *(repeatable)*
+Allowed JWT scope. *(repeatable)* Only applies when `--inbound-mode` is `JWT`.
 
 - Required: No
 
 **`--principal-claim`** (string)
 
-JWT principal claim.
+JWT principal claim. Only applies when `--inbound-mode` is `JWT`.
 
 - Required: No
 - Default: `sub`
@@ -227,15 +239,15 @@ All `grn agentbase` commands accept:
 
 ## Examples
 
-Create a simple PUBLIC gateway from flags:
+Create a simple PUBLIC gateway from flags (inbound auth defaults to `IAM`;
+add `--inbound-mode NONE` to open the gateway):
 
 ```bash
 grn agentbase gateway create \
   --name my-gateway \
   --network-mode PUBLIC \
   --flavor-id fill-flavor-id \
-  --replicas 1 \
-  --inbound-mode NONE
+  --replicas 1
 grn agentbase gateway wait my-gateway
 ```
 
