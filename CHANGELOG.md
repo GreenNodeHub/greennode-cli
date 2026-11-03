@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.15.0...v1.16.0) (2026-11-03)
+
+
+### Features
+
+* **vdb:** add grn vdb commands (relational, memorystore, postgresql, kafka) ([#25](https://github.com/GreenNodeHub/greennode-cli/issues/25)) ([773d76d](https://github.com/GreenNodeHub/greennode-cli/commit/773d76d2821b0db665a7a33504193fe35186a027))
+
 ## [1.15.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.14.0...v1.15.0) (2026-10-27)
 
 
