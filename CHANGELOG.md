@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.16.0...v1.17.0) (2026-11-03)
+
+
+### Features
+
+* **agentbase:** switch default inbound mode to IAM ([#26](https://github.com/GreenNodeHub/greennode-cli/issues/26)) ([d8de3aa](https://github.com/GreenNodeHub/greennode-cli/commit/d8de3aa506cc33ae80eac9b0a5cf03ff24c3fcb2))
+
 ## [1.16.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.15.0...v1.16.0) (2026-11-03)
 
 
