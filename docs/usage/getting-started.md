@@ -30,15 +30,20 @@ grn vks list-clusters
 # Get cluster details
 grn vks get-cluster --cluster-id k8s-xxxxx
 
-# Create a cluster
+# Create a cluster (control plane only). Pass one ID to --subnet-ids for a
+# single-subnet cluster, or several comma-separated for a multi-subnet one.
 grn vks create-cluster \
   --name my-cluster \
   --k8s-version v1.30.10-vks.1746550800 \
   --network-type CILIUM_OVERLAY \
   --vpc-id net-xxxxx \
-  --subnet-id sub-xxxxx \
-  --cidr 192.168.0.0/16 \
-  --node-group-name default \
+  --subnet-ids sub-xxxxx \
+  --cidr 192.168.0.0/16
+
+# Add worker nodes — node groups are a separate command
+grn vks create-nodegroup \
+  --cluster-id k8s-xxxxx \
+  --name default \
   --flavor-id flav-xxxxx \
   --os ubuntu \
   --disk-type vtype-xxxxx \

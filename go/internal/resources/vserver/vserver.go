@@ -62,6 +62,19 @@ func simpleList(tmpl string, idFields ...string) func(context.Context, *cobra.Co
 
 func fetchSubnets(_ context.Context, cmd *cobra.Command) ([]string, error) {
 	vpcID, _ := cmd.Flags().GetString("vpc-id")
+
+	// Commands like create-nodegroup take --cluster-id but no --vpc-id. The
+	// cluster API belongs to another service, so the lookup goes through the
+	// resolver registered in the cli registry and this file keeps knowing only
+	// vserver paths. Failures fall through to "no suggestions".
+	if vpcID == "" {
+		if clusterID, _ := cmd.Flags().GetString("cluster-id"); clusterID != "" {
+			if resolved, err := cli.ResolveClusterVPC(cmd, clusterID); err == nil {
+				vpcID = resolved
+			}
+		}
+	}
+
 	path, ok := subnetPath(projectID(cmd), vpcID)
 	if !ok {
 		return nil, nil
