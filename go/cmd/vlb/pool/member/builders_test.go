@@ -186,3 +186,13 @@ func TestMemberUpdateFillsInBackup(t *testing.T) {
 		t.Errorf("backup = %#v (present=%v), want false to be filled in", v, ok)
 	}
 }
+
+// member update shares pool create's member checks, so a member without a
+// port fails here instead of reaching the API's "Invalid port number".
+func TestMemberUpdateRequiresIPAddressAndPort(t *testing.T) {
+	for _, member := range []string{"monitorPort=80,weight=1", "ipAddress=10.0.0.4,monitorPort=80"} {
+		if _, err := buildUpdateBody(nil, []string{member}, true, false); err == nil {
+			t.Errorf("--member %s: expected an error", member)
+		}
+	}
+}

@@ -2,6 +2,7 @@ package listener
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/vlbclient"
@@ -202,7 +203,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 	if !anyChanged {
 		return fmt.Errorf("nothing to update: provide at least one of --%s",
-			joinFlags(updateFlagNames()))
+			strings.Join(updateFlagNames(), ", --"))
 	}
 
 	apiClient, cfg, projectID, err := resolve(cmd)
@@ -215,7 +216,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to fetch listener %s: %w", listenerID, err)
 	}
 
-	body, err := buildUpdateBody(unwrapData(response), cmd.Flags())
+	body, err := buildUpdateBody(vlbclient.UnwrapData(response), cmd.Flags())
 	if err != nil {
 		return err
 	}
@@ -231,15 +232,4 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	return outputRaw(cmd, cfg, result)
-}
-
-func joinFlags(names []string) string {
-	out := ""
-	for i, n := range names {
-		if i > 0 {
-			out += ", --"
-		}
-		out += n
-	}
-	return out
 }

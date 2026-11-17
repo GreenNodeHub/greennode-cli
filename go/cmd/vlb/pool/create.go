@@ -9,18 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// memberIntFields / memberBoolFields drive shorthand type coercion for the
-// --member struct flag; they mirror MemberRequest.
-var (
-	memberIntFields  = []string{"port", "weight", "monitorPort"}
-	memberBoolFields = []string{"backup"}
-)
-
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new pool",
 	RunE:  runCreate,
 }
+
+// exampleHealthMonitor is the --health-monitor example in the help text. A test
+// checks that it passes validateHealthMonitor, so the help cannot drift again.
+const exampleHealthMonitor = "healthCheckProtocol=TCP,timeout=5,interval=30,healthyThreshold=3,unhealthyThreshold=3"
 
 func init() {
 	addLBFlag(createCmd)
@@ -31,9 +28,10 @@ func init() {
 	f.Bool("stickiness", false, "Enable sticky sessions")
 	f.Bool("tls-encryption", false, "Enable TLS encryption to the members")
 	f.String("health-monitor", "",
-		"Health monitor, shorthand (healthCheckProtocol=HTTP,healthCheckPath=/,timeout=5,interval=30) or JSON (required)")
+		"Health monitor, shorthand ("+exampleHealthMonitor+") or JSON (required); "+
+			"HTTP also needs healthCheckPath, healthCheckMethod, successCode and httpVersion")
 	f.StringArray("member", nil,
-		"Pool member, shorthand (ipAddress=10.0.0.4,port=80,weight=1,backup=false) or JSON (repeatable)")
+		"Pool member, shorthand (ipAddress=10.0.0.4,port=80,monitorPort=80,weight=1,backup=false) or JSON (repeatable)")
 	f.Bool("dry-run", false, "Validate parameters and print the request body without creating")
 	for _, name := range []string{"name", "protocol", "health-monitor"} {
 		if err := createCmd.MarkFlagRequired(name); err != nil {
@@ -205,39 +203,6 @@ func containsString(all []string, want string) bool {
 	return false
 }
 
-// validateMembers reports members the backend would reject, and fills in the one
-// required field that has an unambiguous default.
-//
-// MemberRequest declares port and monitorPort as primitive ints with
-// @Range(1,65535), so omitting either arrives as 0 and fails with "Invalid port
-// number" — baffling when the user never set one. monitorPort stays an explicit
-// requirement because defaulting it to port is a real networking choice, not a
-// formality.
-//
-// backup is a boxed Boolean with @NotNull, so omitting it fails with
-// "members[N].backup: must not be null". Unlike monitorPort its default is
-// unambiguous — a plain member is not a backup — so it is filled in rather than
-// demanded. This is also what makes the documented shorthand
-// (ipAddress=..,port=..,monitorPort=..) work.
-func validateMembers(members []map[string]interface{}) error {
-	for i, m := range members {
-		if _, ok := m["ipAddress"]; !ok {
-			return fmt.Errorf("--member[%d]: ipAddress is required", i)
-		}
-		if _, ok := m["port"]; !ok {
-			return fmt.Errorf("--member[%d]: port is required", i)
-		}
-		if _, ok := m["monitorPort"]; !ok {
-			return fmt.Errorf("--member[%d]: monitorPort is required by the API "+
-				"(set it to the same value as port for a plain health check)", i)
-		}
-		if _, ok := m["backup"]; !ok {
-			m["backup"] = false
-		}
-	}
-	return nil
-}
-
 // buildCreateBody assembles the CreatePoolRequest.
 //
 // stickiness and tlsEncryption are gated on the pool protocol. The backend tests
@@ -258,7 +223,7 @@ func buildCreateBody(name, protocol, algorithm string, stickiness, tlsEncryption
 		return nil, fmt.Errorf("--health-monitor must not be empty")
 	}
 
-	parsedMembers, err := cli.ParseStructFlags("member", members, memberIntFields, memberBoolFields)
+	parsedMembers, err := cli.ParseStructFlags("member", members, vlbclient.MemberIntFields, vlbclient.MemberBoolFields)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +234,7 @@ func buildCreateBody(name, protocol, algorithm string, stickiness, tlsEncryption
 	if err := validateHealthMonitor(protocol, hm); err != nil {
 		return nil, err
 	}
-	if err := validateMembers(parsedMembers); err != nil {
+	if err := vlbclient.ValidateMembers(parsedMembers); err != nil {
 		return nil, err
 	}
 

@@ -570,8 +570,9 @@ grn vlb loadbalancer wait-deleted
 ### Output
 
 As for [wait-active](#wait-active): exit `0` on success, exit **255** on
-timeout, or if the load balancer returns to `ACTIVE` (meaning the delete never
-took effect).
+timeout, or if the load balancer goes from `DELETING` back to `ACTIVE` (meaning
+the delete was rolled back). `ACTIVE` before `DELETING` is not a failure: the
+first poll can come before the API shows the delete.
 
 ### Examples
 

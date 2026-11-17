@@ -461,6 +461,10 @@ The other flags take the same values as [policy create](#policy-create). At
 least one of them must be given. Switching `--action` to `REDIRECT_TO_URL`
 requires `--redirect-url` unless the policy already has one.
 
+Flags of the other action are refused: `--redirect-url`, `--redirect-http-code`
+and `--keep-query-string` fail on a `REDIRECT_TO_POOL` policy, and
+`--redirect-pool-id` fails on a `REDIRECT_TO_URL` policy.
+
 ### Examples
 
 ```bash

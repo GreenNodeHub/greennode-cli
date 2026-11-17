@@ -59,7 +59,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 }
 
 func printDeletePreview(response interface{}) {
-	p := unwrapData(response)
+	p := vlbclient.UnwrapData(response)
 	fmt.Println("The following pool will be deleted:")
 	fmt.Println()
 	fmt.Printf("  ID:        %v\n", p["uuid"])

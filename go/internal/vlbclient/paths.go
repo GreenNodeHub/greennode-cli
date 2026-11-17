@@ -41,6 +41,26 @@ func LoadBalancerSub(projectID, lbID, sub string) string {
 	return fmt.Sprintf("/v2/%s/loadBalancers/%s/%s", projectID, lbID, sub)
 }
 
+// Packages lists the load balancer packages available to the project.
+func Packages(projectID string) string {
+	return LoadBalancers(projectID) + "/packages"
+}
+
+// AllPackages lists every load balancer package, including unavailable ones.
+func AllPackages(projectID string) string {
+	return LoadBalancers(projectID) + "/all_packages"
+}
+
+// Headers lists the HTTP headers a listener can insert.
+func Headers(projectID string) string {
+	return LoadBalancers(projectID) + "/headers"
+}
+
+// LoadBalancersBySubnet lists the load balancers in one subnet.
+func LoadBalancersBySubnet(projectID, subnetID string) string {
+	return fmt.Sprintf("%s/subnet/%s", LoadBalancers(projectID), subnetID)
+}
+
 // Listeners is the listener collection of a load balancer.
 func Listeners(projectID, lbID string) string {
 	return fmt.Sprintf("/v2/%s/loadBalancers/%s/listeners", projectID, lbID)

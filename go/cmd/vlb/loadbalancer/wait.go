@@ -17,7 +17,7 @@ import (
 // a "data" envelope and names the field displayStatus — not "status" as VKS
 // does — so this cannot share vks's extractor.
 func statusOf(result interface{}) string {
-	s, _ := unwrapData(result)["displayStatus"].(string)
+	s, _ := vlbclient.UnwrapData(result)["displayStatus"].(string)
 	return s
 }
 
@@ -47,27 +47,39 @@ func evaluateActive(result interface{}, err error) (done bool, failed bool, stat
 	}
 }
 
-// evaluateDeleted decides one poll for wait-deleted: the resource being gone
-// (404) is the success condition.
-func evaluateDeleted(result interface{}, err error) (done bool, failed bool, status string, fatal error) {
-	if err != nil {
-		if cli.IsNotFound(err) {
-			return true, false, "DELETED", nil
+// newDeletedEvaluator returns the evaluator for wait-deleted: the resource
+// being gone (404) is the success condition.
+//
+// ACTIVE counts as a failure only after DELETING was seen. The first poll can
+// come before the API shows the delete (a script that runs
+// `lb delete && lb wait-deleted`), and failing there would stop the waiter
+// while the delete is still running. ACTIVE after DELETING means the delete
+// was rolled back. If DELETING is never seen, --max-attempts ends the wait.
+func newDeletedEvaluator() cli.WaitEvaluator {
+	sawDeleting := false
+	return func(result interface{}, err error) (done bool, failed bool, status string, fatal error) {
+		if err != nil {
+			if cli.IsNotFound(err) {
+				return true, false, "DELETED", nil
+			}
+			if cli.IsPermanentAPIError(err) {
+				return false, false, "", err
+			}
+			return false, false, "", nil
 		}
-		if cli.IsPermanentAPIError(err) {
-			return false, false, "", err
+		status = statusOf(result)
+		switch {
+		case status == "DELETING":
+			sawDeleting = true
+			return false, false, status, nil
+		case status == "ACTIVE" && sawDeleting:
+			// Back to ACTIVE after DELETING: the delete was rolled back.
+			return false, true, status, nil
+		case terminalFailureStatuses[status]:
+			return false, true, status, nil
+		default:
+			return false, false, status, nil
 		}
-		return false, false, "", nil
-	}
-	status = statusOf(result)
-	switch {
-	case status == "ACTIVE":
-		// Back to ACTIVE means the delete never took effect.
-		return false, true, status, nil
-	case terminalFailureStatuses[status]:
-		return false, true, status, nil
-	default:
-		return false, false, status, nil
 	}
 }
 
@@ -86,7 +98,7 @@ var waitDeletedCmd = &cobra.Command{
 	Use:   "wait-deleted",
 	Short: "Wait until a load balancer is fully deleted",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runWait(cmd, evaluateDeleted, "be deleted")
+		return runWait(cmd, newDeletedEvaluator(), "be deleted")
 	},
 }
 

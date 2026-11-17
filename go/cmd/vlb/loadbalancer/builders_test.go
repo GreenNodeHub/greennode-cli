@@ -180,16 +180,19 @@ func TestBuildCloneBody(t *testing.T) {
 	}
 }
 
-func TestUnwrapData(t *testing.T) {
-	wrapped := map[string]interface{}{"data": map[string]interface{}{"uuid": "lb-1"}}
-	if got := unwrapData(wrapped); got["uuid"] != "lb-1" {
-		t.Errorf("unwrapData(envelope) = %v", got)
+// TagRequest is {key, value}. The natural guess --tag env=prod parses to
+// {"env":"prod"}, which the API cannot use, so it must fail with a hint.
+func TestBuildCreateBodyChecksTagShape(t *testing.T) {
+	for _, tag := range []string{"env=prod", "value=prod", "key=env,value=prod,extra=1"} {
+		if _, err := buildCreateBody("lb1", "pkg1", "Internet", "sub1", "Layer 7", "", false,
+			[]string{tag}, "", ""); err == nil {
+			t.Errorf("--tag %s: expected an error", tag)
+		}
 	}
-	bare := map[string]interface{}{"uuid": "lb-1"}
-	if got := unwrapData(bare); got["uuid"] != "lb-1" {
-		t.Errorf("unwrapData(bare) = %v", got)
-	}
-	if got := unwrapData("not an object"); len(got) != 0 {
-		t.Errorf("unwrapData(non-object) = %v, want an empty map", got)
+	for _, tag := range []string{"key=env,value=prod", "key=env", `{"key":"env","value":"prod"}`} {
+		if _, err := buildCreateBody("lb1", "pkg1", "Internet", "sub1", "Layer 7", "", false,
+			[]string{tag}, "", ""); err != nil {
+			t.Errorf("--tag %s: unexpected error: %v", tag, err)
+		}
 	}
 }

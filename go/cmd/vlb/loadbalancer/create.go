@@ -23,7 +23,7 @@ func init() {
 	f.String("type", "", "Type: 'Layer 4' or 'Layer 7' (required)")
 	f.String("zone-id", "", "Availability zone ID")
 	f.Bool("auto-scalable", false, "Enable autoscale mode")
-	f.StringArray("tag", nil, "Tag as key=value or JSON (repeatable)")
+	f.StringArray("tag", nil, "Tag as key=<name>,value=<value> or JSON {\"key\":...,\"value\":...} (repeatable)")
 	f.String("listener", "", "Initial listener; JSON, or shorthand "+
 		"(listenerName=web,listenerProtocol=HTTP,listenerProtocolPort=80). Requires --pool")
 	f.String("pool", "", "Initial pool; JSON only — it must carry a nested healthMonitor, "+
@@ -86,6 +86,14 @@ func buildCreateBody(name, packageID, scheme, subnetID, lbType, zoneID string, a
 	parsedTags, err := cli.ParseStructFlags("tag", tags, nil, nil)
 	if err != nil {
 		return nil, err
+	}
+	// TagRequest is {key, value}. A tag written as env=prod (the natural guess)
+	// parses to {"env":"prod"}, which the API cannot use, so check the shape.
+	for i, tag := range parsedTags {
+		k, _ := tag["key"].(string)
+		if k == "" || len(tag) > 2 || (len(tag) == 2 && tag["value"] == nil) {
+			return nil, fmt.Errorf("--tag #%d: use key=<name>,value=<value>, e.g. --tag key=env,value=prod", i+1)
+		}
 	}
 	if parsedTags != nil {
 		body["tags"] = parsedTags

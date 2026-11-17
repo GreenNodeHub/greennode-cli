@@ -239,6 +239,10 @@ grn vlb pool update
     `--health-monitor` fields on top, and sends the result — so changing one
     field leaves the rest alone.
 
+    To remove a field, give it an empty value (`domainName=`). When you switch
+    to `httpVersion=1.0`, the current `domainName` is removed for you, because
+    the API does not allow a domain with HTTP/1.0.
+
 The other flags take the same values as [create](#create). At least one of them
 must be given.
 

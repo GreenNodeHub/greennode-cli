@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/greennodehub/greennode-cli/internal/cli"
 )
 
 // completeTCPMonitor carries every field the live API requires; the spec marks
@@ -148,6 +150,34 @@ func TestBuildUpdateBody(t *testing.T) {
 	t.Run("an unknown current algorithm is an actionable error", func(t *testing.T) {
 		if _, err := buildUpdateBody(map[string]interface{}{}, currentMonitor(), map[string]bool{"stickiness": true}, "", true, false, ""); err == nil {
 			t.Error("expected an error when the algorithm cannot be determined")
+		}
+	})
+
+	t.Run("switching to httpVersion 1.0 drops the carried-over domainName", func(t *testing.T) {
+		monitor := currentMonitor()
+		monitor["httpVersion"] = "1.1"
+		monitor["domainName"] = "app.example.com"
+		got, err := buildUpdateBody(currentPool(), monitor, map[string]bool{"health-monitor": true}, "", false, false, "httpVersion=1.0")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		hm := got["healthMonitor"].(map[string]interface{})
+		if _, ok := hm["domainName"]; ok {
+			t.Errorf("domainName = %v, want it removed for httpVersion 1.0", hm["domainName"])
+		}
+	})
+
+	t.Run("an empty override removes the field", func(t *testing.T) {
+		monitor := currentMonitor()
+		monitor["httpVersion"] = "1.1"
+		monitor["domainName"] = "app.example.com"
+		got, err := buildUpdateBody(currentPool(), monitor, map[string]bool{"health-monitor": true}, "", false, false, "httpVersion=1.0,domainName=")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		hm := got["healthMonitor"].(map[string]interface{})
+		if _, ok := hm["domainName"]; ok {
+			t.Errorf("domainName = %#v, want it removed by domainName=", hm["domainName"])
 		}
 	})
 
@@ -366,57 +396,6 @@ func mergeMaps(base, over map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func TestValidateMembers(t *testing.T) {
-	ok := map[string]interface{}{"ipAddress": "10.0.0.4", "port": 80, "monitorPort": 80}
-
-	tests := []struct {
-		name    string
-		members []map[string]interface{}
-		wantErr string
-	}{
-		{name: "no members is fine — a pool may start empty"},
-		{name: "complete member", members: []map[string]interface{}{ok}},
-		{
-			name:    "missing monitorPort (the API 400s with a confusing message)",
-			members: []map[string]interface{}{{"ipAddress": "10.0.0.4", "port": 80}},
-			wantErr: "monitorPort is required",
-		},
-		{
-			name:    "the error names the offending member",
-			members: []map[string]interface{}{ok, {"ipAddress": "10.0.0.5", "port": 80}},
-			wantErr: "--member[1]",
-		},
-		{
-			name:    "missing ipAddress",
-			members: []map[string]interface{}{{"port": 80, "monitorPort": 80}},
-			wantErr: "ipAddress is required",
-		},
-		{
-			name:    "missing port",
-			members: []map[string]interface{}{{"ipAddress": "10.0.0.4", "monitorPort": 80}},
-			wantErr: "port is required",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateMembers(tt.members)
-			if tt.wantErr == "" {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				return
-			}
-			if err == nil {
-				t.Fatalf("expected an error mentioning %q", tt.wantErr)
-			}
-			if !strings.Contains(err.Error(), tt.wantErr) {
-				t.Errorf("error = %q, want it to mention %q", err.Error(), tt.wantErr)
-			}
-		})
-	}
-}
-
 // The first version of buildUpdateBody seeded the monitor from the pool payload,
 // which the live API does not include — every pool update then failed with
 // "If healthCheckProtocol field is HTTP, following fields must be specified".
@@ -594,5 +573,17 @@ func TestMemberBackupIsNotOverwrittenWhenSet(t *testing.T) {
 	members := got["members"].([]map[string]interface{})
 	if members[0]["backup"] != true {
 		t.Errorf("backup = %#v, want the user's true preserved", members[0]["backup"])
+	}
+}
+
+// The --health-monitor example in the help must be accepted by the CLI's own
+// validation; the old one was missing five required fields.
+func TestHelpHealthMonitorExampleIsValid(t *testing.T) {
+	hm, err := cli.ParseStructFlagTyped(exampleHealthMonitor, healthMonitorIntFields, nil)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if err := validateHealthMonitor("TCP", hm); err != nil {
+		t.Errorf("help example %q is rejected: %v", exampleHealthMonitor, err)
 	}
 }

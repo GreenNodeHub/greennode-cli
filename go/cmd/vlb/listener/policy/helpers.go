@@ -71,16 +71,3 @@ func idsOf(cmd *cobra.Command, withPolicy bool) (lbID, listenerID, policyID stri
 	}
 	return lbID, listenerID, policyID, nil
 }
-
-// unwrapData returns the payload of a {"data": ...} envelope, or the response
-// itself when it is already the bare object.
-func unwrapData(response interface{}) map[string]interface{} {
-	m, ok := response.(map[string]interface{})
-	if !ok {
-		return map[string]interface{}{}
-	}
-	if data, ok := m["data"].(map[string]interface{}); ok {
-		return data
-	}
-	return m
-}

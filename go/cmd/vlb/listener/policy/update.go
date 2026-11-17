@@ -2,6 +2,7 @@ package policy
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/vlbclient"
@@ -84,6 +85,12 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 
 	switch action {
 	case actionRedirectToPool:
+		// The URL-only flags have no place in a REDIRECT_TO_POOL body. Refuse
+		// them instead of dropping them, or the user's change is silently lost
+		// and the PUT still moves the load balancer into UPDATING.
+		if err := rejectChanged(f, action, "redirect-url", "redirect-http-code", "keep-query-string"); err != nil {
+			return nil, err
+		}
 		poolID, _ := f.GetString("redirect-pool-id")
 		if !f.Changed("redirect-pool-id") {
 			poolID, _ = current["redirectPoolId"].(string)
@@ -93,6 +100,9 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 		}
 		body["redirectPoolId"] = poolID
 	case actionRedirectToURL:
+		if err := rejectChanged(f, action, "redirect-pool-id"); err != nil {
+			return nil, err
+		}
 		url, _ := f.GetString("redirect-url")
 		if !f.Changed("redirect-url") {
 			url, _ = current["redirectUrl"].(string)
@@ -138,6 +148,21 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 	return body, nil
 }
 
+// rejectChanged returns an error when any of the named flags was set, because
+// it does not apply to the policy's action.
+func rejectChanged(f *pflag.FlagSet, action string, names ...string) error {
+	var set []string
+	for _, n := range names {
+		if f.Changed(n) {
+			set = append(set, "--"+n)
+		}
+	}
+	if len(set) > 0 {
+		return fmt.Errorf("%s cannot be used when the action is %s", strings.Join(set, ", "), action)
+	}
+	return nil
+}
+
 func runUpdate(cmd *cobra.Command, args []string) error {
 	lbID, listenerID, policyID, err := idsOf(cmd, true)
 	if err != nil {
@@ -153,8 +178,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if !anyChanged {
-		return fmt.Errorf("nothing to update: provide at least one of " +
-			"--action, --redirect-pool-id, --redirect-url, --redirect-http-code, --keep-query-string, --rule")
+		return fmt.Errorf("nothing to update: provide at least one of --%s",
+			strings.Join(updateFlags, ", --"))
 	}
 
 	apiClient, cfg, projectID, err := resolve(cmd)
@@ -167,7 +192,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to fetch policy %s: %w", policyID, err)
 	}
 
-	body, err := buildUpdateBody(unwrapData(response), cmd.Flags())
+	body, err := buildUpdateBody(vlbclient.UnwrapData(response), cmd.Flags())
 	if err != nil {
 		return err
 	}

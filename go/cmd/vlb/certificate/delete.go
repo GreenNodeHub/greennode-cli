@@ -59,7 +59,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 }
 
 func printDeletePreview(response interface{}) {
-	c := unwrapData(response)
+	c := vlbclient.UnwrapData(response)
 	fmt.Println("The following certificate will be deleted:")
 	fmt.Println()
 	fmt.Printf("  ID:      %v\n", c["uuid"])

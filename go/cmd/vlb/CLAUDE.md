@@ -50,8 +50,8 @@ truth for the API is `openapi-vlb.json` at the repo root.
   `list-scale-history` and `list-by-subnet` return a **bare array**, and
   `get-clone-metadata` and `GET /cas/{caId}` return a **bare object** — while
   `POST /cas` wraps in `{"data": ...}`, so `certificate get --query uuid` works
-  but `certificate create` needs `data.uuid`. Each package has an `unwrapData`
-  helper; completers pass the right envelope key to `cli.ExtractCompletions`.
+  but `certificate create` needs `data.uuid`. Use `vlbclient.UnwrapData` for a
+  single object; completers pass the right envelope key to `cli.ExtractCompletions`.
 - **`POST` keys the new id under `uuid`**, not a resource-named key:
   `lb create` returns `{"uuid": "lb-..."}`. Same for pool, listener and policy.
 - **`zoneId` is `null` in `lb list`** for every load balancer even though
@@ -85,8 +85,9 @@ truth for the API is `openapi-vlb.json` at the repo root.
 
 The spec understates what the backend demands. Breaking these rules produces
 either an HTTP 500 or a 400 naming a field the user never supplied, so
-`pool/create.go` validates them client-side (`validateHealthMonitor`,
-`validateMembers`) and reports one actionable message instead:
+the CLI validates them client-side (`validateHealthMonitor` in `pool/create.go`,
+`vlbclient.ValidateMembers`, shared by `pool create` and `pool member update`)
+and reports one actionable message instead:
 
 - **Health monitor**: `timeout`, `interval`, `healthyThreshold` and
   `unhealthyThreshold` are always required. Omitting any of them yields
@@ -158,8 +159,8 @@ either an HTTP 500 or a 400 naming a field the user never supplied, so
   same check using the pool's stored protocol, so echoing the service's own
   `stickiness: false` back on a TCP pool is rejected too (see Open defects).
 - **Member `backup` is required.** Omitting it returns
-  `400 members[0].backup: must not be null;` — the spec agrees it is required,
-  but `validateMembers` does not check it (see Open defects).
+  `400 members[0].backup: must not be null;` — the spec agrees it is required.
+  `vlbclient.ValidateMembers` fills in `false` when it is missing.
 - **The inline `--listener`/`--pool` on `lb create` are all-or-nothing** —
   supplying one gives `400 Both listener and pool properties must be required
   (non null) or both are not required (null)`. The inline listener also requires
@@ -270,6 +271,9 @@ vks's in two ways worth remembering:
   nothing, and a test pins this
 - `CREATING`, `UPDATING` and `DELETING` are all transient; only `ERROR` and
   `FAILED` are terminal failures
+- the wait-deleted evaluator is stateful (`newDeletedEvaluator`): `ACTIVE` is a
+  failure only after `DELETING` was seen, because the first poll right after
+  `lb delete` can still read `ACTIVE`
 
 Naming note: the command is `loadbalancer wait-active`, not vks's
 `wait loadbalancer-active`, to keep VLB's noun-group-then-verb shape. The leaf

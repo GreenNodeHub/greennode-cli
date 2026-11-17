@@ -150,6 +150,19 @@ func TestBuildUpdateBody(t *testing.T) {
 		}
 	})
 
+	t.Run("flags of the other action are refused, not silently dropped", func(t *testing.T) {
+		for _, set := range []map[string]string{
+			{"keep-query-string": "true"},
+			{"redirect-url": "https://example.com"},
+			{"redirect-http-code": "301"},
+			{"action": actionRedirectToURL, "redirect-url": "https://example.com", "redirect-pool-id": "pool-2"},
+		} {
+			if _, err := buildUpdateBody(currentPolicy(), updateFlagSet(t, set)); err == nil {
+				t.Errorf("flags %v: expected an error, the flag does not apply to the action", set)
+			}
+		}
+	})
+
 	t.Run("an unknown current action is an actionable error", func(t *testing.T) {
 		if _, err := buildUpdateBody(map[string]interface{}{}, updateFlagSet(t, map[string]string{"redirect-url": "x"})); err == nil {
 			t.Error("expected an error when the action cannot be determined")

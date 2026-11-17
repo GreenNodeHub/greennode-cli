@@ -65,7 +65,7 @@ func TestEvaluateDeleted(t *testing.T) {
 	}{
 		{name: "404 means gone", err: apiErr(404), wantDone: true, wantStatus: "DELETED"},
 		{name: "DELETING keeps polling", result: lbResponse("DELETING"), wantStatus: "DELETING"},
-		{name: "still ACTIVE means the delete never took", result: lbResponse("ACTIVE"), wantFailed: true, wantStatus: "ACTIVE"},
+		{name: "ACTIVE before DELETING keeps polling", result: lbResponse("ACTIVE"), wantStatus: "ACTIVE"},
 		{name: "ERROR is terminal", result: lbResponse("ERROR"), wantFailed: true, wantStatus: "ERROR"},
 		{name: "403 aborts", err: apiErr(403), wantFatal: true},
 		{name: "500 is transient", err: apiErr(500)},
@@ -73,9 +73,29 @@ func TestEvaluateDeleted(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			done, failed, status, fatal := evaluateDeleted(tt.result, tt.err)
+			done, failed, status, fatal := newDeletedEvaluator()(tt.result, tt.err)
 			checkWait(t, done, failed, status, fatal, tt.wantDone, tt.wantFailed, tt.wantStatus, tt.wantFatal)
 		})
+	}
+}
+
+// The first poll after a delete can still see ACTIVE; only ACTIVE after
+// DELETING means the delete was rolled back.
+func TestEvaluateDeletedFailsOnActiveOnlyAfterDeleting(t *testing.T) {
+	eval := newDeletedEvaluator()
+	steps := []struct {
+		status     string
+		wantFailed bool
+	}{
+		{"ACTIVE", false},
+		{"DELETING", false},
+		{"ACTIVE", true},
+	}
+	for i, step := range steps {
+		_, failed, _, _ := eval(lbResponse(step.status), nil)
+		if failed != step.wantFailed {
+			t.Errorf("poll %d (%s): failed = %v, want %v", i+1, step.status, failed, step.wantFailed)
+		}
 	}
 }
 

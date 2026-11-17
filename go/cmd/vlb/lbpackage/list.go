@@ -32,10 +32,10 @@ func runList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	path := fmt.Sprintf("%s/packages", vlbclient.LoadBalancers(projectID))
+	path := vlbclient.Packages(projectID)
 	var params map[string]string
 	if all {
-		path = fmt.Sprintf("%s/all_packages", vlbclient.LoadBalancers(projectID))
+		path = vlbclient.AllPackages(projectID)
 	} else if zoneID != "" {
 		params = map[string]string{"zoneId": zoneID}
 	}

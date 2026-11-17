@@ -209,3 +209,25 @@ func TestCellStringDoesNotUseScientificNotation(t *testing.T) {
 		}
 	}
 }
+
+// vDB paginates backups, configurations and histories under "content" (not
+// "data"), next to a pageObject. Those items must become the table rows.
+func TestFormatTableWithColumnsRendersVdbContentList(t *testing.T) {
+	data := map[string]interface{}{
+		"content": []interface{}{
+			map[string]interface{}{"id": "cfg-1", "name": "pg-default"},
+			map[string]interface{}{"id": "cfg-2", "name": "pg-tuned"},
+		},
+		"pageObject": map[string]interface{}{"pageNumber": 1.0, "totalElements": 2.0},
+	}
+	var buf bytes.Buffer
+	if err := FormatTableWithColumnsColor(data, []string{"id", "name"}, "", &buf, false); err != nil {
+		t.Fatalf("FormatTableWithColumnsColor: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{"cfg-1", "pg-default", "cfg-2", "pg-tuned"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q\n--- got ---\n%s", want, out)
+		}
+	}
+}

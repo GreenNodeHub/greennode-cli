@@ -8,13 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// memberIntFields / memberBoolFields drive shorthand type coercion for the
-// --member struct flag; they mirror MemberRequest.
-var (
-	memberIntFields  = []string{"port", "weight", "monitorPort"}
-	memberBoolFields = []string{"backup"}
-)
-
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Replace the members of a pool",
@@ -28,7 +21,7 @@ func init() {
 	addIDFlags(updateCmd)
 	f := updateCmd.Flags()
 	f.StringArray("member", nil,
-		"Pool member, shorthand (ipAddress=10.0.0.4,port=80,weight=1,backup=false) or JSON (repeatable)")
+		"Pool member, shorthand (ipAddress=10.0.0.4,port=80,monitorPort=80,weight=1,backup=false) or JSON (repeatable)")
 	f.Bool("keep-existing", false, "Keep the pool's current members and add the --member entries to them")
 	f.Bool("force", false, "Skip confirmation prompt")
 	f.Bool("dry-run", false, "Preview the resulting member list without applying it")
@@ -73,25 +66,14 @@ func buildUpdateBody(current []interface{}, memberFlags []string, memberFlagGive
 		}
 	}
 
-	parsed, err := cli.ParseStructFlags("member", memberFlags, memberIntFields, memberBoolFields)
+	parsed, err := cli.ParseStructFlags("member", memberFlags, vlbclient.MemberIntFields, vlbclient.MemberBoolFields)
 	if err != nil {
 		return nil, err
 	}
-	// monitorPort is optional in the spec but mandatory in practice: omitting it
-	// yields a 400 complaining that monitorPort is out of range, which is
-	// baffling when the user never set one. Only new --member entries are
-	// checked; members carried over by --keep-existing already have one.
-	for i, m := range parsed {
-		if _, ok := m["monitorPort"]; !ok {
-			return nil, fmt.Errorf("--member[%d]: monitorPort is required by the API "+
-				"(set it to the same value as port for a plain health check)", i)
-		}
-		// backup is a boxed @NotNull Boolean on MemberRequest, so omitting it
-		// fails with "must not be null". Its default is unambiguous, so fill it
-		// in rather than demand it.
-		if _, ok := m["backup"]; !ok {
-			m["backup"] = false
-		}
+	// Only new --member entries are checked; members carried over by
+	// --keep-existing already carry the service's own values.
+	if err := vlbclient.ValidateMembers(parsed); err != nil {
+		return nil, err
 	}
 	members = append(members, parsed...)
 

@@ -33,7 +33,7 @@ func runListBySubnet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	result, err := apiClient.Get(fmt.Sprintf("%s/subnet/%s", vlbclient.LoadBalancers(projectID), subnetID), nil)
+	result, err := apiClient.Get(vlbclient.LoadBalancersBySubnet(projectID, subnetID), nil)
 	if err != nil {
 		return fmt.Errorf("failed to list load balancers in subnet %s: %w", subnetID, err)
 	}

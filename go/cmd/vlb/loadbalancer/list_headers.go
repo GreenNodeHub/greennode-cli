@@ -20,7 +20,7 @@ func runListHeaders(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	result, err := apiClient.Get(fmt.Sprintf("%s/headers", vlbclient.LoadBalancers(projectID)), nil)
+	result, err := apiClient.Get(vlbclient.Headers(projectID), nil)
 	if err != nil {
 		return fmt.Errorf("failed to list headers: %w", err)
 	}

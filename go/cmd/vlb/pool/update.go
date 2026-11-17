@@ -106,7 +106,20 @@ func buildUpdateBody(current, currentMonitor map[string]interface{}, changed map
 		return nil, fmt.Errorf("--health-monitor: %w", err)
 	}
 	for k, v := range overrides {
+		// An empty value (domainName=) removes the field instead of sending "".
+		if s, isStr := v.(string); isStr && s == "" {
+			delete(hm, k)
+			continue
+		}
 		hm[k] = v
+	}
+	// httpVersion 1.0 forbids a domainName. When the user switches to 1.0 and
+	// the domain only came from the current monitor, drop it: otherwise the
+	// carried-over value makes the switch impossible.
+	if v, _ := overrides["httpVersion"].(string); v == "1.0" {
+		if _, userSetDomain := overrides["domainName"]; !userSetDomain {
+			delete(hm, "domainName")
+		}
 	}
 	if len(hm) == 0 {
 		return nil, fmt.Errorf("could not read the pool's current health monitor; " +
@@ -162,7 +175,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to fetch the health monitor of pool %s: %w", poolID, err)
 	}
 
-	body, err := buildUpdateBody(unwrapData(response), unwrapData(monitorResp), changed,
+	body, err := buildUpdateBody(vlbclient.UnwrapData(response), vlbclient.UnwrapData(monitorResp), changed,
 		algorithm, stickiness, tlsEncryption, healthMonitor)
 	if err != nil {
 		return err

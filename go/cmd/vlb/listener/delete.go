@@ -59,7 +59,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 }
 
 func printDeletePreview(response interface{}) {
-	l := unwrapData(response)
+	l := vlbclient.UnwrapData(response)
 	fmt.Println("The following listener will be deleted:")
 	fmt.Println()
 	fmt.Printf("  ID:           %v\n", l["uuid"])

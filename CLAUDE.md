@@ -130,6 +130,7 @@ go/
 │   ├── vlbclient/                   # VLB endpoint + URL path builders + resource completers
 │   │   ├── client.go                # BuildClient / ProjectID / Output (wraps internal/cli)
 │   │   ├── paths.go                 # Resolve() + every VLB URL path
+│   │   ├── body.go                  # UnwrapData + shared --member fields/validation
 │   │   └── complete.go              # CompleteLoadBalancerIDs, CompletePoolIDs, ...
 │   ├── agentbase/                   # self-contained agentbase stack (own auth/config/client)
 │   │   ├── auth/                    # OAuth2 v2 clientcredentials

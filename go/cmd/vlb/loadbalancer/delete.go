@@ -60,7 +60,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 // printDeletePreview describes the load balancer about to be deleted. The GET
 // response wraps the resource in a "data" envelope.
 func printDeletePreview(response interface{}) {
-	lb := unwrapData(response)
+	lb := vlbclient.UnwrapData(response)
 	fmt.Println("The following load balancer will be deleted:")
 	fmt.Println()
 	fmt.Printf("  ID:      %v\n", lb["uuid"])
@@ -70,18 +70,4 @@ func printDeletePreview(response interface{}) {
 	fmt.Printf("  Status:  %v\n", lb["displayStatus"])
 	fmt.Println()
 	fmt.Println("Its listeners, pools and members are deleted with it. This action is irreversible.")
-}
-
-// unwrapData returns the payload of a {"data": {...}} envelope, or the response
-// itself when it is already the bare object. Returns an empty map for anything
-// else so preview printing degrades to blanks rather than panicking.
-func unwrapData(response interface{}) map[string]interface{} {
-	m, ok := response.(map[string]interface{})
-	if !ok {
-		return map[string]interface{}{}
-	}
-	if data, ok := m["data"].(map[string]interface{}); ok {
-		return data
-	}
-	return m
 }

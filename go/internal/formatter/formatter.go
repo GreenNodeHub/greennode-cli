@@ -18,7 +18,9 @@ import (
 // Checking these by name (instead of "first array field found") prevents a
 // detail object's nested array field (e.g. a cluster's listSubnetIds) from being
 // mistaken for the rows — which previously produced empty table/text output.
-var knownListKeys = []string{"items", "listData", "data"}
+// "content" is the vDB key for paginated backups, configurations and histories
+// (see internal/vdbclient/output.go).
+var knownListKeys = []string{"items", "listData", "data", "content"}
 
 // Format formats and outputs the response data (no coloring).
 func Format(data interface{}, outputFormat, query string, w io.Writer) error {
