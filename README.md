@@ -160,6 +160,21 @@ grn --version
 
 - `list-cluster-versions` — List available Kubernetes versions
 
+**Add-on**
+
+- `list-addon-versions` — List the add-ons of the catalog and their versions
+- `get-addon-configuration-schema` — Get the configuration schema of an add-on version
+- `list-addons` — List the add-ons installed on a cluster
+- `get-addon` — Get details of an add-on installed on a cluster
+- `create-addon` — Install an add-on on a cluster
+- `update-addon` — Update the version or configuration of an add-on
+- `delete-addon` — Delete an add-on from a cluster
+
+**Update**
+
+- `list-updates` — List the update IDs of a cluster, a node group or an add-on
+- `get-update` — Get the status of an update
+
 **Auto-Upgrade**
 
 - `set-auto-upgrade-config` — Configure auto-upgrade schedule for a cluster
@@ -188,6 +203,9 @@ grn --version
 - `wait cluster-deleted` — Wait until a cluster is fully deleted
 - `wait nodegroup-active` — Wait until a node group reaches ACTIVE status
 - `wait nodegroup-deleted` — Wait until a node group is fully deleted
+- `wait addon-active` — Wait until an add-on reaches ACTIVE status
+- `wait addon-deleted` — Wait until an add-on is fully deleted
+- `wait update-successful` — Wait until an update reaches Successful status
 
 ## Getting Help
 
