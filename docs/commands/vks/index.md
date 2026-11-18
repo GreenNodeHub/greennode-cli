@@ -1,6 +1,6 @@
 # VKS Commands
 
-VKS (GreenNode Kubernetes Service) commands for managing Kubernetes clusters and node groups.
+VKS (GreenNode Kubernetes Service) commands for managing Kubernetes clusters, node groups and cluster add-ons.
 
 ```bash
 grn vks <command> [options]
@@ -36,6 +36,25 @@ grn vks <command> [options]
 | Command | Description |
 |---------|-------------|
 | [list-cluster-versions](list-cluster-versions.md) | List available Kubernetes versions |
+
+### Add-on
+
+| Command | Description |
+|---------|-------------|
+| [list-addon-versions](list-addon-versions.md) | List the add-ons of the catalog and their versions |
+| [get-addon-configuration-schema](get-addon-configuration-schema.md) | Get the configuration schema of an add-on version |
+| [list-addons](list-addons.md) | List the add-ons installed on a cluster |
+| [get-addon](get-addon.md) | Get details of an add-on installed on a cluster |
+| [create-addon](create-addon.md) | Install an add-on on a cluster |
+| [update-addon](update-addon.md) | Update the version or configuration of an add-on |
+| [delete-addon](delete-addon.md) | Delete an add-on from a cluster |
+
+### Update
+
+| Command | Description |
+|---------|-------------|
+| [list-updates](list-updates.md) | List the update IDs of a cluster, a node group or an add-on |
+| [get-update](get-update.md) | Get the status of an update |
 
 ### Auto-Upgrade
 
@@ -73,4 +92,4 @@ grn vks <command> [options]
 
 | Command | Description |
 |---------|-------------|
-| [wait](wait.md) | Wait until a cluster or node group reaches a desired state |
+| [wait](wait.md) | Wait until a cluster, node group, add-on or update reaches a desired state |

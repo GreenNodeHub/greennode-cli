@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/validator"
 	"github.com/spf13/cobra"
@@ -85,7 +86,7 @@ func evaluateDeleted(result interface{}, err error) (done bool, failed bool, sta
 var waitCmd = &cobra.Command{
 	Use:   "wait",
 	Short: "Wait for a VKS resource to reach a desired state",
-	Long:  "Poll until a cluster or node group reaches the requested state (active or deleted).",
+	Long:  "Poll until a cluster, node group or add-on reaches the requested state (active or deleted), or an update completes.",
 }
 
 // evaluator decides, for one poll, whether the waiter is done, has failed, or
@@ -142,10 +143,14 @@ var (
 	waitClusterDeletedSub   = &cobra.Command{Use: "cluster-deleted", Short: "Wait until a cluster is deleted", RunE: runWaitClusterDeleted}
 	waitNodegroupActiveSub  = &cobra.Command{Use: "nodegroup-active", Short: "Wait until a node group reaches ACTIVE", RunE: runWaitNodegroupActive}
 	waitNodegroupDeletedSub = &cobra.Command{Use: "nodegroup-deleted", Short: "Wait until a node group is deleted", RunE: runWaitNodegroupDeleted}
+	waitAddonActiveSub      = &cobra.Command{Use: "addon-active", Short: "Wait until an add-on reaches ACTIVE", RunE: runWaitAddonActive}
+	waitAddonDeletedSub     = &cobra.Command{Use: "addon-deleted", Short: "Wait until an add-on is deleted", RunE: runWaitAddonDeleted}
+	waitUpdateSuccessfulSub = &cobra.Command{Use: "update-successful", Short: "Wait until an update reaches Successful", RunE: runWaitUpdateSuccessful}
 )
 
 func init() {
-	for _, c := range []*cobra.Command{waitClusterActiveSub, waitClusterDeletedSub, waitNodegroupActiveSub, waitNodegroupDeletedSub} {
+	for _, c := range []*cobra.Command{waitClusterActiveSub, waitClusterDeletedSub, waitNodegroupActiveSub, waitNodegroupDeletedSub,
+		waitAddonActiveSub, waitAddonDeletedSub, waitUpdateSuccessfulSub} {
 		c.Flags().String("cluster-id", "", "Cluster ID (required)")
 		c.Flags().Int("delay", 30, "Seconds between polls")
 		c.MarkFlagRequired("cluster-id")
@@ -159,7 +164,30 @@ func init() {
 	waitNodegroupActiveSub.Flags().Int("max-attempts", 80, "Maximum poll attempts")
 	waitNodegroupDeletedSub.Flags().Int("max-attempts", 40, "Maximum poll attempts")
 
-	waitCmd.AddCommand(waitClusterActiveSub, waitClusterDeletedSub, waitNodegroupActiveSub, waitNodegroupDeletedSub)
+	for _, c := range []*cobra.Command{waitAddonActiveSub, waitAddonDeletedSub} {
+		c.Flags().String("addon-name", "", "Add-on name (required)")
+		c.MarkFlagRequired("addon-name")
+		c.Flags().Int("max-attempts", 60, "Maximum poll attempts")
+		_ = c.RegisterFlagCompletionFunc("addon-name", cli.FlagFromAPI(fetchClusterAddonNames))
+	}
+	waitAddonActiveSub.Flags().Lookup("delay").DefValue = "10"
+	_ = waitAddonActiveSub.Flags().Set("delay", "10")
+	waitAddonDeletedSub.Flags().Lookup("delay").DefValue = "10"
+	_ = waitAddonDeletedSub.Flags().Set("delay", "10")
+
+	waitUpdateSuccessfulSub.Flags().String("update-id", "", "Update ID (required)")
+	waitUpdateSuccessfulSub.MarkFlagRequired("update-id")
+	waitUpdateSuccessfulSub.Flags().String("addon-name", "", "Add-on the update belongs to")
+	waitUpdateSuccessfulSub.Flags().String("nodegroup-id", "", "Node group the update belongs to")
+	waitUpdateSuccessfulSub.MarkFlagsMutuallyExclusive("nodegroup-id", "addon-name")
+	waitUpdateSuccessfulSub.Flags().Int("max-attempts", 60, "Maximum poll attempts")
+	waitUpdateSuccessfulSub.Flags().Lookup("delay").DefValue = "10"
+	_ = waitUpdateSuccessfulSub.Flags().Set("delay", "10")
+	_ = waitUpdateSuccessfulSub.RegisterFlagCompletionFunc("addon-name", cli.FlagFromAPI(fetchClusterAddonNames))
+	_ = waitUpdateSuccessfulSub.RegisterFlagCompletionFunc("update-id", cli.FlagFromAPI(fetchUpdateIDs))
+
+	waitCmd.AddCommand(waitClusterActiveSub, waitClusterDeletedSub, waitNodegroupActiveSub, waitNodegroupDeletedSub,
+		waitAddonActiveSub, waitAddonDeletedSub, waitUpdateSuccessfulSub)
 }
 
 func runWaitClusterActive(cmd *cobra.Command, args []string) error {
@@ -236,4 +264,74 @@ func runWaitNodegroupDeleted(cmd *cobra.Command, args []string) error {
 		return apiClient.Get(fmt.Sprintf("/v1/clusters/%s/node-groups/%s", clusterID, nodegroupID), nil)
 	}
 	return runWaiter(fmt.Sprintf("node group %s", nodegroupID), "Successfully waited for node group to be deleted", describe, evaluateDeleted, delay, maxAttempts)
+}
+
+// addonWaitArgs reads and validates the flags shared by the add-on waiters.
+func addonWaitArgs(cmd *cobra.Command) (clusterID, addonName string, delay, maxAttempts int, err error) {
+	clusterID, _ = cmd.Flags().GetString("cluster-id")
+	addonName, _ = cmd.Flags().GetString("addon-name")
+	delay, _ = cmd.Flags().GetInt("delay")
+	maxAttempts, _ = cmd.Flags().GetInt("max-attempts")
+	if err = validator.ValidateID(clusterID, "cluster-id"); err != nil {
+		return
+	}
+	err = validateAddonName(addonName)
+	return
+}
+
+func runWaitAddonActive(cmd *cobra.Command, args []string) error {
+	clusterID, addonName, delay, maxAttempts, err := addonWaitArgs(cmd)
+	if err != nil {
+		return err
+	}
+	apiClient, err := createClient(cmd)
+	if err != nil {
+		return err
+	}
+	describe := func() (interface{}, error) {
+		return apiClient.Get(fmt.Sprintf("/v1/clusters/%s/addons/%s", clusterID, addonName), nil)
+	}
+	return runWaiter(fmt.Sprintf("add-on %s", addonName), "Successfully waited for add-on to reach ACTIVE", describe, evaluateAddonActive, delay, maxAttempts)
+}
+
+func runWaitAddonDeleted(cmd *cobra.Command, args []string) error {
+	clusterID, addonName, delay, maxAttempts, err := addonWaitArgs(cmd)
+	if err != nil {
+		return err
+	}
+	apiClient, err := createClient(cmd)
+	if err != nil {
+		return err
+	}
+	describe := func() (interface{}, error) {
+		return apiClient.Get(fmt.Sprintf("/v1/clusters/%s/addons/%s", clusterID, addonName), nil)
+	}
+	return runWaiter(fmt.Sprintf("add-on %s", addonName), "Successfully waited for add-on to be deleted", describe, evaluateAddonDeleted, delay, maxAttempts)
+}
+
+func runWaitUpdateSuccessful(cmd *cobra.Command, args []string) error {
+	clusterID, _ := cmd.Flags().GetString("cluster-id")
+	updateID, _ := cmd.Flags().GetString("update-id")
+	nodegroupID, _ := cmd.Flags().GetString("nodegroup-id")
+	addonName, _ := cmd.Flags().GetString("addon-name")
+	delay, _ := cmd.Flags().GetInt("delay")
+	maxAttempts, _ := cmd.Flags().GetInt("max-attempts")
+	if err := validator.ValidateID(clusterID, "cluster-id"); err != nil {
+		return err
+	}
+	if err := validator.ValidateID(updateID, "update-id"); err != nil {
+		return err
+	}
+	if err := validateUpdateScope(nodegroupID, addonName); err != nil {
+		return err
+	}
+	apiClient, err := createClient(cmd)
+	if err != nil {
+		return err
+	}
+	params := updateScopeParams(nodegroupID, addonName)
+	describe := func() (interface{}, error) {
+		return apiClient.Get(fmt.Sprintf("/v1/clusters/%s/updates/%s", clusterID, updateID), params)
+	}
+	return runWaiter(fmt.Sprintf("update %s", updateID), "Successfully waited for update to reach Successful", describe, evaluateUpdateSuccessful, delay, maxAttempts)
 }

@@ -87,8 +87,16 @@ go/
 │       ├── get_cluster_events.go         # Cluster events (paginated)
 │       ├── generate_kubeconfig.go        # Request kubeconfig (async)
 │       ├── update_kubeconfig.go          # Fetch + merge kubeconfig
+│       ├── addon_helpers.go              # Add-on validators, request flags/body, waiter evaluators, completers
+│       ├── list_addon_versions.go        # Add-on catalog (GET /v1/addon-versions)
+│       ├── get_addon_configuration_schema.go
+│       ├── list_addons.go / get_addon.go
+│       ├── create_addon.go / update_addon.go  # update is async → returns an update
+│       ├── delete_addon.go               # Confirm + --force + --dry-run + --preserve
+│       ├── list_updates.go / get_update.go    # Cluster/node-group/add-on updates
+│       ├── addon_test.go                 # Add-on command tests
 │       ├── completion.go            # registerCompletions() — wires all VKS flag value completers
-│       ├── wait.go                  # Polling waiters (cluster-active, cluster-deleted, nodegroup-active, nodegroup-deleted)
+│       ├── wait.go                  # Polling waiters (cluster/nodegroup/addon active+deleted, update-successful)
 │       ├── wait_test.go             # Wait command tests
 │       └── auto_upgrade.go          # Set/delete auto-upgrade
 ├── internal/

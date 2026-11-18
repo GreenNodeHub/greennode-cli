@@ -39,3 +39,25 @@ repo-wide conventions; this file records what is specific to VKS.
 - `--placement-group` → `placementGroupConfigDto` (strings)
 - `--auto-upgrade-config` → `autoUpgradeConfig` (`weekdays` — use JSON for multiple days; `time`)
 - `--auto-healing-config` → `autoHealingConfig` (bool `enableAutoHealing`, int `timeoutUnhealthy`)
+
+## Add-ons (EKS-style API)
+
+- Paths: `/v1/clusters/{id}/addons[/{name}[/update]]`, catalog `/v1/addon-versions`,
+  schema `/v1/addons/{name}/versions/{version}/configuration-schema`, updates
+  `/v1/clusters/{id}/updates[/{updateId}]`. Responses are wrapped: `{addon:…}`,
+  `{update:…}`, `{addons:[names], addonDetails:[…]}` (details only with `?detail=true`).
+- Add-on status: `CREATING`, `ACTIVE`, `DEGRADED`, `UPDATING`, `DELETING`,
+  `CREATE_FAILED`, `UPDATE_FAILED`, `DELETE_FAILED`. **`DEGRADED` ≠ failed**: the Helm
+  release is applied but workloads are not ready (e.g. no nodes yet); a 2-minute sync
+  turns it `ACTIVE`. `wait addon-active` keeps polling on it (EKS fails on it).
+- `update-addon` is asynchronous and returns an **update** (`InProgress` → `Successful` |
+  `Failed` | `Cancelled`). Omitted fields keep the current value; `configurationValues: ""`
+  clears it — so the body holds only flags the user set (`cmd.Flags().Changed`).
+- `get-update` / `list-updates` scope must match: `addonName` for add-on updates,
+  `nodeGroupId` for node-group updates, none for the cluster. A wrong scope is a 404.
+- `list-updates` pages with `maxResults` (1-100) + `nextToken`, not `page`/`pageSize`.
+- Add-on versions look like `1.2.0-vks.1` (regex in `addon_helpers.go`, mirrors vks-api
+  `AddonConst`); `--k8s-version` for the catalog is sent without a leading `v`.
+- `create-addon` is accepted while the cluster is `WAITING_*`/`CREATING`/`ACTIVE`.
+- `configurationValues` is a JSON or YAML **string** (≤64 KiB); `file://<path>` is read
+  by the CLI.

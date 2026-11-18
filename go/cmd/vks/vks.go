@@ -34,6 +34,19 @@ func init() {
 	VksCmd.AddCommand(updateNodegroupMetadataCmd)
 	VksCmd.AddCommand(listNodesCmd)
 
+	// Add-on commands
+	VksCmd.AddCommand(listAddonVersionsCmd)
+	VksCmd.AddCommand(getAddonConfigurationSchemaCmd)
+	VksCmd.AddCommand(listAddonsCmd)
+	VksCmd.AddCommand(getAddonCmd)
+	VksCmd.AddCommand(createAddonCmd)
+	VksCmd.AddCommand(updateAddonCmd)
+	VksCmd.AddCommand(deleteAddonCmd)
+
+	// Update (asynchronous change) commands
+	VksCmd.AddCommand(listUpdatesCmd)
+	VksCmd.AddCommand(getUpdateCmd)
+
 	// Wait commands
 	VksCmd.AddCommand(waitCmd)
 

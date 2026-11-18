@@ -58,6 +58,17 @@ nav:
       - delete-nodegroup: commands/vks/delete-nodegroup.md
     - Versions:
       - list-cluster-versions: commands/vks/list-cluster-versions.md
+    - Add-on:
+      - list-addon-versions: commands/vks/list-addon-versions.md
+      - get-addon-configuration-schema: commands/vks/get-addon-configuration-schema.md
+      - list-addons: commands/vks/list-addons.md
+      - get-addon: commands/vks/get-addon.md
+      - create-addon: commands/vks/create-addon.md
+      - update-addon: commands/vks/update-addon.md
+      - delete-addon: commands/vks/delete-addon.md
+    - Update:
+      - list-updates: commands/vks/list-updates.md
+      - get-update: commands/vks/get-update.md
     - Auto-Upgrade:
       - config-auto-upgrade: commands/vks/config-auto-upgrade.md
       - delete-auto-upgrade-config: commands/vks/delete-auto-upgrade-config.md
