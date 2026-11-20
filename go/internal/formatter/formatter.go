@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +18,9 @@ import (
 // Checking these by name (instead of "first array field found") prevents a
 // detail object's nested array field (e.g. a cluster's listSubnetIds) from being
 // mistaken for the rows — which previously produced empty table/text output.
-var knownListKeys = []string{"items", "listData", "data"}
+// "content" is the vDB key for paginated backups, configurations and histories
+// (see internal/vdbclient/output.go).
+var knownListKeys = []string{"items", "listData", "data", "content"}
 
 // Format formats and outputs the response data (no coloring).
 func Format(data interface{}, outputFormat, query string, w io.Writer) error {
@@ -153,7 +157,7 @@ func formatRowsTable(rows []interface{}, w io.Writer, color bool) {
 		m, _ := row.(map[string]interface{})
 		strRows[i] = make([]string, len(headers))
 		for j, h := range headers {
-			val := fmt.Sprint(m[h])
+			val := cellString(m[h])
 			strRows[i][j] = val
 			if len(val) > colWidths[j] {
 				colWidths[j] = len(val)
@@ -184,7 +188,7 @@ func formatKeyValueTable(m map[string]interface{}, w io.Writer, color bool) {
 	valWidth := len("VALUE")
 	vals := make([]string, len(keys))
 	for i, k := range keys {
-		vals[i] = fmt.Sprint(m[k])
+		vals[i] = cellString(m[k])
 		if len(vals[i]) > valWidth {
 			valWidth = len(vals[i])
 		}
@@ -255,7 +259,7 @@ func mapValues(m map[string]interface{}) []string {
 	keys := mapKeys(m)
 	vals := make([]string, len(keys))
 	for i, k := range keys {
-		vals[i] = fmt.Sprint(m[k])
+		vals[i] = cellString(m[k])
 	}
 	return vals
 }
@@ -357,7 +361,7 @@ func formatTableColumns(data interface{}, columns []string, w io.Writer, color b
 		m, _ := row.(map[string]interface{})
 		strRows[i] = make([]string, len(columns))
 		for j, col := range columns {
-			val := fmt.Sprint(m[col])
+			val := cellString(m[col])
 			if val == "<nil>" {
 				val = ""
 			}
@@ -383,24 +387,25 @@ func formatTableColumns(data interface{}, columns []string, w io.Writer, color b
 }
 
 func extractRows(data interface{}) []interface{} {
-	switch v := data.(type) {
-	case []interface{}:
-		return v
-	case map[string]interface{}:
-		// List envelope: {"listData": [...]} or any key holding a slice
-		for _, value := range v {
-			if items, ok := value.([]interface{}); ok {
-				return items
-			}
-		}
-		// Single-object envelope: {"data": {...}} — unwrap the inner object
+	// A top-level array, or an object wrapping one under a known list key, is
+	// the row set. listRows is shared with formatTable so both table paths
+	// agree on what counts as a list — and, crucially, it only looks under the
+	// known keys. Scanning every value for the first slice would let an
+	// unrelated array field (a certificate's subjectAlternativeNames, a
+	// resource's tags) hijack the rows, and would do so non-deterministically,
+	// since Go randomises map iteration order.
+	if rows, ok := listRows(data); ok {
+		return rows
+	}
+	if v, ok := data.(map[string]interface{}); ok {
+		// Single-object envelope: {"data": {...}} — unwrap the inner object.
 		if inner, ok := v["data"].(map[string]interface{}); ok {
 			return []interface{}{inner}
 		}
-		return []interface{}{v}
-	default:
+		// A bare detail object is a single row.
 		return []interface{}{v}
 	}
+	return []interface{}{data}
 }
 func formatHeader(s string) string {
 	var b strings.Builder
@@ -416,4 +421,18 @@ func formatHeader(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// cellString renders one table or text cell. JSON numbers arrive as float64, and
+// fmt.Sprint switches to scientific notation for large magnitudes — an epoch
+// millisecond timestamp such as notAfter rendered as "1.781232534e+12". Whole
+// values are therefore printed as integers.
+func cellString(v interface{}) string {
+	if f, ok := v.(float64); ok && f == math.Trunc(f) && !math.IsInf(f, 0) &&
+		// Strict upper bound: float64(MaxInt64) rounds up to 2^63, which
+		// would overflow int64.
+		f >= math.MinInt64 && f < math.MaxInt64 {
+		return strconv.FormatInt(int64(f), 10)
+	}
+	return fmt.Sprint(v)
 }

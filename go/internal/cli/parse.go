@@ -110,3 +110,25 @@ func BuildEventsQuery(action, eventType string, page, pageSize int, changed map[
 	}
 	return params
 }
+
+// ParseStructFlags parses a repeatable struct-valued flag (cobra StringArray)
+// into one map per occurrence, applying ParseStructFlagTyped to each. Blank
+// entries are skipped; the flag name is used to prefix errors so the user is
+// told which occurrence was malformed.
+func ParseStructFlags(flagName string, values []string, intFields, boolFields []string) ([]map[string]interface{}, error) {
+	out := make([]map[string]interface{}, 0, len(values))
+	for i, v := range values {
+		m, err := ParseStructFlagTyped(v, intFields, boolFields)
+		if err != nil {
+			return nil, fmt.Errorf("--%s[%d]: %w", flagName, i, err)
+		}
+		if m == nil {
+			continue
+		}
+		out = append(out, m)
+	}
+	if len(out) == 0 {
+		return nil, nil
+	}
+	return out, nil
+}

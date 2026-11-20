@@ -752,14 +752,15 @@ meaning. Print a confirmation, not the payload.
 - List items are very wide (a database instance carries ~68 fields, billing
   metadata included), so list commands **must** pass a column set to
   `vdbclient.OutputWithColumns`. JSON output is unaffected and keeps every field.
-- **`OutputWithColumns` is for lists only.** It goes through
-  `formatter.extractRows`, which returns the first slice it finds while ranging
-  over the map. That is deterministic for a list payload (one array: the items),
-  but a detail payload has several nested arrays — a database instance carries
-  `ip`, `securityGroup`, `replicas` and `sharedActions` — and Go randomises map
-  iteration, so table output would pick one of them at random. Detail commands
-  (`get`) must use `vdbclient.Output`, which renders an object as a key/value
-  table.
+- **Use `OutputWithColumns` for lists, `vdbclient.Output` for detail commands.**
+  `OutputWithColumns` goes through `formatter.extractRows`, which looks for the
+  rows only under the known list keys (a top-level array, or `items`/`data`/
+  `listData`/… — see `formatter.listRows`) and otherwise renders the object as a
+  single row. Both cases are deterministic: nested arrays in a detail payload
+  (an instance's `ip`, `securityGroup`, `replicas`, `sharedActions`) are no
+  longer picked up as rows. A detail object through `OutputWithColumns` would
+  still show only the chosen columns as one wide row, so `get` commands should
+  keep using `vdbclient.Output`, which renders an object as a key/value table.
 
 ## Build gating
 

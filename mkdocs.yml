@@ -286,6 +286,17 @@ nav:
       - user: commands/vdb/kafka-user.md
       - configuration: commands/vdb/kafka-configuration.md
       - catalog: commands/vdb/kafka-catalog.md
+  - VLB Commands:
+    - Overview: commands/vlb/index.md
+    - Load Balancers:
+      - loadbalancer: commands/vlb/load-balancer.md
+    - Traffic Routing:
+      - listener: commands/vlb/listener.md
+      - pool: commands/vlb/pool.md
+    - Security:
+      - certificate: commands/vlb/certificate.md
+    - Reference:
+      - package: commands/vlb/package.md
   - Development:
     - Contributing: development/contributing.md
     - Architecture & Adding a Service: development/architecture.md
