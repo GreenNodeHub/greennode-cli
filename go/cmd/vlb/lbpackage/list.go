@@ -21,6 +21,9 @@ func init() {
 	f := listCmd.Flags()
 	f.String("zone-id", "", "Zone to list active packages for (active packages only)")
 	f.Bool("all", false, "List every package, including those not currently offered")
+	// The all_packages endpoint takes no zone filter; refuse the pair instead
+	// of silently returning every zone's packages.
+	listCmd.MarkFlagsMutuallyExclusive("all", "zone-id")
 }
 
 func runList(cmd *cobra.Command, args []string) error {

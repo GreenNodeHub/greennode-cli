@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"bytes"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -203,6 +204,9 @@ func TestCellStringDoesNotUseScientificNotation(t *testing.T) {
 		{"already a string", "already a string"},
 		{true, "true"},
 		{nil, "<nil>"},
+		// 2^63 equals float64(MaxInt64) after rounding; int64() of it would
+		// overflow to MinInt64, so it must not take the integer path.
+		{math.Pow(2, 63), "9.223372036854776e+18"},
 	} {
 		if got := cellString(tc.in); got != tc.want {
 			t.Errorf("cellString(%#v) = %q, want %q", tc.in, got, tc.want)

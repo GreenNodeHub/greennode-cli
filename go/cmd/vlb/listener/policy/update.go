@@ -83,14 +83,15 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 	}
 	body["action"] = action
 
+	// Flags that have no place in this action's body are refused instead of
+	// dropped, or the user's change is silently lost and the PUT still moves
+	// the load balancer into UPDATING.
+	if err := rejectActionMismatch(f, action); err != nil {
+		return nil, err
+	}
+
 	switch action {
 	case actionRedirectToPool:
-		// The URL-only flags have no place in a REDIRECT_TO_POOL body. Refuse
-		// them instead of dropping them, or the user's change is silently lost
-		// and the PUT still moves the load balancer into UPDATING.
-		if err := rejectChanged(f, action, "redirect-url", "redirect-http-code", "keep-query-string"); err != nil {
-			return nil, err
-		}
 		poolID, _ := f.GetString("redirect-pool-id")
 		if !f.Changed("redirect-pool-id") {
 			poolID, _ = current["redirectPoolId"].(string)
@@ -100,9 +101,6 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 		}
 		body["redirectPoolId"] = poolID
 	case actionRedirectToURL:
-		if err := rejectChanged(f, action, "redirect-pool-id"); err != nil {
-			return nil, err
-		}
 		url, _ := f.GetString("redirect-url")
 		if !f.Changed("redirect-url") {
 			url, _ = current["redirectUrl"].(string)
@@ -150,6 +148,18 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 
 // rejectChanged returns an error when any of the named flags was set, because
 // it does not apply to the policy's action.
+// rejectActionMismatch refuses the flags that have no place in a body for
+// `action`. Shared by create and update so both give the same error.
+func rejectActionMismatch(f *pflag.FlagSet, action string) error {
+	switch action {
+	case actionRedirectToPool:
+		return rejectChanged(f, action, "redirect-url", "redirect-http-code", "keep-query-string")
+	case actionRedirectToURL:
+		return rejectChanged(f, action, "redirect-pool-id")
+	}
+	return nil
+}
+
 func rejectChanged(f *pflag.FlagSet, action string, names ...string) error {
 	var set []string
 	for _, n := range names {

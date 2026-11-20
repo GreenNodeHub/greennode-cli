@@ -354,6 +354,28 @@ func TestDryRunRejectsBadInput(t *testing.T) {
 			wantErr: "--rule is required",
 		},
 		{
+			name: "policy create refuses url flags on a pool redirect (same as update)",
+			args: []string{"listener", "policy", "create", "--load-balancer-id", "lb-1",
+				"--listener-id", "li-1", "--name", "p", "--action", "REDIRECT_TO_POOL",
+				"--redirect-pool-id", "pool-1", "--redirect-url", "https://x",
+				"--redirect-http-code", "301",
+				"--rule", "ruleType=PATH,compareType=STARTS_WITH,ruleValue=/x", "--dry-run"},
+			wantErr: "--redirect-url, --redirect-http-code cannot be used when the action is REDIRECT_TO_POOL",
+		},
+		{
+			name: "policy create refuses a pool on a url redirect (same as update)",
+			args: []string{"listener", "policy", "create", "--load-balancer-id", "lb-1",
+				"--listener-id", "li-1", "--name", "p", "--action", "REDIRECT_TO_URL",
+				"--redirect-url", "https://x", "--redirect-pool-id", "pool-1",
+				"--rule", "ruleType=PATH,compareType=STARTS_WITH,ruleValue=/x", "--dry-run"},
+			wantErr: "--redirect-pool-id cannot be used when the action is REDIRECT_TO_URL",
+		},
+		{
+			name:    "package list --all ignores zones, so --zone-id is refused with it",
+			args:    []string{"package", "list", "--all", "--zone-id", "HCM03-1A"},
+			wantErr: "none of the others can be",
+		},
+		{
 			name: "certificate type must be one of the two",
 			args: []string{"certificate", "create", "--name", "c", "--type", "PGP",
 				"--certificate", "PEM", "--dry-run"},

@@ -387,7 +387,9 @@ grn vlb pool member update
 
 `--keep-existing` (boolean)
 : Keep the pool's current members and add the `--member` entries to them.
-  Default: `false`.
+  A `--member` with the same `ipAddress` and `port` as a current member
+  replaces that member (use this to change its weight). Needs at least one
+  `--member`. Default: `false`.
 
 `--force` (boolean)
 : Skip the confirmation prompt. Default: `false`.
@@ -406,6 +408,10 @@ grn vlb pool member update --load-balancer-id lb-1234abcd --pool-id pool-1 \
 # Add one server, keeping the rest
 grn vlb pool member update --load-balancer-id lb-1234abcd --pool-id pool-1 \
     --keep-existing --member ipAddress=10.0.0.6,port=80,monitorPort=80
+
+# Change the weight of one server, keeping the rest
+grn vlb pool member update --load-balancer-id lb-1234abcd --pool-id pool-1 \
+    --keep-existing --member ipAddress=10.0.0.4,port=80,monitorPort=80,weight=5
 
 # Preview first
 grn vlb pool member update --load-balancer-id lb-1234abcd --pool-id pool-1 \

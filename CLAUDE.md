@@ -72,7 +72,7 @@ go/
 │   │   ├── completion.go            # registerCompletions() — walks the VLB tree
 │   │   ├── loadbalancer/            # list/get/create/delete/resize/clone/configure-scaling/wait-active/...
 │   │   ├── listener/                # list/get/create/update/delete
-│   │   │   └── policy/              # L7 policies: list/get/create/update/delete/update-order
+│   │   │   └── policy/              # L7 policies: list/get/create/update/delete
 │   │   ├── pool/                    # list/get/create/update/delete/get-health-monitor
 │   │   │   └── member/              # list/update (update REPLACES the member list)
 │   │   ├── certificate/             # list/get/create (alias import)/delete

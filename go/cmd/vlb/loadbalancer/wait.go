@@ -2,6 +2,7 @@ package loadbalancer
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/vlbclient"
@@ -16,9 +17,12 @@ import (
 // statusOf reads displayStatus out of a GET response. VLB wraps the resource in
 // a "data" envelope and names the field displayStatus — not "status" as VKS
 // does — so this cannot share vks's extractor.
+//
+// The value is upper-cased: displayStatus casing differs per resource (see
+// cmd/vlb/CLAUDE.md), so every evaluator compares case-insensitively for free.
 func statusOf(result interface{}) string {
 	s, _ := vlbclient.UnwrapData(result)["displayStatus"].(string)
-	return s
+	return strings.ToUpper(s)
 }
 
 // terminalFailureStatuses are the states a load balancer will not leave on its

@@ -429,7 +429,9 @@ func formatHeader(s string) string {
 // values are therefore printed as integers.
 func cellString(v interface{}) string {
 	if f, ok := v.(float64); ok && f == math.Trunc(f) && !math.IsInf(f, 0) &&
-		f >= math.MinInt64 && f <= math.MaxInt64 {
+		// Strict upper bound: float64(MaxInt64) rounds up to 2^63, which
+		// would overflow int64.
+		f >= math.MinInt64 && f < math.MaxInt64 {
 		return strconv.FormatInt(int64(f), 10)
 	}
 	return fmt.Sprint(v)

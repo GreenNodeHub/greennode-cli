@@ -13,7 +13,9 @@ var updateCmd = &cobra.Command{
 	Short: "Replace the members of a pool",
 	Long: "Set the pool's member list. The API replaces the list wholesale, so any " +
 		"existing member not passed via --member is removed. Use --keep-existing to " +
-		"add to the current members instead of replacing them.",
+		"add to the current members instead of replacing them; a --member with the " +
+		"same ipAddress and port as a current member replaces that member (e.g. to " +
+		"change its weight).",
 	RunE: runUpdate,
 }
 
@@ -48,6 +50,12 @@ var currentMemberFields = map[string]string{
 func buildUpdateBody(current []interface{}, memberFlags []string, memberFlagGiven, keepExisting bool) (map[string]interface{}, error) {
 	members := []map[string]interface{}{}
 
+	// --keep-existing alone would PUT the unchanged list: a no-op that still
+	// moves the load balancer into UPDATING and blocks the next mutation.
+	if keepExisting && !memberFlagGiven {
+		return nil, fmt.Errorf("nothing to update: --keep-existing needs at least one --member")
+	}
+
 	if keepExisting {
 		for _, item := range current {
 			m, ok := item.(map[string]interface{})
@@ -75,13 +83,34 @@ func buildUpdateBody(current []interface{}, memberFlags []string, memberFlagGive
 	if err := vlbclient.ValidateMembers(parsed); err != nil {
 		return nil, err
 	}
-	members = append(members, parsed...)
+	// A --member with the same ipAddress:port as a carried-over member replaces
+	// it in place, so `--keep-existing --member ...,weight=5` changes a weight
+	// instead of sending the member twice.
+	index := map[string]int{}
+	for i, m := range members {
+		index[memberKey(m)] = i
+	}
+	for _, m := range parsed {
+		key := memberKey(m)
+		if i, ok := index[key]; ok {
+			members[i] = m
+			continue
+		}
+		index[key] = len(members)
+		members = append(members, m)
+	}
 
 	if len(members) == 0 && !memberFlagGiven {
 		return nil, fmt.Errorf("provide at least one --member, or pass --member '' explicitly to empty the pool")
 	}
 
 	return map[string]interface{}{"members": members}, nil
+}
+
+// memberKey identifies a member by ipAddress:port. fmt.Sprint makes a port read
+// back from the API (float64 80) and a parsed one (int 80) compare equal.
+func memberKey(m map[string]interface{}) string {
+	return fmt.Sprint(m["ipAddress"]) + ":" + fmt.Sprint(m["port"])
 }
 
 func runUpdate(cmd *cobra.Command, args []string) error {

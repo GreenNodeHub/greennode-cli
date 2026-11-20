@@ -37,6 +37,9 @@ func TestEvaluateActive(t *testing.T) {
 		{name: "ERROR is terminal", result: lbResponse("ERROR"), wantFailed: true, wantStatus: "ERROR"},
 		{name: "FAILED is terminal", result: lbResponse("FAILED"), wantFailed: true, wantStatus: "FAILED"},
 		{name: "an unknown status keeps polling", result: lbResponse("REBALANCING"), wantStatus: "REBALANCING"},
+		// displayStatus casing differs per resource; compare case-insensitively.
+		{name: "lower-case active finishes the wait", result: lbResponse("active"), wantDone: true, wantStatus: "ACTIVE"},
+		{name: "mixed-case Error is terminal", result: lbResponse("Error"), wantFailed: true, wantStatus: "ERROR"},
 		{name: "404 aborts — waiting cannot conjure it", err: apiErr(404), wantFatal: true},
 		{name: "403 aborts", err: apiErr(403), wantFatal: true},
 		{name: "400 aborts", err: apiErr(400), wantFatal: true},

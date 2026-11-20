@@ -29,8 +29,8 @@ grn vlb package list [--zone-id <value>] [--all]
 ### Options
 
 `--zone-id` (string)
-: List the active packages for a specific availability zone. Ignored when
-  `--all` is given.
+: List the active packages for a specific availability zone. Cannot be
+  combined with `--all`.
 
 `--all` (boolean)
 : List every package, including those not currently offered. Default: `false`.

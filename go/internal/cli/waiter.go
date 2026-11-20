@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/greennodehub/greennode-cli/internal/client"
@@ -49,6 +50,7 @@ type WaitEvaluator func(result interface{}, err error) (done bool, failed bool, 
 // Shared by every product's `wait` commands — the product supplies describe()
 // and the evaluator, which is where the service-specific status handling lives.
 func RunWaiter(label, successMsg string, describe func() (interface{}, error), eval WaitEvaluator, delay, maxAttempts int) error {
+	prevLen := 0
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		result, err := describe()
 		done, failed, status, fatal := eval(result, err)
@@ -65,7 +67,8 @@ func RunWaiter(label, successMsg string, describe func() (interface{}, error), e
 		if shown == "" {
 			shown = "polling"
 		}
-		fmt.Fprintf(os.Stderr, "\rWaiting for %s: %s (attempt %d/%d)", label, shown, attempt, maxAttempts)
+		fmt.Fprint(os.Stderr, progressLine(
+			fmt.Sprintf("Waiting for %s: %s (attempt %d/%d)", label, shown, attempt, maxAttempts), &prevLen))
 
 		if done {
 			fmt.Fprintln(os.Stderr)
@@ -87,4 +90,17 @@ func RunWaiter(label, successMsg string, describe func() (interface{}, error), e
 	fmt.Fprintf(os.Stderr, "Waiter timed out after %d attempts\n", maxAttempts)
 	os.Exit(WaiterExitCode)
 	return nil
+}
+
+// progressLine returns line prefixed with "\r" to redraw the progress line in
+// place. When line is shorter than the previous one, it is padded with spaces
+// so no leftover characters remain. Padding (rather than an ANSI
+// clear-to-end-of-line code) keeps non-TTY output, such as CI logs, clean.
+func progressLine(line string, prevLen *int) string {
+	padded := line
+	if n := *prevLen - len(line); n > 0 {
+		padded += strings.Repeat(" ", n)
+	}
+	*prevLen = len(line)
+	return "\r" + padded
 }

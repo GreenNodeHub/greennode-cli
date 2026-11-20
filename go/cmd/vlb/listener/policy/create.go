@@ -105,6 +105,13 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	rules, _ := f.GetStringArray("rule")
 	dryRun, _ := f.GetBool("dry-run")
 
+	// Refuse flags that do not belong to the chosen action, exactly as
+	// `policy update` does. buildCreateBody would otherwise drop them, and the
+	// policy would be created without the settings the user asked for.
+	if err := rejectActionMismatch(f, action); err != nil {
+		return err
+	}
+
 	body, err := buildCreateBody(name, action, redirectPoolID, redirectURL, redirectHTTPCode, keepQueryString, rules)
 	if err != nil {
 		return err

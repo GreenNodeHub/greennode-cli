@@ -107,12 +107,12 @@ func Output(cmd *cobra.Command, data interface{}) error {
 // included), so table output would be unreadable without one. JSON output is
 // unaffected and still carries every field.
 //
-// Use it for LIST responses only. It routes through formatter.extractRows, which
-// picks the first slice it finds while ranging over the map — deterministic for a
-// list payload (exactly one array: the items) but NOT for a detail payload, where
-// a single instance carries four nested arrays (ip, securityGroup, replicas,
-// sharedActions) and Go randomizes map iteration order. Detail commands should
-// call Output, which renders an object as a key/value table instead.
+// Use it for LIST responses. It routes through formatter.extractRows, which
+// takes the rows only from a top-level array or a known list key (see
+// formatter.listRows) and otherwise renders the object as one row — so nested
+// arrays in a detail payload are never mistaken for rows. Detail commands should
+// still call Output, which renders an object as a key/value table instead of one
+// wide row limited to the chosen columns.
 func OutputWithColumns(cmd *cobra.Command, data interface{}, columns []string) error {
 	return write(cmd, Unwrap(data), columns)
 }

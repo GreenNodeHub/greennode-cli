@@ -90,6 +90,46 @@ func TestBuildUpdateBody(t *testing.T) {
 		}
 	})
 
+	t.Run("--keep-existing: a --member matching ipAddress:port replaces the current one", func(t *testing.T) {
+		got, err := buildUpdateBody(currentMembers(),
+			[]string{"ipAddress=10.0.0.4,port=80,monitorPort=80,weight=5"}, true, true)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		members := got["members"].([]map[string]interface{})
+		if len(members) != 2 {
+			t.Fatalf("members length = %d, want 2 (no duplicate 10.0.0.4:80)", len(members))
+		}
+		// Replaced in place, keeping the order of the current list.
+		if members[0]["ipAddress"] != "10.0.0.4" || members[0]["weight"] != 5 {
+			t.Errorf("members[0] = %#v, want 10.0.0.4 with weight 5", members[0])
+		}
+		if members[1]["ipAddress"] != "10.0.0.5" {
+			t.Errorf("members[1] = %#v, want the untouched 10.0.0.5", members[1])
+		}
+	})
+
+	t.Run("repeating the same ipAddress:port in --member keeps only the last", func(t *testing.T) {
+		got, err := buildUpdateBody(nil, []string{
+			"ipAddress=10.0.0.9,port=80,monitorPort=80,weight=1",
+			"ipAddress=10.0.0.9,port=80,monitorPort=80,weight=3",
+		}, true, false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		members := got["members"].([]map[string]interface{})
+		if len(members) != 1 || members[0]["weight"] != 3 {
+			t.Errorf("members = %v, want one member with weight 3", members)
+		}
+	})
+
+	t.Run("--keep-existing without --member is refused (it would be a no-op PUT)", func(t *testing.T) {
+		_, err := buildUpdateBody(currentMembers(), nil, false, true)
+		if err == nil || !strings.Contains(err.Error(), "nothing to update") {
+			t.Errorf("error = %v, want a nothing-to-update error", err)
+		}
+	})
+
 	t.Run("--keep-existing does not re-check members carried over from the API", func(t *testing.T) {
 		// currentMembers() have no monitorPort; they came from the service, so
 		// they must not be rejected on the way back.
