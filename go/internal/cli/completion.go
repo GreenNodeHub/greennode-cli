@@ -63,6 +63,42 @@ func findSlice(resp interface{}) []interface{} {
 	return nil
 }
 
+// ExtractCompletions pulls "id\tname" completion pairs from a list response.
+// listKeys are the envelope keys to try in order (e.g. "listData", "data");
+// idKey is the completion value and nameKey the tab description. Items missing
+// idKey are skipped; a missing nameKey yields a bare id.
+func ExtractCompletions(result interface{}, listKeys []string, idKey, nameKey string) []string {
+	var items []interface{}
+	switch v := result.(type) {
+	case []interface{}:
+		items = v
+	case map[string]interface{}:
+		for _, key := range listKeys {
+			if d, ok := v[key].([]interface{}); ok {
+				items = d
+				break
+			}
+		}
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		obj, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id, _ := obj[idKey].(string)
+		if id == "" {
+			continue
+		}
+		if name, _ := obj[nameKey].(string); name != "" {
+			out = append(out, id+"\t"+name)
+		} else {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
 // CompFunc is a cobra flag/positional value completion function.
 type CompFunc = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective)
 

@@ -24,3 +24,6 @@
 /go/cmd/vdb/             @GreenNodeHub/vdb
 /go/internal/vdbclient/  @GreenNodeHub/vdb
 /docs/commands/vdb/      @GreenNodeHub/vdb
+/go/cmd/vlb/                @GreenNodeHub/vlb
+/go/internal/vlbclient/     @GreenNodeHub/vlb
+/docs/commands/vlb/         @GreenNodeHub/vlb

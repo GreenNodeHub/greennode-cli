@@ -1,111 +1,34 @@
+// Package vserverclient adapts the shared internal/cli plumbing to vServer:
+// the endpoint name and the vServer-specific resource completers. The client,
+// project-id and output helpers are thin wrappers over internal/cli so vServer
+// and other project-scoped services (vlb) cannot drift apart.
 package vserverclient
 
 import (
-	"fmt"
-	"os"
-	"time"
-
 	"github.com/greennodehub/greennode-cli/internal/cli"
 	"github.com/greennodehub/greennode-cli/internal/client"
 	"github.com/greennodehub/greennode-cli/internal/config"
-	"github.com/greennodehub/greennode-cli/internal/formatter"
 	"github.com/spf13/cobra"
 )
 
-// BuildClient creates a GreennodeClient from cobra command flags.
+// BuildClient creates a GreennodeClient for the vServer endpoint from cobra
+// command flags, along with the config its project ID comes from.
 func BuildClient(cmd *cobra.Command) (*client.GreennodeClient, *config.Config, error) {
-	profile, _ := cmd.Flags().GetString("profile")
-	region, _ := cmd.Flags().GetString("region")
-	endpointURL, _ := cmd.Flags().GetString("endpoint-url")
-	noVerifySSL, _ := cmd.Flags().GetBool("no-verify-ssl")
-	debug, _ := cmd.Flags().GetBool("debug")
-	allowUntrusted, _ := cmd.Flags().GetBool("allow-untrusted-endpoint")
-	connectTimeout, _ := cmd.Flags().GetInt("cli-connect-timeout")
-	readTimeout, _ := cmd.Flags().GetInt("cli-read-timeout")
-
-	if err := cli.CheckEndpoint(endpointURL, noVerifySSL, allowUntrusted); err != nil {
-		return nil, nil, err
-	}
-
-	cfg, err := config.LoadConfig(profile)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Auth source is profile-driven (one auth type per profile): auth_mode=user
-	// → login refresh-token provider; else → machine client_credentials. Shared
-	// with cli.NewClient so vks and vserver select auth identically. Reads the
-	// RESOLVED profile off cfg (cfg.Profile), not the raw --profile flag.
-	tp, err := cli.NewTokenProvider(cfg)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if region != "" {
-		cfg.Region = region
-	}
-
-	var baseURL string
-	if endpointURL != "" {
-		baseURL = endpointURL
-	} else {
-		baseURL, err = cfg.GetEndpoint("vserver")
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	if noVerifySSL {
-		fmt.Fprintln(os.Stderr, "Warning: SSL certificate verification is disabled. This is not recommended for production use.")
-	}
-
-	connect := time.Duration(connectTimeout) * time.Second
-	read := time.Duration(readTimeout) * time.Second
-
-	return client.NewGreennodeClient(baseURL, tp, connect, read, !noVerifySSL, debug), cfg, nil
+	return cli.NewClientWithConfig(cmd, "vserver")
 }
 
 // ProjectID extracts and validates the project ID from config.
 func ProjectID(cfg *config.Config) (string, error) {
-	if cfg.ProjectID == "" {
-		return "", fmt.Errorf("project_id is not configured. Run 'grn configure' or set GRN_DEFAULT_PROJECT_ID")
-	}
-	return cfg.ProjectID, nil
+	return cli.ProjectID(cfg)
 }
 
 // Output formats and writes the API result to stdout.
 func Output(cmd *cobra.Command, cfg *config.Config, data interface{}) error {
-	output, _ := cmd.Flags().GetString("output")
-	query, _ := cmd.Flags().GetString("query")
-
-	if output == "" && cfg != nil {
-		output = cfg.Output
-	}
-	if output == "" {
-		output = "json"
-	}
-
-	colorMode, _ := cmd.Flags().GetString("color")
-	return formatter.FormatColor(data, output, query, os.Stdout, formatter.ColorEnabled(colorMode, os.Stdout))
+	return cli.OutputWithConfig(cmd, cfg, data)
 }
 
 // OutputWithColumns formats and writes the API result to stdout.
 // When the output format is "table", only the specified columns are shown in the given order.
 func OutputWithColumns(cmd *cobra.Command, cfg *config.Config, data interface{}, columns []string) error {
-	output, _ := cmd.Flags().GetString("output")
-	query, _ := cmd.Flags().GetString("query")
-
-	if output == "" && cfg != nil {
-		output = cfg.Output
-	}
-	if output == "" {
-		output = "json"
-	}
-
-	colorMode, _ := cmd.Flags().GetString("color")
-	color := formatter.ColorEnabled(colorMode, os.Stdout)
-	if output == "table" && len(columns) > 0 {
-		return formatter.FormatTableWithColumnsColor(data, columns, query, os.Stdout, color)
-	}
-	return formatter.FormatColor(data, output, query, os.Stdout, color)
+	return cli.OutputWithColumns(cmd, cfg, data, columns)
 }

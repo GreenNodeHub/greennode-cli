@@ -64,9 +64,9 @@ func runListPackages(cmd *cobra.Command, args []string) error {
 // flattenPackages turns the response's two levels into one row per package.
 //
 // The payload is an array of {engineGroup, packages[]}, so a table would otherwise
-// show one row per engine group with the packages collapsed into a Go-printed slice —
-// and OutputWithColumns picks the first array it finds, which is the outer one.
-// Flattening keeps engineGroup on each row so the grouping is not lost.
+// show one row per engine group with the packages collapsed into a Go-printed slice:
+// OutputWithColumns takes the top-level array as the rows and does not descend into
+// nested ones. Flattening keeps engineGroup on each row so the grouping is not lost.
 func flattenPackages(payload interface{}) interface{} {
 	groups, ok := payload.([]interface{})
 	if !ok {

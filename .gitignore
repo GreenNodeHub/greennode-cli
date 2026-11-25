@@ -15,7 +15,15 @@ build/
 .eggs/
 *.whl
 
+# IDE
+.idea/
+.vscode/
+
 # Internal design docs (local only, not for public repo)
 docs/superpowers/
 docs/api-docs-local/
+
+# Live E2E runbook working files (env.example.sh and RESULTS.template.md are committed)
+tests/vlb/env.sh
+tests/vlb/RESULTS.md
 
