@@ -20,7 +20,7 @@ func TestRequireStorageIDRejectsOtherResources(t *testing.T) {
 }
 
 // TestFlattenPackages: the API nests packages under engine groups, and table output
-// picks the first array it finds — the outer one — so each package has to become a
+// takes the top-level array (the groups) as its rows, so each package has to become a
 // row of its own, keeping its engine group.
 func TestFlattenPackages(t *testing.T) {
 	payload := []interface{}{

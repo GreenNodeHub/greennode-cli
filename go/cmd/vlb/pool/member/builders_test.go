@@ -90,41 +90,65 @@ func TestBuildUpdateBody(t *testing.T) {
 		}
 	})
 
-	t.Run("--keep-existing: a --member matching ipAddress:port replaces the current one", func(t *testing.T) {
+	t.Run("--keep-existing: a --member matching ipAddress:port is merged into the current one", func(t *testing.T) {
+		// 10.0.0.5:80 is a backup member named web-2. Changing its weight must
+		// not wipe the name or reset backup to the false default.
 		got, err := buildUpdateBody(currentMembers(),
-			[]string{"ipAddress=10.0.0.4,port=80,monitorPort=80,weight=5"}, true, true)
+			[]string{"ipAddress=10.0.0.5,port=80,monitorPort=80,weight=5"}, true, true)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		members := got["members"].([]map[string]interface{})
 		if len(members) != 2 {
-			t.Fatalf("members length = %d, want 2 (no duplicate 10.0.0.4:80)", len(members))
+			t.Fatalf("members length = %d, want 2 (no duplicate 10.0.0.5:80)", len(members))
 		}
-		// Replaced in place, keeping the order of the current list.
-		if members[0]["ipAddress"] != "10.0.0.4" || members[0]["weight"] != 5 {
-			t.Errorf("members[0] = %#v, want 10.0.0.4 with weight 5", members[0])
+		if members[0]["ipAddress"] != "10.0.0.4" || members[0]["weight"] != float64(1) {
+			t.Errorf("members[0] = %#v, want the untouched 10.0.0.4", members[0])
 		}
-		if members[1]["ipAddress"] != "10.0.0.5" {
-			t.Errorf("members[1] = %#v, want the untouched 10.0.0.5", members[1])
+		// Merged in place, keeping the order of the current list.
+		m := members[1]
+		if m["ipAddress"] != "10.0.0.5" || m["weight"] != 5 || m["monitorPort"] != 80 {
+			t.Errorf("members[1] = %#v, want 10.0.0.5 with weight 5 and monitorPort 80", m)
+		}
+		if m["name"] != "web-2" {
+			t.Errorf("name = %v, want web-2 kept from the current member", m["name"])
+		}
+		if m["backup"] != true {
+			t.Errorf("backup = %v, want true kept (the backup=false default must not apply to a merge)", m["backup"])
 		}
 	})
 
-	t.Run("repeating the same ipAddress:port in --member keeps only the last", func(t *testing.T) {
-		got, err := buildUpdateBody(nil, []string{
-			"ipAddress=10.0.0.9,port=80,monitorPort=80,weight=1",
-			"ipAddress=10.0.0.9,port=80,monitorPort=80,weight=3",
-		}, true, false)
+	t.Run("--keep-existing: an explicit backup in --member does change it", func(t *testing.T) {
+		got, err := buildUpdateBody(currentMembers(),
+			[]string{"ipAddress=10.0.0.5,port=80,monitorPort=80,backup=false"}, true, true)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		members := got["members"].([]map[string]interface{})
-		if len(members) != 1 || members[0]["weight"] != 3 {
-			t.Errorf("members = %v, want one member with weight 3", members)
+		if m := got["members"].([]map[string]interface{})[1]; m["backup"] != false {
+			t.Errorf("backup = %v, want false as the user asked", m["backup"])
+		}
+	})
+
+	t.Run("the same ipAddress:port twice in --member is refused", func(t *testing.T) {
+		_, err := buildUpdateBody(nil, []string{
+			"ipAddress=10.0.0.9,port=80,monitorPort=80,weight=1",
+			"ipAddress=10.0.0.9,port=80,monitorPort=80,weight=3",
+		}, true, false)
+		if err == nil || !strings.Contains(err.Error(), "each member must be given once") {
+			t.Errorf("error = %v, want a duplicate-member error", err)
 		}
 	})
 
 	t.Run("--keep-existing without --member is refused (it would be a no-op PUT)", func(t *testing.T) {
 		_, err := buildUpdateBody(currentMembers(), nil, false, true)
+		if err == nil || !strings.Contains(err.Error(), "nothing to update") {
+			t.Errorf("error = %v, want a nothing-to-update error", err)
+		}
+	})
+
+	t.Run("--keep-existing --member '' is refused too (still a no-op PUT)", func(t *testing.T) {
+		// pflag delivers `--member ''` as an empty slice with Changed=true.
+		_, err := buildUpdateBody(currentMembers(), nil, true, true)
 		if err == nil || !strings.Contains(err.Error(), "nothing to update") {
 			t.Errorf("error = %v, want a nothing-to-update error", err)
 		}
@@ -234,5 +258,18 @@ func TestMemberUpdateRequiresIPAddressAndPort(t *testing.T) {
 		if _, err := buildUpdateBody(nil, []string{member}, true, false); err == nil {
 			t.Errorf("--member %s: expected an error", member)
 		}
+	}
+}
+
+func TestMemberPreviewLineShowsWeightAndBackup(t *testing.T) {
+	got := memberPreviewLine(map[string]interface{}{
+		"ipAddress": "10.0.0.5", "port": 80, "name": "web-2", "weight": 5, "backup": true,
+	})
+	if want := "10.0.0.5:80  (web-2)  weight=5  backup"; got != want {
+		t.Errorf("memberPreviewLine = %q, want %q", got, want)
+	}
+	got = memberPreviewLine(map[string]interface{}{"ipAddress": "10.0.0.9", "port": 8080, "backup": false})
+	if want := "10.0.0.9:8080"; got != want {
+		t.Errorf("memberPreviewLine = %q, want %q", got, want)
 	}
 }

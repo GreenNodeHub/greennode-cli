@@ -27,7 +27,7 @@ func init() {
 	f.String("redirect-pool-id", "", "Pool to forward to (required for REDIRECT_TO_POOL)")
 	f.String("redirect-url", "", "URL to redirect to (required for REDIRECT_TO_URL)")
 	f.Int("redirect-http-code", 0, "Redirect HTTP code: 301 or 302 (REDIRECT_TO_URL only)")
-	f.Bool("keep-query-string", false, "Keep the query string when redirecting")
+	f.Bool("keep-query-string", false, "Keep the query string when redirecting (REDIRECT_TO_URL only)")
 	f.StringArray("rule", nil,
 		"Match rule, shorthand (ruleType=PATH,compareType=STARTS_WITH,ruleValue=/api) or JSON (repeatable, at least one required)")
 	f.Bool("dry-run", false, "Validate parameters and print the request body without creating")

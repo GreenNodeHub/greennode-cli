@@ -373,7 +373,7 @@ func TestDryRunRejectsBadInput(t *testing.T) {
 		{
 			name:    "package list --all ignores zones, so --zone-id is refused with it",
 			args:    []string{"package", "list", "--all", "--zone-id", "HCM03-1A"},
-			wantErr: "none of the others can be",
+			wantErr: "--zone-id cannot be used with --all",
 		},
 		{
 			name: "certificate type must be one of the two",

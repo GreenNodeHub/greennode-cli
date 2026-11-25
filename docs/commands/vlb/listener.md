@@ -401,7 +401,7 @@ grn vlb listener policy create
 : - Possible values: `301`, `302`
 
 `--keep-query-string` (boolean)
-: Keep the query string when redirecting. Default: `false`.
+: Keep the query string when redirecting. `REDIRECT_TO_URL` only. Default: `false`.
 
 `--rule` (struct, repeatable)
 : A condition the request must match. All rules must match.
@@ -413,6 +413,10 @@ grn vlb listener policy create
 
 `--dry-run` (boolean)
 : Validate the parameters and print the request body without creating anything.
+
+Flags of the other action are refused: `--redirect-url`, `--redirect-http-code`
+and `--keep-query-string` fail with `--action REDIRECT_TO_POOL`, and
+`--redirect-pool-id` fails with `--action REDIRECT_TO_URL`.
 
 ### Examples
 

@@ -388,8 +388,13 @@ grn vlb pool member update
 `--keep-existing` (boolean)
 : Keep the pool's current members and add the `--member` entries to them.
   A `--member` with the same `ipAddress` and `port` as a current member
-  replaces that member (use this to change its weight). Needs at least one
-  `--member`. Default: `false`.
+  updates that member: only the fields you set change, and the rest (such as
+  `name` and `backup`) are kept. Use this to change a weight. Needs at least
+  one non-empty `--member`. Default: `false`.
+
+The same `ipAddress` and `port` may appear only once across the `--member`
+flags. The preview before confirmation shows each member's `weight` and marks
+`backup` members.
 
 `--force` (boolean)
 : Skip the confirmation prompt. Default: `false`.

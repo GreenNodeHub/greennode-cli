@@ -33,7 +33,7 @@ func addUpdateFlags(f *pflag.FlagSet) {
 	f.String("redirect-pool-id", "", "Pool to forward to (REDIRECT_TO_POOL only)")
 	f.String("redirect-url", "", "URL to redirect to (REDIRECT_TO_URL only)")
 	f.Int("redirect-http-code", 0, "Redirect HTTP code: 301 or 302 (REDIRECT_TO_URL only)")
-	f.Bool("keep-query-string", false, "Keep the query string when redirecting")
+	f.Bool("keep-query-string", false, "Keep the query string when redirecting (REDIRECT_TO_URL only)")
 	f.StringArray("rule", nil,
 		"Match rule, shorthand (ruleType=PATH,compareType=STARTS_WITH,ruleValue=/api) or JSON (repeatable); replaces the current list")
 }
@@ -146,8 +146,6 @@ func buildUpdateBody(current map[string]interface{}, f *pflag.FlagSet) (map[stri
 	return body, nil
 }
 
-// rejectChanged returns an error when any of the named flags was set, because
-// it does not apply to the policy's action.
 // rejectActionMismatch refuses the flags that have no place in a body for
 // `action`. Shared by create and update so both give the same error.
 func rejectActionMismatch(f *pflag.FlagSet, action string) error {
@@ -160,6 +158,8 @@ func rejectActionMismatch(f *pflag.FlagSet, action string) error {
 	return nil
 }
 
+// rejectChanged returns an error when any of the named flags was set, because
+// it does not apply to the policy's action.
 func rejectChanged(f *pflag.FlagSet, action string, names ...string) error {
 	var set []string
 	for _, n := range names {

@@ -14,8 +14,8 @@ var updateCmd = &cobra.Command{
 	Long: "Set the pool's member list. The API replaces the list wholesale, so any " +
 		"existing member not passed via --member is removed. Use --keep-existing to " +
 		"add to the current members instead of replacing them; a --member with the " +
-		"same ipAddress and port as a current member replaces that member (e.g. to " +
-		"change its weight).",
+		"same ipAddress and port as a current member updates only the fields it " +
+		"sets on that member (e.g. to change its weight).",
 	RunE: runUpdate,
 }
 
@@ -50,12 +50,6 @@ var currentMemberFields = map[string]string{
 func buildUpdateBody(current []interface{}, memberFlags []string, memberFlagGiven, keepExisting bool) (map[string]interface{}, error) {
 	members := []map[string]interface{}{}
 
-	// --keep-existing alone would PUT the unchanged list: a no-op that still
-	// moves the load balancer into UPDATING and blocks the next mutation.
-	if keepExisting && !memberFlagGiven {
-		return nil, fmt.Errorf("nothing to update: --keep-existing needs at least one --member")
-	}
-
 	if keepExisting {
 		for _, item := range current {
 			m, ok := item.(map[string]interface{})
@@ -78,25 +72,55 @@ func buildUpdateBody(current []interface{}, memberFlags []string, memberFlagGive
 	if err != nil {
 		return nil, err
 	}
+	// --keep-existing with nothing to add would PUT the unchanged list: a no-op
+	// that still moves the load balancer into UPDATING and blocks the next
+	// mutation. Checked after parsing, so `--keep-existing --member ''` is
+	// refused too.
+	if keepExisting && len(parsed) == 0 {
+		return nil, fmt.Errorf("nothing to update: --keep-existing needs at least one --member")
+	}
+
+	// Record the keys the user actually typed before ValidateMembers fills in
+	// defaults (backup=false). A merge must overlay only these, or changing a
+	// weight would also turn a backup member into a primary.
+	explicit := make([][]string, len(parsed))
+	for i, m := range parsed {
+		for k := range m {
+			explicit[i] = append(explicit[i], k)
+		}
+	}
 	// Only new --member entries are checked; members carried over by
 	// --keep-existing already carry the service's own values.
 	if err := vlbclient.ValidateMembers(parsed); err != nil {
 		return nil, err
 	}
-	// A --member with the same ipAddress:port as a carried-over member replaces
-	// it in place, so `--keep-existing --member ...,weight=5` changes a weight
-	// instead of sending the member twice.
+
+	// The same ipAddress:port twice in --member is most likely a copy-paste
+	// slip (a port meant to differ); refuse it rather than keep one silently.
+	seen := map[string]int{}
+	for i, m := range parsed {
+		key := memberKey(m)
+		if j, ok := seen[key]; ok {
+			return nil, fmt.Errorf("--member[%d] and --member[%d] are both %s; each member must be given once", j, i, key)
+		}
+		seen[key] = i
+	}
+
+	// A --member with the same ipAddress:port as a carried-over member is merged
+	// into it in place: only the keys the user typed change, so
+	// `--keep-existing --member ...,weight=5` keeps the member's name and backup
+	// flag instead of sending the member twice or wiping them.
 	index := map[string]int{}
 	for i, m := range members {
 		index[memberKey(m)] = i
 	}
-	for _, m := range parsed {
-		key := memberKey(m)
-		if i, ok := index[key]; ok {
-			members[i] = m
+	for i, m := range parsed {
+		if j, ok := index[memberKey(m)]; ok {
+			for _, k := range explicit[i] {
+				members[j][k] = m[k]
+			}
 			continue
 		}
-		index[key] = len(members)
 		members = append(members, m)
 	}
 
@@ -175,15 +199,28 @@ func memberList(response interface{}) []interface{} {
 func printMemberPreview(current []interface{}, resulting []map[string]interface{}) {
 	fmt.Printf("The pool's member list will be replaced (%d current -> %d new):\n\n", len(current), len(resulting))
 	for _, m := range resulting {
-		fmt.Printf("  %v:%v", m["ipAddress"], m["port"])
-		if name, ok := m["name"]; ok {
-			fmt.Printf("  (%v)", name)
-		}
-		fmt.Println()
+		fmt.Println("  " + memberPreviewLine(m))
 	}
 	if len(resulting) == 0 {
 		fmt.Println("  (none — the pool will have no members)")
 	}
 	fmt.Println()
 	fmt.Println("Members not listed above are removed from the pool.")
+}
+
+// memberPreviewLine renders one member for the confirmation preview. weight and
+// backup are shown so that a change to them (for example through a
+// --keep-existing merge) is visible before the user confirms.
+func memberPreviewLine(m map[string]interface{}) string {
+	line := fmt.Sprintf("%v:%v", m["ipAddress"], m["port"])
+	if name, ok := m["name"]; ok {
+		line += fmt.Sprintf("  (%v)", name)
+	}
+	if w, ok := m["weight"]; ok {
+		line += fmt.Sprintf("  weight=%v", w)
+	}
+	if b, ok := m["backup"].(bool); ok && b {
+		line += "  backup"
+	}
+	return line
 }

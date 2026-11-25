@@ -385,8 +385,8 @@ first.
   `publicAccess`, `backupAuto`, `volumeTypeZoneId`, `quotaPackageId`, `poc`,
   `bandwidth`, `enableAutoRenew`.
   Two consequences: **there is no `ip`, `port` or `securityGroup`**, so the instance
-  `list` column set cannot be reused as-is; and since the items carry no nested
-  arrays at all, `OutputWithColumns` is unambiguous here.
+  `list` column set cannot be reused as-is; and since `data` is a bare array,
+  `OutputWithColumns` renders one row per replica.
 
   **The four `update-*` endpoints share one response**, and all four are
   **asynchronous**:
