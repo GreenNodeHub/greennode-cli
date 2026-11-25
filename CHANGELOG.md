@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.17.0...v1.18.0) (2026-11-25)
+
+
+### Features
+
+* **vlb:** add the VLB (load balancer) command group. ([#29](https://github.com/GreenNodeHub/greennode-cli/issues/29)) ([db2d96a](https://github.com/GreenNodeHub/greennode-cli/commit/db2d96aba6903c6624c7d3fcbd73465fec1a7a02))
+
 ## [1.17.0](https://github.com/GreenNodeHub/greennode-cli/compare/v1.16.0...v1.17.0) (2026-11-03)
 
 
